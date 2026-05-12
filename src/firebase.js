@@ -3,13 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
- apiKey: "AIzaSyAPP07U5UbZfHAeSUuUSWHfoSrLPI33Ahc",
-  authDomain: "mess-manager-2.firebaseapp.com",
-  projectId: "mess-manager-2",
-  storageBucket: "mess-manager-2.firebasestorage.app",
-  messagingSenderId: "13664139775",
-  appId: "1:13664139775:web:3a48a7e9718b53dc28cfca",
-  measurementId: "G-FYZ4ZYGZFX"
+  apiKey: "AIzaSyBZqnOCaGo2PSBnIGfD9Hf2rzSzXS14hgk",
+  authDomain: "mess-manager-n.firebaseapp.com",
+  projectId: "mess-manager-n",
+  storageBucket: "mess-manager-n.firebasestorage.app",
+  messagingSenderId: "652482966344",
+  appId: "1:652482966344:web:7d6dfab31bc86050a1f97d",
+  measurementId: "G-XB4KWRES7S"
 };
 
 const app = initializeApp(firebaseConfig);
