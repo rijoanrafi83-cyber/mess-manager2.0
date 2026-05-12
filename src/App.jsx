@@ -1,5 +1,5 @@
 /**
- * MessManager — App.jsx  (v3.0 — Enhanced Edition)
+ * MessManager — App.jsx  (v3.0 — Enhanced Edition + React Router)
  * Firebase Firestore-backed Mess Meal Management System
  *
  * NEW in v3.0:
@@ -12,12 +12,21 @@
  *  - Member active/inactive status toggle
  *  - Monthly meal calendar heatmap view
  *  - Month-over-month comparison chart
+ *  - React Router: /login /register /forgot-password /unauthorized /
  *
  * Firestore collections:
  *   /members   /meals   /bazaar   /deposits   /extraCharges   /guestMeals
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -34,16 +43,40 @@ const MONTHS     = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct",
 const MEAL_TYPES = ["breakfast","lunch","dinner"];
 const COLORS     = ["#6366f1","#22d3ee","#f59e0b","#10b981","#f43f5e","#a78bfa","#34d399","#fb923c"];
 
+// ─── Session store (localStorage) ─────────────────────────────────────────────
+const SESSION_KEY = "mess_current_user_v1";
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || null; } catch { return null; }
+}
+function saveSession(user) {
+  if (user) localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  else localStorage.removeItem(SESSION_KEY);
+}
+
 // ─── Admin store (localStorage) ───────────────────────────────────────────────
 const ADMIN_KEY = "mess_admins_v2";
+
 function loadAdmins() {
-  try { return JSON.parse(localStorage.getItem(ADMIN_KEY)) || null; } catch { return null; }
+try {
+return JSON.parse(localStorage.getItem(ADMIN_KEY)) || [];
+} catch {
+return [];
 }
-function saveAdmins(list) { localStorage.setItem(ADMIN_KEY, JSON.stringify(list)); }
+}
+
+function saveAdmins(list) {
+localStorage.setItem(ADMIN_KEY, JSON.stringify(list));
+}
+
 function getAdmins() {
-  return loadAdmins() || [
-    { id: "admin", name: "Admin", email: "admin@mess.com", password: "admin123", role: "admin" },
-  ];
+return loadAdmins() || [];
+}
+
+
+// ─── Member logins store ──────────────────────────────────────────────────────
+const MEMBER_LOGINS_KEY = "mess_member_logins_v1";
+function getMemberLogins() {
+  try { return JSON.parse(localStorage.getItem(MEMBER_LOGINS_KEY)) || []; } catch { return []; }
 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -186,7 +219,6 @@ function calcMonth(ym,members,meals,bazaar,deposits,extraCharges=[],guestMeals=[
   const monthBazaar=bazaar.filter(b=>(b.date||"").startsWith(ym));
   const monthGuests=guestMeals.filter(g=>(g.date||"").startsWith(ym));
 
-  // Total bazaar + guest meal cost (guests pay same meal rate, added to pool)
   const totalBazaarRaw=monthBazaar.reduce((s,b)=>s+Number(b.amount||0),0);
 
   let totalMeals=0;
@@ -203,7 +235,6 @@ function calcMonth(ym,members,meals,bazaar,deposits,extraCharges=[],guestMeals=[
     totalMeals+=cnt;
   });
 
-  // Count guest meals
   const totalGuestMeals=monthGuests.reduce((s,g)=>s+Number(g.mealCount||0),0);
   const grandTotalMeals=totalMeals+totalGuestMeals;
   const mealRate=grandTotalMeals>0?totalBazaarRaw/grandTotalMeals:0;
@@ -318,181 +349,62 @@ function printBill(html) {
   setTimeout(()=>{ win.print(); },600);
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
-export default function App() {
-  const [currentUser,setCurrentUser]=useState(null);
-  const [dark,setDark]=useState(()=>localStorage.getItem("theme")==="dark");
-  const [page,setPage]=useState("dashboard");
-  const [members,setMembers]=useState([]);
-  const [meals,setMeals]=useState({});
-  const [bazaar,setBazaar]=useState([]);
-  const [deposits,setDeposits]=useState([]);
-  const [extraCharges,setExtraCharges]=useState([]);
-  const [guestMeals,setGuestMeals]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const {toasts,push:notify}=useToast();
+// ─── ProtectedRoute ───────────────────────────────────────────────────────────
+function ProtectedRoute({ currentUser, allowedRoles, children }) {
+  const location = useLocation();
 
-  useEffect(()=>{localStorage.setItem("theme",dark?"dark":"light");},[dark]);
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-  useEffect(()=>{
-    if(!currentUser) return;
-    setLoading(true);
-    const unsubs=[];
-    unsubs.push(onSnapshot(query(collection(db,"members"),orderBy("createdAt","asc")),
-      snap=>{setMembers(snap.docs.map(d=>({id:d.id,...d.data()})));setLoading(false);},
-      err=>{console.error(err);notify("Failed to load members","error");setLoading(false);}));
-    unsubs.push(onSnapshot(collection(db,"meals"),
-      snap=>{const map={};snap.docs.forEach(d=>{map[d.id]={id:d.id,...d.data()};});setMeals(map);},
-      err=>console.error(err)));
-    unsubs.push(onSnapshot(query(collection(db,"bazaar"),orderBy("date","desc")),
-      snap=>setBazaar(snap.docs.map(d=>({id:d.id,...d.data()}))),
-      err=>console.error(err)));
-    unsubs.push(onSnapshot(query(collection(db,"deposits"),orderBy("date","desc")),
-      snap=>setDeposits(snap.docs.map(d=>({id:d.id,...d.data()}))),
-      err=>console.error(err)));
-    unsubs.push(onSnapshot(query(collection(db,"extraCharges"),orderBy("date","desc")),
-      snap=>setExtraCharges(snap.docs.map(d=>({id:d.id,...d.data()}))),
-      err=>console.error(err)));
-    unsubs.push(onSnapshot(query(collection(db,"guestMeals"),orderBy("date","desc")),
-      snap=>setGuestMeals(snap.docs.map(d=>({id:d.id,...d.data()}))),
-      err=>console.error(err)));
-    return()=>unsubs.forEach(u=>u());
-  },[currentUser]); // eslint-disable-line
+  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
-  if(!currentUser) return (
-    <div className={dark?"dark":""}>
-      <LoginPage onLogin={setCurrentUser} dark={dark} setDark={setDark}/>
-      <ToastContainer toasts={toasts}/>
-    </div>
-  );
-
-  const isAdmin=currentUser.role==="admin";
-
-  const adminNavItems=[
-    {key:"dashboard",icon:"📊",label:"Dashboard"},
-    {key:"members",  icon:"👥",label:"Members"},
-    {key:"meals",    icon:"🍽️", label:"Meals"},
-    {key:"bazaar",   icon:"🛒",label:"Bazaar"},
-    {key:"deposits", icon:"💰",label:"Deposits"},
-    {key:"extras",   icon:"➕",label:"Extras"},
-    {key:"guests",   icon:"🧑‍🤝‍🧑",label:"Guests"},
-    {key:"reports",  icon:"📈",label:"Reports"},
-    {key:"settings", icon:"⚙️", label:"Settings"},
-  ];
-  const memberNavItems=[
-    {key:"dashboard",icon:"📊",label:"My Bill"},
-    {key:"meals",    icon:"🍽️", label:"My Meals"},
-  ];
-  const navItems=isAdmin?adminNavItems:memberNavItems;
-
-  const shared={members,meals,bazaar,deposits,extraCharges,guestMeals,notify,currentUser,isAdmin};
-
-  // Member portal: filter data to only their own
-  const memberPortalShared=!isAdmin?{
-    ...shared,
-    deposits:deposits.filter(d=>d.memberId===currentUser.memberId),
-    extraCharges:extraCharges.filter(e=>e.memberId===currentUser.memberId),
-  }:shared;
-
-  const pages={
-    dashboard:<Dashboard {...memberPortalShared}/>,
-    members:  isAdmin?<MembersPage {...shared}/>:null,
-    meals:    <MealsPage {...memberPortalShared}/>,
-    bazaar:   isAdmin?<BazaarPage {...shared}/>:null,
-    deposits: isAdmin?<DepositsPage {...shared}/>:null,
-    extras:   isAdmin?<ExtrasPage {...shared}/>:null,
-    guests:   isAdmin?<GuestsPage {...shared}/>:null,
-    reports:  isAdmin?<ReportsPage {...shared}/>:null,
-    settings: <SettingsPage {...shared} dark={dark} setDark={setDark} onLogout={()=>setCurrentUser(null)}/>,
-  };
-
-  return (
-    <div className={dark?"dark":""}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex">
-        {/* Desktop sidebar */}
-        <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 fixed h-full z-20">
-          <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
-            <span className="text-3xl">🍛</span>
-            <div>
-              <h1 className="font-bold text-lg leading-tight">MessManager</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">v3.0 — {isAdmin?"Admin Panel":"Member Portal"}</p>
-            </div>
-          </div>
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {navItems.map(n=>(
-              <button key={n.key} onClick={()=>setPage(n.key)}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all
-                  ${page===n.key?"bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900"
-                               :"text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
-                <span>{n.icon}</span>{n.label}
-              </button>
-            ))}
-          </nav>
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-            <div className="flex items-center gap-3 mb-3">
-              <Avatar name={currentUser.name} size={9}/>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{currentUser.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{currentUser.role}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={()=>setDark(d=>!d)}
-                className="flex-1 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700">
-                {dark?"☀️ Light":"🌙 Dark"}
-              </button>
-              <button onClick={()=>setCurrentUser(null)}
-                className="flex-1 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-100">
-                Logout
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        {/* Mobile header */}
-        <header className="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-20 flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-2"><span className="text-2xl">🍛</span><span className="font-bold text-base">MessManager</span></div>
-          <div className="flex items-center gap-1">
-            <button onClick={()=>setDark(d=>!d)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">{dark?"☀️":"🌙"}</button>
-            <button onClick={()=>setCurrentUser(null)} className="px-3 py-1.5 rounded-lg text-red-500 text-xs font-medium hover:bg-red-50 dark:hover:bg-red-900/20">Logout</button>
-          </div>
-        </header>
-
-        {/* Mobile bottom nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-30 flex">
-          {navItems.slice(0,5).map(n=>(
-            <button key={n.key} onClick={()=>setPage(n.key)}
-              className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors ${page===n.key?"text-indigo-600 dark:text-indigo-400":"text-gray-500 dark:text-gray-400"}`}>
-              <span className="text-lg leading-none">{n.icon}</span>
-              <span className="text-[10px] mt-0.5">{n.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <main className="flex-1 md:ml-64 pt-14 md:pt-0 pb-20 md:pb-0 min-h-screen">
-          <div className="p-4 md:p-6 max-w-7xl mx-auto">
-            {loading?<Spinner label="Syncing with Firebase…"/>:pages[page]}
-          </div>
-        </main>
-        <ToastContainer toasts={toasts}/>
-      </div>
-    </div>
-  );
+  return children;
 }
 
-// ─── Login ────────────────────────────────────────────────────────────────────
-function LoginPage({onLogin,dark,setDark}) {
-  const [email,setEmail]=useState("admin@mess.com");
-  const [password,setPassword]=useState("admin123");
-  const [error,setError]=useState("");
+// ─── LoginPage (Router-aware) ─────────────────────────────────────────────────
+function LoginPage({ onLogin, dark, setDark }) {
+ const [email, setEmail] = useState("");
+const [password, setPassword] = useState("");
+  const [error, setError]       = useState("");
+  const navigate                = useNavigate();
+  const location                = useLocation();
+  const from                    = location.state?.from?.pathname || "/";
 
-  const handleLogin=()=>{
-    // Check admins
-    const admins=getAdmins();
-    const admin=admins.find(u=>u.email===email&&u.password===password);
-    if(admin){setError("");onLogin({...admin,role:"admin"});return;}
-    // Fallback: member login handled via members collection — handled in App after load
-    setError("Invalid credentials. Members: use email as password or contact admin.");
+  const handleLogin = () => {
+    // Check admin accounts
+    const admins = getAdmins();
+    const admin  = admins.find(u => u.email === email && u.password === password);
+    if (admin) {
+      const user = { ...admin, role: "admin" };
+      saveSession(user);
+      setError("");
+      onLogin(user);
+      navigate(from, { replace: true });
+      return;
+    }
+
+    // Check member logins
+    const memberLogins = getMemberLogins();
+    const memberLogin  = memberLogins.find(l => l.email === email && l.password === password);
+    if (memberLogin) {
+      const user = {
+        id:       memberLogin.memberId,
+        memberId: memberLogin.memberId,
+        name:     memberLogin.name,
+        email:    memberLogin.email,
+        role:     "member",
+      };
+      saveSession(user);
+      setError("");
+      onLogin(user);
+      navigate(from, { replace: true });
+      return;
+    }
+
+    setError("Invalid credentials. Members: use your assigned email and password, or contact admin.");
   };
 
   return (
@@ -504,29 +416,469 @@ function LoginPage({onLogin,dark,setDark}) {
             <h1 className="text-3xl font-bold">MessManager</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">v3.0 — Firebase Meal Management</p>
           </div>
-          {error&&<div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">{error}</div>}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">{error}</div>
+          )}
           <div className="space-y-4">
             <div>
               <label className={labelCls}>Email</label>
-              <input type="email" value={email} onChange={e=>setEmail(e.target.value)} className={inputCls} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls}
+                onKeyDown={e => e.key === "Enter" && handleLogin()} />
             </div>
             <div>
               <label className={labelCls}>Password</label>
-              <input type="password" value={password} onChange={e=>setPassword(e.target.value)} className={inputCls} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} className={inputCls}
+                onKeyDown={e => e.key === "Enter" && handleLogin()} />
             </div>
             <button onClick={handleLogin}
               className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900 transition-all">
               Sign In
             </button>
           </div>
-          <div className="mt-5 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs text-gray-400 text-center">
-            Default admin: admin@mess.com / admin123
+          <div className="mt-5 flex flex-col gap-2 text-center text-xs text-gray-400">
+
+            <div className="flex justify-center gap-4 mt-1">
+              <button onClick={() => navigate("/register")}
+                className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                Register
+              </button>
+              <span>·</span>
+              <button onClick={() => navigate("/forgot-password")}
+                className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                Forgot password?
+              </button>
+            </div>
           </div>
-          <button onClick={()=>setDark(d=>!d)} className="w-full mt-3 text-center text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-            {dark?"☀️ Light Mode":"🌙 Dark Mode"}
+          <button onClick={() => setDark(d => !d)}
+            className="w-full mt-3 text-center text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── RegisterPage ─────────────────────────────────────────────────────────────
+function RegisterPage({ dark, setDark }) {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
+  const [error, setError]   = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleRegister = () => {
+    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
+      setError("All fields are required."); return;
+    }
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters."); return;
+    }
+    if (form.password !== form.confirm) {
+      setError("Passwords do not match."); return;
+    }
+    const admins = getAdmins();
+    if (admins.find(a => a.email === form.email)) {
+      setError("An account with this email already exists."); return;
+    }
+    // Registration creates a pending admin account (admin must activate in settings)
+    const newAdmin = { id: uid(), name: form.name, email: form.email, password: form.password, role: "admin", pending: true };
+    saveAdmins([...admins, newAdmin]);
+    setError("");
+    setSuccess("Account created! Ask an existing admin to activate your account, or log in if you already have access.");
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-indigo-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 border border-gray-100 dark:border-gray-800">
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-3">🍛</div>
+            <h1 className="text-3xl font-bold">Create Account</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">MessManager v3.0</p>
+          </div>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">{error}</div>
+          )}
+          {success && (
+            <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm">{success}</div>
+          )}
+          <div className="space-y-4">
+            {[["Full Name", "name", "text"], ["Email", "email", "email"], ["Password", "password", "password"], ["Confirm Password", "confirm", "password"]].map(([lbl, key, type]) => (
+              <div key={key}>
+                <label className={labelCls}>{lbl}</label>
+                <input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  className={inputCls} onKeyDown={e => e.key === "Enter" && handleRegister()} />
+              </div>
+            ))}
+            <button onClick={handleRegister}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900 transition-all">
+              Register
+            </button>
+          </div>
+          <div className="mt-5 text-center">
+            <button onClick={() => navigate("/login")}
+              className="text-xs text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+              ← Back to Sign In
+            </button>
+          </div>
+          <button onClick={() => setDark(d => !d)}
+            className="w-full mt-3 text-center text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ForgotPasswordPage ───────────────────────────────────────────────────────
+function ForgotPasswordPage({ dark, setDark }) {
+  const navigate = useNavigate();
+  const [email, setEmail]     = useState("");
+  const [step, setStep]       = useState(1); // 1=email, 2=reset
+  const [newPw, setNewPw]     = useState("");
+  const [confirmPw, setConfirm] = useState("");
+  const [error, setError]     = useState("");
+  const [success, setSuccess] = useState("");
+  const foundAdmin            = useRef(null);
+
+  const handleLookup = () => {
+    const admins = getAdmins();
+    const admin  = admins.find(a => a.email === email.trim());
+    if (!admin) { setError("No admin account found with that email."); return; }
+    foundAdmin.current = admin;
+    setError("");
+    setStep(2);
+  };
+
+  const handleReset = () => {
+    if (newPw.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (newPw !== confirmPw) { setError("Passwords do not match."); return; }
+    const admins  = getAdmins();
+    const updated = admins.map(a => a.id === foundAdmin.current.id ? { ...a, password: newPw } : a);
+    saveAdmins(updated);
+    setError("");
+    setSuccess("Password reset! You can now sign in with your new password.");
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-indigo-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 border border-gray-100 dark:border-gray-800">
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-3">🔑</div>
+            <h1 className="text-3xl font-bold">Reset Password</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">MessManager v3.0</p>
+          </div>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">{error}</div>
+          )}
+          {success ? (
+            <div className="space-y-4">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm">{success}</div>
+              <button onClick={() => navigate("/login")}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all">
+                Back to Sign In
+              </button>
+            </div>
+          ) : step === 1 ? (
+            <div className="space-y-4">
+              <div>
+                <label className={labelCls}>Admin Email Address</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  className={inputCls} onKeyDown={e => e.key === "Enter" && handleLookup()} />
+              </div>
+              <button onClick={handleLookup}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all">
+                Look Up Account
+              </button>
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-xl text-xs">
+                ⚠️ This resets locally-stored passwords only. For Firebase Auth, use the Firebase console.
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Resetting password for <strong>{foundAdmin.current?.email}</strong>
+              </p>
+              <div>
+                <label className={labelCls}>New Password</label>
+                <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Confirm New Password</label>
+                <input type="password" value={confirmPw} onChange={e => setConfirm(e.target.value)}
+                  className={inputCls} onKeyDown={e => e.key === "Enter" && handleReset()} />
+              </div>
+              <button onClick={handleReset}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all">
+                Reset Password
+              </button>
+            </div>
+          )}
+          <div className="mt-5 text-center">
+            <button onClick={() => navigate("/login")}
+              className="text-xs text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+              ← Back to Sign In
+            </button>
+          </div>
+          <button onClick={() => setDark(d => !d)}
+            className="w-full mt-3 text-center text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── UnauthorizedPage ─────────────────────────────────────────────────────────
+function UnauthorizedPage({ onLogout }) {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 dark:from-gray-950 dark:via-gray-900 dark:to-red-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-10 border border-gray-100 dark:border-gray-800">
+          <div className="text-7xl mb-4">🚫</div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+            You don't have permission to view this page. Please contact your administrator if you believe this is an error.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button onClick={() => navigate("/")}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all">
+              Go to Dashboard
+            </button>
+            <button onClick={() => { onLogout?.(); navigate("/login"); }}
+              className="w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all">
+              Sign In with Different Account
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main App Shell (dashboard wrapper) ──────────────────────────────────────
+function AppShell({ currentUser, setCurrentUser, dark, setDark }) {
+  const [page, setPage]               = useState("dashboard");
+  const [members, setMembers]         = useState([]);
+  const [meals, setMeals]             = useState({});
+  const [bazaar, setBazaar]           = useState([]);
+  const [deposits, setDeposits]       = useState([]);
+  const [extraCharges, setExtraCharges] = useState([]);
+  const [guestMeals, setGuestMeals]   = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const { toasts, push: notify }      = useToast();
+  const navigate                      = useNavigate();
+
+  useEffect(() => {
+    if (!currentUser) return;
+    setLoading(true);
+    const unsubs = [];
+    unsubs.push(onSnapshot(query(collection(db, "members"), orderBy("createdAt", "asc")),
+      snap => { setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); },
+      err  => { console.error(err); notify("Failed to load members", "error"); setLoading(false); }));
+    unsubs.push(onSnapshot(collection(db, "meals"),
+      snap => { const map = {}; snap.docs.forEach(d => { map[d.id] = { id: d.id, ...d.data() }; }); setMeals(map); },
+      err  => console.error(err)));
+    unsubs.push(onSnapshot(query(collection(db, "bazaar"), orderBy("date", "desc")),
+      snap => setBazaar(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      err  => console.error(err)));
+    unsubs.push(onSnapshot(query(collection(db, "deposits"), orderBy("date", "desc")),
+      snap => setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      err  => console.error(err)));
+    unsubs.push(onSnapshot(query(collection(db, "extraCharges"), orderBy("date", "desc")),
+      snap => setExtraCharges(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      err  => console.error(err)));
+    unsubs.push(onSnapshot(query(collection(db, "guestMeals"), orderBy("date", "desc")),
+      snap => setGuestMeals(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      err  => console.error(err)));
+    return () => unsubs.forEach(u => u());
+  }, [currentUser]); // eslint-disable-line
+
+  const handleLogout = () => {
+    saveSession(null);
+    setCurrentUser(null);
+    navigate("/login", { replace: true });
+  };
+
+  const isAdmin = currentUser.role === "admin";
+
+  const adminNavItems = [
+    { key: "dashboard", icon: "📊", label: "Dashboard" },
+    { key: "members",   icon: "👥", label: "Members" },
+    { key: "meals",     icon: "🍽️",  label: "Meals" },
+    { key: "bazaar",    icon: "🛒", label: "Bazaar" },
+    { key: "deposits",  icon: "💰", label: "Deposits" },
+    { key: "extras",    icon: "➕", label: "Extras" },
+    { key: "guests",    icon: "🧑‍🤝‍🧑", label: "Guests" },
+    { key: "reports",   icon: "📈", label: "Reports" },
+    { key: "settings",  icon: "⚙️",  label: "Settings" },
+  ];
+  const memberNavItems = [
+    { key: "dashboard", icon: "📊", label: "My Bill" },
+    { key: "meals",     icon: "🍽️",  label: "My Meals" },
+  ];
+  const navItems = isAdmin ? adminNavItems : memberNavItems;
+
+  const shared = { members, meals, bazaar, deposits, extraCharges, guestMeals, notify, currentUser, isAdmin };
+
+  const memberPortalShared = !isAdmin ? {
+    ...shared,
+    deposits:     deposits.filter(d => d.memberId === currentUser.memberId),
+    extraCharges: extraCharges.filter(e => e.memberId === currentUser.memberId),
+  } : shared;
+
+  const pages = {
+    dashboard: <Dashboard {...memberPortalShared} />,
+    members:   isAdmin ? <MembersPage {...shared} /> : null,
+    meals:     <MealsPage {...memberPortalShared} />,
+    bazaar:    isAdmin ? <BazaarPage {...shared} /> : null,
+    deposits:  isAdmin ? <DepositsPage {...shared} /> : null,
+    extras:    isAdmin ? <ExtrasPage {...shared} /> : null,
+    guests:    isAdmin ? <GuestsPage {...shared} /> : null,
+    reports:   isAdmin ? <ReportsPage {...shared} /> : null,
+    settings:  <SettingsPage {...shared} dark={dark} setDark={setDark} onLogout={handleLogout} />,
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 fixed h-full z-20">
+        <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+          <span className="text-3xl">🍛</span>
+          <div>
+            <h1 className="font-bold text-lg leading-tight">MessManager</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">v3.0 — {isAdmin ? "Admin Panel" : "Member Portal"}</p>
+          </div>
+        </div>
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {navItems.map(n => (
+            <button key={n.key} onClick={() => setPage(n.key)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all
+                ${page === n.key
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
+              <span>{n.icon}</span>{n.label}
+            </button>
+          ))}
+        </nav>
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-3 mb-3">
+            <Avatar name={currentUser.name} size={9} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{currentUser.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{currentUser.role}</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setDark(d => !d)}
+              className="flex-1 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700">
+              {dark ? "☀️ Light" : "🌙 Dark"}
+            </button>
+            <button onClick={handleLogout}
+              className="flex-1 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-100">
+              Logout
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile header */}
+      <header className="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-20 flex items-center justify-between px-4 h-14">
+        <div className="flex items-center gap-2"><span className="text-2xl">🍛</span><span className="font-bold text-base">MessManager</span></div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setDark(d => !d)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">{dark ? "☀️" : "🌙"}</button>
+          <button onClick={handleLogout} className="px-3 py-1.5 rounded-lg text-red-500 text-xs font-medium hover:bg-red-50 dark:hover:bg-red-900/20">Logout</button>
+        </div>
+      </header>
+
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-30 flex">
+        {navItems.slice(0, 5).map(n => (
+          <button key={n.key} onClick={() => setPage(n.key)}
+            className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors ${page === n.key ? "text-indigo-600 dark:text-indigo-400" : "text-gray-500 dark:text-gray-400"}`}>
+            <span className="text-lg leading-none">{n.icon}</span>
+            <span className="text-[10px] mt-0.5">{n.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      <main className="flex-1 md:ml-64 pt-14 md:pt-0 pb-20 md:pb-0 min-h-screen">
+        <div className="p-4 md:p-6 max-w-7xl mx-auto">
+          {loading ? <Spinner label="Syncing with Firebase…" /> : pages[page]}
+        </div>
+      </main>
+      <ToastContainer toasts={toasts} />
+    </div>
+  );
+}
+
+// ─── Root App with Router ─────────────────────────────────────────────────────
+export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => loadSession());
+  const [dark, setDark]               = useState(() => localStorage.getItem("theme") === "dark");
+
+  useEffect(() => { localStorage.setItem("theme", dark ? "dark" : "light"); }, [dark]);
+
+  const handleLogin  = (user) => { saveSession(user); setCurrentUser(user); };
+  const handleLogout = ()     => { saveSession(null); setCurrentUser(null); };
+
+  return (
+    <div className={dark ? "dark" : ""}>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route
+            path="/login"
+            element={
+              currentUser
+                ? <Navigate to="/" replace />
+                : <LoginPage onLogin={handleLogin} dark={dark} setDark={setDark} />
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              currentUser
+                ? <Navigate to="/" replace />
+                : <RegisterPage dark={dark} setDark={setDark} />
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              currentUser
+                ? <Navigate to="/" replace />
+                : <ForgotPasswordPage dark={dark} setDark={setDark} />
+            }
+          />
+          <Route
+            path="/unauthorized"
+            element={<UnauthorizedPage onLogout={handleLogout} />}
+          />
+
+          {/* Protected dashboard — allowedRoles: admin + member */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute currentUser={currentUser} allowedRoles={["admin", "member"]}>
+                <AppShell
+                  currentUser={currentUser}
+                  setCurrentUser={setCurrentUser}
+                  dark={dark}
+                  setDark={setDark}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }
@@ -537,7 +889,6 @@ function Dashboard({members,meals,bazaar,deposits,extraCharges,guestMeals,curren
   const [yNum,mNum]=ym.split("-").map(Number);
   const {totalBazaar,totalMeals,mealRate,memberSummary,totalGuestMeals}=calcMonth(ym,members,meals,bazaar,deposits,extraCharges,guestMeals);
 
-  // If member portal — show only own summary
   if(!isAdmin) {
     const me=memberSummary.find(m=>m.id===currentUser.memberId);
     if(!me) return <EmptyState icon="👤" title="Account not linked" desc="Ask admin to link your member account."/>;
@@ -568,7 +919,6 @@ function Dashboard({members,meals,bazaar,deposits,extraCharges,guestMeals,curren
     );
   }
 
-  // Admin dashboard
   const bazaarTrend=Array.from({length:6},(_,i)=>{
     const d=new Date(yNum,mNum-1-i,1);
     const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
@@ -792,7 +1142,7 @@ function MembersPage({members,notify}) {
 // ─── Meals ────────────────────────────────────────────────────────────────────
 function MealsPage({members,meals,notify,currentUser,isAdmin}) {
   const [selectedDate,setSelectedDate]=useState(TODAY);
-  const [viewMode,setViewMode]=useState("table"); // table | calendar
+  const [viewMode,setViewMode]=useState("table");
   const [busyKey,setBusyKey]=useState(null);
   const [calMonth,setCalMonth]=useState(getCurrentMonth());
 
@@ -843,11 +1193,10 @@ function MealsPage({members,meals,notify,currentUser,isAdmin}) {
     return s+(e.breakfast?1:0)+(e.lunch?1:0)+(e.dinner?1:0);
   },0);
 
-  // Calendar view: heatmap for a month
   const renderCalendar=()=>{
     const [cy,cm]=calMonth.split("-").map(Number);
     const days=daysInMonth(calMonth);
-    const firstDay=new Date(cy,cm-1,1).getDay(); // 0=Sun
+    const firstDay=new Date(cy,cm-1,1).getDay();
 
     const cells=[];
     for(let i=0;i<firstDay;i++) cells.push(<div key={`e${i}`}/>);
@@ -1076,19 +1425,11 @@ function BazaarPage({bazaar,notify,currentUser}) {
                       <td className="px-4 py-3 text-gray-500">{b.addedBy||"—"}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                         <button
-  onClick={() => {
-    setEditId(b.id);
-    setForm({
-      date: b.date,
-      amount: String(b.amount),
-      note: b.note || "",
-    });
-  }}
-  className="px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-amber-100"
->
-  Edit
-</button>
+                          <button
+                            onClick={()=>{setEditId(b.id);setForm({date:b.date,amount:String(b.amount),note:b.note||"",});}}
+                            className="px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-amber-100">
+                            Edit
+                          </button>
                           <button onClick={()=>setConfirm({id:b.id})}
                             className="px-3 py-1 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-100">Delete</button>
                         </div>
@@ -1392,7 +1733,6 @@ function ReportsPage({members,meals,bazaar,deposits,extraCharges,guestMeals}) {
   const monthName=`${MONTHS[ymM-1]} ${ymY}`;
   const {totalBazaar,totalMeals,mealRate,memberSummary,totalGuestMeals}=calcMonth(ym,members,meals,bazaar,deposits,extraCharges,guestMeals);
 
-  // Previous month comparison
   const prevD=new Date(ymY,ymM-2,1);
   const prevYm=`${prevD.getFullYear()}-${String(prevD.getMonth()+1).padStart(2,"0")}`;
   const {totalBazaar:prevBazaar,totalMeals:prevMeals,mealRate:prevRate}=calcMonth(prevYm,members,meals,bazaar,deposits,extraCharges,guestMeals);
@@ -1499,7 +1839,6 @@ function ReportsPage({members,meals,bazaar,deposits,extraCharges,guestMeals}) {
         </div>
       </div>
 
-      {/* Month comparison */}
       <Card title="Month-over-Month Comparison" sub={`${MONTHS[new Date(prevD).getMonth()]} vs ${monthName}`}>
         <div className="grid grid-cols-3 gap-4">
           {compData.map((c,i)=>{
@@ -1519,7 +1858,6 @@ function ReportsPage({members,meals,bazaar,deposits,extraCharges,guestMeals}) {
         </div>
       </Card>
 
-      {/* Summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           {label:"Total Bazaar",value:fmtCurrency(totalBazaar),icon:"🛒"},
@@ -1565,7 +1903,6 @@ function ReportsPage({members,meals,bazaar,deposits,extraCharges,guestMeals}) {
         )}
       </div>
 
-      {/* Per-member statement with individual PDF */}
       <Card title={`Monthly Statement — ${monthName}`} sub={`Meal rate: ${fmtCurrency(mealRate)} per meal`}>
         {memberSummary.length===0
           ?<EmptyState icon="📊" title="No data" desc="No members or meal data for this month."/>
@@ -1621,11 +1958,9 @@ function ReportsPage({members,meals,bazaar,deposits,extraCharges,guestMeals}) {
 function SettingsPage({dark,setDark,onLogout,notify,currentUser,members}) {
   const isAdmin=currentUser.role==="admin";
 
-  // Profile
   const [profForm,setProfForm]=useState({name:currentUser.name,email:currentUser.email});
   const [pwForm,setPwForm]=useState({old:"",new1:"",new2:""});
 
-  // Admin management
   const [admins,setAdmins]=useState(getAdmins);
   const [newAdmin,setNewAdmin]=useState({name:"",email:"",password:""});
   const [confirm,setConfirm]=useState(null);
@@ -1671,9 +2006,7 @@ function SettingsPage({dark,setDark,onLogout,notify,currentUser,members}) {
     notify("Admin removed");
   };
 
-  // Member login setup: link a member to a login
   const [memberLoginForm,setMemberLoginForm]=useState({memberId:"",password:""});
-  const MEMBER_LOGINS_KEY="mess_member_logins_v1";
   const [memberLogins,setMemberLogins]=useState(()=>{
     try{return JSON.parse(localStorage.getItem(MEMBER_LOGINS_KEY))||[];}catch{return [];}
   });
@@ -1694,7 +2027,6 @@ function SettingsPage({dark,setDark,onLogout,notify,currentUser,members}) {
     <div className="space-y-6 max-w-2xl">
       <PageHeader title="Settings"/>
 
-      {/* Appearance */}
       <Card title="Appearance">
         <div className="flex items-center justify-between">
           <div><p className="font-medium text-sm">Dark Mode</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Toggle light/dark theme</p></div>
@@ -1705,7 +2037,6 @@ function SettingsPage({dark,setDark,onLogout,notify,currentUser,members}) {
         </div>
       </Card>
 
-      {/* Profile */}
       <Card title="My Profile">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><label className={labelCls}>Display Name</label><input value={profForm.name} onChange={e=>setProfForm(f=>({...f,name:e.target.value}))} className={inputCls}/></div>
@@ -1714,7 +2045,6 @@ function SettingsPage({dark,setDark,onLogout,notify,currentUser,members}) {
         <BtnPrimary onClick={saveProfile} className="mt-4">Save Profile</BtnPrimary>
       </Card>
 
-      {/* Change Password */}
       <Card title="Change Password">
         <div className="space-y-3">
           {[["Current Password","old"],["New Password","new1"],["Confirm New Password","new2"]].map(([lbl,key])=>(
@@ -1727,7 +2057,6 @@ function SettingsPage({dark,setDark,onLogout,notify,currentUser,members}) {
         </div>
       </Card>
 
-      {/* Admin accounts */}
       {isAdmin&&(
         <Card title="Admin Accounts" sub="Manage who can log in as admin">
           <div className="space-y-2 mb-5">
@@ -1759,7 +2088,6 @@ function SettingsPage({dark,setDark,onLogout,notify,currentUser,members}) {
         </Card>
       )}
 
-      {/* Member login setup */}
       {isAdmin&&(
         <Card title="Member Login Setup" sub="Give members a password to view their own bill">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -1793,13 +2121,12 @@ function SettingsPage({dark,setDark,onLogout,notify,currentUser,members}) {
         </Card>
       )}
 
-      {/* About */}
       <Card title="About">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          <strong className="text-gray-900 dark:text-white">MessManager v3.0</strong> — Enhanced mess meal management with multi-role login, PDF billing, guest meals, extra charges, and member portal.
+          <strong className="text-gray-900 dark:text-white">MessManager v3.0</strong> — Enhanced mess meal management with multi-role login, PDF billing, guest meals, extra charges, member portal, and React Router.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          {["React 18","Tailwind CSS","Firebase Firestore","Recharts","Multi-role Auth","PDF Export"].map(t=>(
+          {["React 18","React Router v6","Tailwind CSS","Firebase Firestore","Recharts","Multi-role Auth","PDF Export"].map(t=>(
             <span key={t} className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-xs font-medium">{t}</span>
           ))}
         </div>

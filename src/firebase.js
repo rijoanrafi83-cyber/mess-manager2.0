@@ -1,8 +1,9 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAPPO7U5ubZfHAeSUuUSWHfoSrLPI33Ahc",
+  apiKey: "AIzaSyAPP07U5ubZfHAeSUuUSWHfoSrLPI33Ahc",
   authDomain: "mess-manager-2.firebaseapp.com",
   projectId: "mess-manager-2",
   storageBucket: "mess-manager-2.firebasestorage.app",
@@ -12,4 +13,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+export default app;
