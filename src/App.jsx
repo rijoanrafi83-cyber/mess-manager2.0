@@ -197,7 +197,7 @@ function useMessData(ownerId) {
 
     // Members
     unsubs.push(onSnapshot(
-      query(collection(db, "members"), where("ownerId", "==", ownerId), orderBy("createdAt", "asc")),
+      query(collection(db, "members"), orderBy("createdAt", "asc")),
       snap => { setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); },
       err  => { console.error("members:", err); setLoading(false); }
     ));
