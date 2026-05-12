@@ -3,7 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAPP07U5UbZfHAeSUuUSWHfoSrLPI33Ahc",
+ apiKey: "AIzaSyAPP07U5UbZfHAeSUuUSWHfoSrLPI33Ahc",
   authDomain: "mess-manager-2.firebaseapp.com",
   projectId: "mess-manager-2",
   storageBucket: "mess-manager-2.firebasestorage.app",

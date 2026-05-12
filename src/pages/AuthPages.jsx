@@ -3,9 +3,9 @@
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { useTheme } from "./ThemeContext";
-import { inputCls, labelCls } from "./components/UI";
+import { inputCls, labelCls } from "../components/UI";
 
 function AuthCard({ children, title, sub }) {
   return (

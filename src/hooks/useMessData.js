@@ -7,7 +7,7 @@ import {
   subscribeMembers, subscribeMeals, subscribeBazaar,
   subscribeDeposits, subscribeExtraCharges, subscribeGuestMeals,
   subscribeMemberAccounts,
-} from "./firestoreService";
+} from "../firestoreService";
 
 export function useMessData(ownerId, notify) {
   const [members, setMembers] = useState([]);
