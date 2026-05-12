@@ -44,7 +44,7 @@ import {
   signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential,
   sendPasswordResetEmail,
 } from "firebase/auth";
-import { db, auth } from "./firebase/firebase";
+import { db, auth } from "../firebase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const TODAY      = new Date().toISOString().split("T")[0];
