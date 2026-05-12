@@ -145,90 +145,213 @@ const firestoreService = {
 // where() + orderBy() combinations. Without indexes the snapshots silently
 // fail. Sorting is done in JS after each snapshot instead.
 function useMessData(ownerId) {
-  const [members, setMembers]           = useState([]);
-  const [meals, setMeals]               = useState({});
-  const [bazaar, setBazaar]             = useState([]);
-  const [deposits, setDeposits]         = useState([]);
+  const [members, setMembers] = useState([]);
+  const [meals, setMeals] = useState({});
+  const [bazaar, setBazaar] = useState([]);
+  const [deposits, setDeposits] = useState([]);
   const [extraCharges, setExtraCharges] = useState([]);
-  const [guestMeals, setGuestMeals]     = useState([]);
-  const [loading, setLoading]           = useState(true);
+  const [guestMeals, setGuestMeals] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!ownerId) return;
+    if (!ownerId) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    const unsubs = [];
 
-    // Members — sort by createdAt asc in JS
-    unsubs.push(onSnapshot(
-      query(collection(db, "members"), where("ownerId", "==", ownerId)),
-      snap => {
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        docs.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
-        setMembers(docs);
-        setLoading(false);
-      },
-      err => { console.error("members:", err); setLoading(false); }
-    ));
+    const unsubscribers = [];
 
-    // Meals (keyed by doc id for O(1) lookup)
-    unsubs.push(onSnapshot(
-      query(collection(db, "meals"), where("ownerId", "==", ownerId)),
-      snap => {
-        const map = {};
-        snap.docs.forEach(d => { map[d.id] = { id: d.id, ...d.data() }; });
-        setMeals(map);
-      },
-      err => console.error("meals:", err)
-    ));
+    // MEMBERS
+    const membersQuery = query(
+      collection(db, "members"),
+      where("ownerId", "==", ownerId)
+    );
 
-    // Bazaar — sort by date desc in JS
-    unsubs.push(onSnapshot(
-      query(collection(db, "bazaar"), where("ownerId", "==", ownerId)),
-      snap => {
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        docs.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-        setBazaar(docs);
-      },
-      err => console.error("bazaar:", err)
-    ));
+    unsubscribers.push(
+      onSnapshot(
+        membersQuery,
+        (snapshot) => {
+          const data = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
 
-    // Deposits — sort by date desc in JS
-    unsubs.push(onSnapshot(
-      query(collection(db, "deposits"), where("ownerId", "==", ownerId)),
-      snap => {
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        docs.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-        setDeposits(docs);
-      },
-      err => console.error("deposits:", err)
-    ));
+          data.sort(
+            (a, b) =>
+              (a.createdAt?.seconds || 0) -
+              (b.createdAt?.seconds || 0)
+          );
 
-    // Extra Charges — sort by date desc in JS
-    unsubs.push(onSnapshot(
-      query(collection(db, "extraCharges"), where("ownerId", "==", ownerId)),
-      snap => {
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        docs.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-        setExtraCharges(docs);
-      },
-      err => console.error("extraCharges:", err)
-    ));
+          setMembers(data);
+        },
+        (error) => {
+          console.error("Members Error:", error);
+        }
+      )
+    );
 
-    // Guest Meals — sort by date desc in JS
-    unsubs.push(onSnapshot(
-      query(collection(db, "guestMeals"), where("ownerId", "==", ownerId)),
-      snap => {
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        docs.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-        setGuestMeals(docs);
-      },
-      err => console.error("guestMeals:", err)
-    ));
+    // MEALS
+    const mealsQuery = query(
+      collection(db, "meals"),
+      where("ownerId", "==", ownerId)
+    );
 
-    return () => unsubs.forEach(u => u());
+    unsubscribers.push(
+      onSnapshot(
+        mealsQuery,
+        (snapshot) => {
+          const mealsMap = {};
+
+          snapshot.docs.forEach((doc) => {
+            mealsMap[doc.id] = {
+              id: doc.id,
+              ...doc.data(),
+            };
+          });
+
+          setMeals(mealsMap);
+        },
+        (error) => {
+          console.error("Meals Error:", error);
+        }
+      )
+    );
+
+    // BAZAAR
+    const bazaarQuery = query(
+      collection(db, "bazaar"),
+      where("ownerId", "==", ownerId)
+    );
+
+    unsubscribers.push(
+      onSnapshot(
+        bazaarQuery,
+        (snapshot) => {
+          const data = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          data.sort((a, b) =>
+            (b.date || "").localeCompare(a.date || "")
+          );
+
+          setBazaar(data);
+        },
+        (error) => {
+          console.error("Bazaar Error:", error);
+        }
+      )
+    );
+
+    // DEPOSITS
+    const depositsQuery = query(
+      collection(db, "deposits"),
+      where("ownerId", "==", ownerId)
+    );
+
+    unsubscribers.push(
+      onSnapshot(
+        depositsQuery,
+        (snapshot) => {
+          const data = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          data.sort((a, b) =>
+            (b.date || "").localeCompare(a.date || "")
+          );
+
+          setDeposits(data);
+        },
+        (error) => {
+          console.error("Deposits Error:", error);
+        }
+      )
+    );
+
+    // EXTRA CHARGES
+    const extraQuery = query(
+      collection(db, "extraCharges"),
+      where("ownerId", "==", ownerId)
+    );
+
+    unsubscribers.push(
+      onSnapshot(
+        extraQuery,
+        (snapshot) => {
+          const data = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          data.sort((a, b) =>
+            (b.date || "").localeCompare(a.date || "")
+          );
+
+          setExtraCharges(data);
+        },
+        (error) => {
+          console.error("ExtraCharges Error:", error);
+        }
+      )
+    );
+
+    // GUEST MEALS
+    const guestQuery = query(
+      collection(db, "guestMeals"),
+      where("ownerId", "==", ownerId)
+    );
+
+    unsubscribers.push(
+      onSnapshot(
+        guestQuery,
+        (snapshot) => {
+          const data = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          data.sort((a, b) =>
+            (b.date || "").localeCompare(a.date || "")
+          );
+
+          setGuestMeals(data);
+        },
+        (error) => {
+          console.error("GuestMeals Error:", error);
+        }
+      )
+    );
+
+    // IMPORTANT
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+
+    return () => {
+      clearTimeout(timer);
+
+      unsubscribers.forEach((unsubscribe) => {
+        if (typeof unsubscribe === "function") {
+          unsubscribe();
+        }
+      });
+    };
   }, [ownerId]);
 
-  return { members, meals, bazaar, deposits, extraCharges, guestMeals, loading };
+  return {
+    members,
+    meals,
+    bazaar,
+    deposits,
+    extraCharges,
+    guestMeals,
+    loading,
+  };
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
