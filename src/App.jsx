@@ -181,23 +181,28 @@ const firestoreService = {
 
 // ─── useMessData hook ─────────────────────────────────────────────────────────
 // Subscribes to all collections filtered by ownerId. Returns live data + loading.
+// BUG FIXES:
+//   1. Members query used undefined `user.uid` — fixed to use `ownerId` parameter
+//   2. Members query had misplaced closing paren — orderBy() was outside query(),
+//      corrupting the entire onSnapshot() call signature silently
 function useMessData(ownerId) {
-  const [members, setMembers]         = useState([]);
-  const [meals, setMeals]             = useState({});
-  const [bazaar, setBazaar]           = useState([]);
-  const [deposits, setDeposits]       = useState([]);
+  const [members, setMembers]           = useState([]);
+  const [meals, setMeals]               = useState({});
+  const [bazaar, setBazaar]             = useState([]);
+  const [deposits, setDeposits]         = useState([]);
   const [extraCharges, setExtraCharges] = useState([]);
-  const [guestMeals, setGuestMeals]   = useState([]);
-  const [loading, setLoading]         = useState(true);
+  const [guestMeals, setGuestMeals]     = useState([]);
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
     if (!ownerId) return;
     setLoading(true);
     const unsubs = [];
 
-    // Members
+    // ✅ FIX 1: was `user.uid` (undefined) → now correctly uses `ownerId`
+    // ✅ FIX 2: orderBy() is now INSIDE query() — closing paren was misplaced before
     unsubs.push(onSnapshot(
-      query(collection(db, "members"), where("ownerId", "==", user.uid)), orderBy("createdAt", "asc")),
+      query(collection(db, "members"), where("ownerId", "==", ownerId), orderBy("createdAt", "asc")),
       snap => { setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); },
       err  => { console.error("members:", err); setLoading(false); }
     ));
@@ -2044,7 +2049,6 @@ function SettingsPage({ dark, setDark, onLogout, notify, userProfile, isAdmin, m
     try {
       // Create Firebase Auth account for member
       const cred = await createUserWithEmailAndPassword(auth, memberLoginForm.email.trim(), memberLoginForm.password);
-      // Re-sign-in as admin immediately (createUserWithEmailAndPassword switches current user)
       // Store member access record
       await firestoreService.setMemberAccess(cred.user.uid, {
         ownerId,
@@ -2054,7 +2058,7 @@ function SettingsPage({ dark, setDark, onLogout, notify, userProfile, isAdmin, m
         role: "member",
       });
       // Sign admin back in
-      await signInWithEmailAndPassword(auth, auth.currentUser?.email || userProfile.email, "");
+      await signInWithEmailAndPassword(auth, userProfile.email, memberLoginForm.password);
       notify(`Login created for ${member.name}. Note: admin must re-login.`, "warning");
       setMemberLoginForm({ memberId:"", email:"", password:"" });
     } catch (err) {
