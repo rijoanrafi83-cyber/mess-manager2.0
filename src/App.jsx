@@ -1,30 +1,10 @@
 /**
  * MessManager — App.jsx  (v4.0 — Multi-Tenant Firebase Edition)
  *
- * Architecture:
- *  - Firebase Authentication for all users (admin + member)
- *  - Firestore multi-tenant isolation via ownerId on every document
- *  - AuthContext + ThemeContext providers
- *  - firestoreService helpers (all scoped to ownerId)
- *  - useMessData custom hook (realtime listeners)
- *  - ProtectedRoute with role enforcement
- *  - React Router v6
- *
- * Firestore structure (all docs include ownerId field):
- *   /members/{id}      — ownerId = admin's Firebase UID
- *   /meals/{id}        — ownerId = admin's Firebase UID
- *   /bazaar/{id}       — ownerId = admin's Firebase UID
- *   /deposits/{id}     — ownerId = admin's Firebase UID
- *   /extraCharges/{id} — ownerId = admin's Firebase UID
- *   /guestMeals/{id}   — ownerId = admin's Firebase UID
- *   /adminProfiles/{uid} — stores role/name for each Firebase user
- *   /memberAccess/{uid}  — maps Firebase member UID → ownerId (admin UID)
- *
- * Member login flow:
- *   Admin creates a Firebase Auth account for member (via Admin SDK / Cloud Function)
- *   OR: Admin sets member's Firebase UID in their memberAccess doc
- *   For simplicity here: admin creates member login via email/password in Firebase Auth,
- *   then stores a /memberAccess/{memberFirebaseUID} doc pointing to ownerId + memberId.
+ * FIX: Removed orderBy() from all Firestore queries to avoid requiring
+ * composite indexes. Sorting is now done in JavaScript after each snapshot.
+ * This resolves the "data saves but never loads" bug caused by silent
+ * onSnapshot failures when composite indexes don't exist in Firestore.
  */
 
 import { useState, useEffect, useCallback, useContext, createContext, useRef } from "react";
@@ -37,7 +17,7 @@ import {
 } from "recharts";
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc,
-  doc, setDoc, query, where, orderBy, serverTimestamp, getDoc,
+  doc, setDoc, query, where, serverTimestamp, getDoc,
 } from "firebase/firestore";
 import {
   onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
@@ -69,22 +49,14 @@ function ThemeProvider({ children }) {
 // ─── AuthContext ──────────────────────────────────────────────────────────────
 const AuthContext = createContext(null);
 
-/**
- * userProfile shape:
- *  { uid, email, displayName, role: "admin"|"member", ownerId, memberId? }
- *
- * For admins:  ownerId === uid (their own data silo)
- * For members: ownerId === admin's UID, memberId === Firestore member doc id
- */
 function AuthProvider({ children }) {
-  const [userProfile, setUserProfile] = useState(undefined); // undefined = loading
+  const [userProfile, setUserProfile] = useState(undefined);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) { setUserProfile(null); return; }
 
       try {
-        // 1. Check if admin profile exists
         const adminSnap = await getDoc(doc(db, "adminProfiles", firebaseUser.uid));
         if (adminSnap.exists()) {
           const data = adminSnap.data();
@@ -98,7 +70,6 @@ function AuthProvider({ children }) {
           return;
         }
 
-        // 2. Check if member access exists
         const memberSnap = await getDoc(doc(db, "memberAccess", firebaseUser.uid));
         if (memberSnap.exists()) {
           const data = memberSnap.data();
@@ -113,7 +84,6 @@ function AuthProvider({ children }) {
           return;
         }
 
-        // No profile found — sign out
         await signOut(auth);
         setUserProfile(null);
       } catch (err) {
@@ -132,59 +102,48 @@ function AuthProvider({ children }) {
 }
 
 // ─── firestoreService ─────────────────────────────────────────────────────────
-// All writes automatically stamp ownerId so data is isolated per admin.
 const firestoreService = {
-  // Members
   addMember: (ownerId, data) =>
     addDoc(collection(db, "members"), { ...data, ownerId, createdAt: serverTimestamp() }),
   updateMember: (id, data) =>
     updateDoc(doc(db, "members", id), { ...data, updatedAt: serverTimestamp() }),
   deleteMember: (id) => deleteDoc(doc(db, "members", id)),
 
-  // Meals — doc id = `${date}_${memberId}_${ownerId}`
   setMeal: (ownerId, date, memberId, data) =>
     setDoc(doc(db, "meals", `${date}_${memberId}_${ownerId}`), { ...data, date, memberId, ownerId }, { merge: true }),
 
-  // Bazaar
   addBazaar: (ownerId, data) =>
     addDoc(collection(db, "bazaar"), { ...data, ownerId, createdAt: serverTimestamp() }),
   updateBazaar: (id, data) =>
     updateDoc(doc(db, "bazaar", id), { ...data, updatedAt: serverTimestamp() }),
   deleteBazaar: (id) => deleteDoc(doc(db, "bazaar", id)),
 
-  // Deposits
   addDeposit: (ownerId, data) =>
     addDoc(collection(db, "deposits"), { ...data, ownerId, createdAt: serverTimestamp() }),
   deleteDeposit: (id) => deleteDoc(doc(db, "deposits", id)),
 
-  // Extra Charges
   addExtraCharge: (ownerId, data) =>
     addDoc(collection(db, "extraCharges"), { ...data, ownerId, createdAt: serverTimestamp() }),
   deleteExtraCharge: (id) => deleteDoc(doc(db, "extraCharges", id)),
 
-  // Guest Meals
   addGuestMeal: (ownerId, data) =>
     addDoc(collection(db, "guestMeals"), { ...data, ownerId, createdAt: serverTimestamp() }),
   deleteGuestMeal: (id) => deleteDoc(doc(db, "guestMeals", id)),
 
-  // Admin profile
   createAdminProfile: (uid, data) =>
     setDoc(doc(db, "adminProfiles", uid), { ...data, role: "admin", createdAt: serverTimestamp() }),
   updateAdminProfile: (uid, data) =>
     updateDoc(doc(db, "adminProfiles", uid), { ...data, updatedAt: serverTimestamp() }),
 
-  // Member access
   setMemberAccess: (memberUid, data) =>
     setDoc(doc(db, "memberAccess", memberUid), { ...data, updatedAt: serverTimestamp() }),
   deleteMemberAccess: (memberUid) => deleteDoc(doc(db, "memberAccess", memberUid)),
 };
 
 // ─── useMessData hook ─────────────────────────────────────────────────────────
-// Subscribes to all collections filtered by ownerId. Returns live data + loading.
-// BUG FIXES:
-//   1. Members query used undefined `user.uid` — fixed to use `ownerId` parameter
-//   2. Members query had misplaced closing paren — orderBy() was outside query(),
-//      corrupting the entire onSnapshot() call signature silently
+// FIX: All orderBy() calls removed. Firestore requires composite indexes for
+// where() + orderBy() combinations. Without indexes the snapshots silently
+// fail. Sorting is done in JS after each snapshot instead.
 function useMessData(ownerId) {
   const [members, setMembers]           = useState([]);
   const [meals, setMeals]               = useState({});
@@ -199,12 +158,16 @@ function useMessData(ownerId) {
     setLoading(true);
     const unsubs = [];
 
-    // ✅ FIX 1: was `user.uid` (undefined) → now correctly uses `ownerId`
-    // ✅ FIX 2: orderBy() is now INSIDE query() — closing paren was misplaced before
+    // Members — sort by createdAt asc in JS
     unsubs.push(onSnapshot(
-      query(collection(db, "members"), where("ownerId", "==", ownerId), orderBy("createdAt", "asc")),
-      snap => { setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); },
-      err  => { console.error("members:", err); setLoading(false); }
+      query(collection(db, "members"), where("ownerId", "==", ownerId)),
+      snap => {
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+        setMembers(docs);
+        setLoading(false);
+      },
+      err => { console.error("members:", err); setLoading(false); }
     ));
 
     // Meals (keyed by doc id for O(1) lookup)
@@ -218,32 +181,48 @@ function useMessData(ownerId) {
       err => console.error("meals:", err)
     ));
 
-    // Bazaar
+    // Bazaar — sort by date desc in JS
     unsubs.push(onSnapshot(
-      query(collection(db, "bazaar"), where("ownerId", "==", ownerId), orderBy("date", "desc")),
-      snap => setBazaar(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      err  => console.error("bazaar:", err)
+      query(collection(db, "bazaar"), where("ownerId", "==", ownerId)),
+      snap => {
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+        setBazaar(docs);
+      },
+      err => console.error("bazaar:", err)
     ));
 
-    // Deposits
+    // Deposits — sort by date desc in JS
     unsubs.push(onSnapshot(
-      query(collection(db, "deposits"), where("ownerId", "==", ownerId), orderBy("date", "desc")),
-      snap => setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      err  => console.error("deposits:", err)
+      query(collection(db, "deposits"), where("ownerId", "==", ownerId)),
+      snap => {
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+        setDeposits(docs);
+      },
+      err => console.error("deposits:", err)
     ));
 
-    // Extra Charges
+    // Extra Charges — sort by date desc in JS
     unsubs.push(onSnapshot(
-      query(collection(db, "extraCharges"), where("ownerId", "==", ownerId), orderBy("date", "desc")),
-      snap => setExtraCharges(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      err  => console.error("extraCharges:", err)
+      query(collection(db, "extraCharges"), where("ownerId", "==", ownerId)),
+      snap => {
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+        setExtraCharges(docs);
+      },
+      err => console.error("extraCharges:", err)
     ));
 
-    // Guest Meals
+    // Guest Meals — sort by date desc in JS
     unsubs.push(onSnapshot(
-      query(collection(db, "guestMeals"), where("ownerId", "==", ownerId), orderBy("date", "desc")),
-      snap => setGuestMeals(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      err  => console.error("guestMeals:", err)
+      query(collection(db, "guestMeals"), where("ownerId", "==", ownerId)),
+      snap => {
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+        setGuestMeals(docs);
+      },
+      err => console.error("guestMeals:", err)
     ));
 
     return () => unsubs.forEach(u => u());
@@ -613,7 +592,6 @@ function RegisterPage() {
     setError("");
     try {
       const cred = await createUserWithEmailAndPassword(auth, form.email.trim(), form.password);
-      // Create admin profile — ownerId = this user's UID
       await firestoreService.createAdminProfile(cred.user.uid, {
         displayName: form.name.trim(),
         email: form.email.trim(),
@@ -762,7 +740,6 @@ function AppShell() {
   const { toasts, push: notify } = useToast();
   const navigate              = useNavigate();
 
-  // All data is scoped to userProfile.ownerId — admins get their own silo, members get their admin's silo
   const { members, meals, bazaar, deposits, extraCharges, guestMeals, loading } =
     useMessData(userProfile?.ownerId);
 
@@ -793,7 +770,6 @@ function AppShell() {
   ];
   const navItems = isAdmin ? adminNavItems : memberNavItems;
 
-  // For member: filter to own data only
   const memberDeposits     = isAdmin ? deposits     : deposits.filter(d => d.memberId === userProfile.memberId);
   const memberExtraCharges = isAdmin ? extraCharges : extraCharges.filter(e => e.memberId === userProfile.memberId);
 
@@ -1997,12 +1973,10 @@ function SettingsPage({ dark, setDark, onLogout, notify, userProfile, isAdmin, m
   const [pwForm, setPwForm]     = useState({ current:"", new1:"", new2:"" });
   const [busy, setBusy]         = useState(false);
 
-  // Member login setup
   const [memberLoginForm, setMemberLoginForm] = useState({ memberId:"", email:"", password:"" });
   const [memberLoginBusy, setMemberLoginBusy] = useState(false);
   const [memberAccessList, setMemberAccessList] = useState([]);
 
-  // Load member access list for this admin
   useEffect(() => {
     if (!isAdmin) return;
     const unsub = onSnapshot(
@@ -2047,9 +2021,7 @@ function SettingsPage({ dark, setDark, onLogout, notify, userProfile, isAdmin, m
     if (!member) { notify("Member not found", "error"); return; }
     setMemberLoginBusy(true);
     try {
-      // Create Firebase Auth account for member
       const cred = await createUserWithEmailAndPassword(auth, memberLoginForm.email.trim(), memberLoginForm.password);
-      // Store member access record
       await firestoreService.setMemberAccess(cred.user.uid, {
         ownerId,
         memberId: memberLoginForm.memberId,
@@ -2057,7 +2029,6 @@ function SettingsPage({ dark, setDark, onLogout, notify, userProfile, isAdmin, m
         email: memberLoginForm.email.trim(),
         role: "member",
       });
-      // Sign admin back in
       await signInWithEmailAndPassword(auth, userProfile.email, memberLoginForm.password);
       notify(`Login created for ${member.name}. Note: admin must re-login.`, "warning");
       setMemberLoginForm({ memberId:"", email:"", password:"" });
