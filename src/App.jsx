@@ -118,7 +118,10 @@ function AuthProvider({ children }) {
         }
         await signOut(auth);
         setUserProfile(null);
-      } catch (err) { console.error("Auth lookup failed:", err); setUserProfile(null); }
+      } catch (err) {
+  console.error("Authentication error");
+  setUserProfile(null);
+}
     });
     return unsub;
   }, []);
@@ -704,7 +707,11 @@ function RegisterPage() {
       setSuccess("Account created! Redirecting…");
       setTimeout(() => navigate("/"), 1200);
     } catch (err) {
-      setError(err.code === "auth/email-already-in-use" ? "Email already in use." : "Error: " + err.message);
+      setError(
+  err.code === "auth/email-already-in-use"
+    ? "Email already in use."
+    : "Something went wrong. Please try again."
+);
     } finally { setBusy(false); }
   };
 
@@ -756,7 +763,11 @@ function ForgotPasswordPage() {
       await sendPasswordResetEmail(auth, email.trim());
       setSuccess("Reset email sent! Check your inbox.");
     } catch (err) {
-      setError(err.code === "auth/user-not-found" ? "No account with that email." : err.message);
+      setError(
+  err.code === "auth/user-not-found"
+    ? "No account with that email."
+    : "Something went wrong. Please try again."
+);
     } finally { setBusy(false); }
   };
 

@@ -1,26 +1,34 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeFirestore } from "firebase/firestore";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBZqnOCaGo2PSBnIGfD9Hf2rzSzXS14hgk",
-  authDomain: "mess-manager-n.firebaseapp.com",
-  projectId: "mess-manager-n",
-  storageBucket: "mess-manager-n.firebasestorage.app",
-  messagingSenderId: "652482966344",
-  appId: "1:652482966344:web:7d6dfab31bc86050a1f97d",
-  measurementId: "G-XB4KWRES7S"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 
-const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider("6LdQmOcsAAAAAEl38XTX2HJomck5RNJLcmcjRR0s"),
-  isTokenAutoRefreshEnabled: true,
+export const auth = getAuth(app);
+
+export const db = initializeFirestore(app, {
+  ignoreUndefinedProperties: true,
 });
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+let analytics = null;
+
+isSupported().then((yes) => {
+  if (yes) {
+    analytics = getAnalytics(app);
+  }
+});
+
+export { analytics };
 
 export default app;
