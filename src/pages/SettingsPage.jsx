@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   User,
   Moon,
@@ -14,10 +14,172 @@ import {
   Smartphone,
 } from "lucide-react";
 
+import {
+  updatePassword,
+  updateProfile,
+} from "firebase/auth";
+
+import {
+  doc,
+  getDoc,
+  setDoc,
+} from "firebase/firestore";
+
+import { auth, db } from "../firebase";
+import { useAuth } from "../context/AuthContext";
+
 export function SettingsPage() {
+  const { user } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+
   const [darkMode, setDarkMode] = useState(true);
-  const [notifications, setNotifications] = useState(true);
-  const [autoBackup, setAutoBackup] = useState(true);
+  const [notifications, setNotifications] =
+    useState(true);
+  const [autoBackup, setAutoBackup] =
+    useState(true);
+
+  const [newPassword, setNewPassword] =
+    useState("");
+
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+  });
+
+  // Load user settings
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        if (!user) return;
+
+        const userRef = doc(db, "users", user.uid);
+
+        const snap = await getDoc(userRef);
+
+        if (snap.exists()) {
+          const data = snap.data();
+
+          setFormData({
+            fullName:
+              data.fullName ||
+              user.displayName ||
+              "",
+
+            email:
+              data.email ||
+              user.email ||
+              "",
+
+            phone: data.phone || "",
+          });
+
+          setDarkMode(
+            data.darkMode ?? true
+          );
+
+          setNotifications(
+            data.notifications ?? true
+          );
+
+          setAutoBackup(
+            data.autoBackup ?? true
+          );
+        } else {
+          setFormData({
+            fullName:
+              user.displayName || "",
+
+            email: user.email || "",
+
+            phone: "",
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [user]);
+
+  // Save settings
+  const handleSaveSettings = async () => {
+    try {
+      if (!user) return;
+
+      // Update auth profile
+      await updateProfile(auth.currentUser, {
+        displayName: formData.fullName,
+      });
+
+      // Save to firestore
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+
+          darkMode,
+          notifications,
+          autoBackup,
+
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      alert(
+        "Settings saved successfully 😎"
+      );
+    } catch (error) {
+      console.error(error);
+
+      alert(error.message);
+    }
+  };
+
+  // Change password
+  const handlePasswordChange = async () => {
+    try {
+      if (!newPassword) {
+        return alert(
+          "Enter a new password"
+        );
+      }
+
+      if (newPassword.length < 6) {
+        return alert(
+          "Password must be at least 6 characters"
+        );
+      }
+
+      await updatePassword(
+        auth.currentUser,
+        newPassword
+      );
+
+      setNewPassword("");
+
+      alert("Password updated 😎");
+    } catch (error) {
+      console.error(error);
+
+      alert(error.message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#070b1a] flex items-center justify-center text-white text-xl">
+        Loading Settings...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#070b1a] text-white p-6">
@@ -28,7 +190,8 @@ export function SettingsPage() {
         </h1>
 
         <p className="text-gray-400 mt-2">
-          Manage your mess application preferences and account settings.
+          Manage your mess application
+          preferences and account settings.
         </p>
       </div>
 
@@ -37,7 +200,8 @@ export function SettingsPage() {
         <div className="flex items-center gap-5">
           <div className="relative">
             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-3xl font-bold shadow-lg">
-              MR
+              {formData.fullName?.charAt(0) ||
+                "U"}
             </div>
 
             <button className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full bg-violet-600 hover:bg-violet-700 flex items-center justify-center transition">
@@ -47,7 +211,8 @@ export function SettingsPage() {
 
           <div>
             <h2 className="text-2xl font-semibold">
-              Md Rijoan Rafi
+              {formData.fullName ||
+                "Unknown User"}
             </h2>
 
             <p className="text-gray-400">
@@ -67,7 +232,7 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Account Settings */}
         <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xl">
@@ -88,6 +253,7 @@ export function SettingsPage() {
           </div>
 
           <div className="space-y-5">
+            {/* Full Name */}
             <div>
               <label className="text-sm text-gray-400 block mb-2">
                 Full Name
@@ -95,11 +261,18 @@ export function SettingsPage() {
 
               <input
                 type="text"
-                defaultValue="Md Rijoan Rafi"
+                value={formData.fullName}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    fullName: e.target.value,
+                  })
+                }
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-violet-500"
               />
             </div>
 
+            {/* Email */}
             <div>
               <label className="text-sm text-gray-400 block mb-2">
                 Email Address
@@ -113,12 +286,19 @@ export function SettingsPage() {
 
                 <input
                   type="email"
-                  defaultValue="admin@mess.com"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      email: e.target.value,
+                    })
+                  }
                   className="w-full bg-black/30 border border-white/10 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-violet-500"
                 />
               </div>
             </div>
 
+            {/* Phone */}
             <div>
               <label className="text-sm text-gray-400 block mb-2">
                 Phone Number
@@ -132,7 +312,13 @@ export function SettingsPage() {
 
                 <input
                   type="text"
-                  defaultValue="+8801XXXXXXXXX"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      phone: e.target.value,
+                    })
+                  }
                   className="w-full bg-black/30 border border-white/10 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-violet-500"
                 />
               </div>
@@ -180,7 +366,9 @@ export function SettingsPage() {
               </div>
 
               <button
-                onClick={() => setDarkMode(!darkMode)}
+                onClick={() =>
+                  setDarkMode(!darkMode)
+                }
                 className={`w-14 h-7 rounded-full transition relative ${
                   darkMode
                     ? "bg-violet-600"
@@ -189,7 +377,9 @@ export function SettingsPage() {
               >
                 <div
                   className={`w-5 h-5 bg-white rounded-full absolute top-1 transition ${
-                    darkMode ? "left-8" : "left-1"
+                    darkMode
+                      ? "left-8"
+                      : "left-1"
                   }`}
                 />
               </button>
@@ -213,7 +403,9 @@ export function SettingsPage() {
 
               <button
                 onClick={() =>
-                  setNotifications(!notifications)
+                  setNotifications(
+                    !notifications
+                  )
                 }
                 className={`w-14 h-7 rounded-full transition relative ${
                   notifications
@@ -287,12 +479,13 @@ export function SettingsPage() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <button className="w-full flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-4 hover:bg-white/5 transition">
-              <div className="flex items-center gap-3">
+          <div className="space-y-5">
+            {/* Change Password */}
+            <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
+              <div className="flex items-center gap-3 mb-4">
                 <Lock className="text-yellow-400" />
 
-                <div className="text-left">
+                <div>
                   <p className="font-medium">
                     Change Password
                   </p>
@@ -303,34 +496,31 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <span className="text-gray-500">
-                →
-              </span>
-            </button>
+              <input
+                type="password"
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) =>
+                  setNewPassword(
+                    e.target.value
+                  )
+                }
+                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-violet-500 mb-4"
+              />
 
-            <button className="w-full flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-4 hover:bg-white/5 transition">
-              <div className="flex items-center gap-3">
-                <Shield className="text-green-400" />
-
-                <div className="text-left">
-                  <p className="font-medium">
-                    Two-Factor Auth
-                  </p>
-
-                  <p className="text-sm text-gray-400">
-                    Extra account protection
-                  </p>
-                </div>
-              </div>
-
-              <span className="text-gray-500">
-                →
-              </span>
-            </button>
+              <button
+                onClick={
+                  handlePasswordChange
+                }
+                className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 rounded-xl transition"
+              >
+                Change Password
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Save */}
+        {/* Save Settings */}
         <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
           <div>
             <h3 className="text-2xl font-bold mb-3">
@@ -338,11 +528,15 @@ export function SettingsPage() {
             </h3>
 
             <p className="text-violet-100">
-              Apply and save all your updated preferences instantly.
+              Apply and save all your
+              updated preferences instantly.
             </p>
           </div>
 
-          <button className="mt-8 w-full bg-white text-black font-semibold py-4 rounded-2xl hover:scale-[1.02] transition flex items-center justify-center gap-2">
+          <button
+            onClick={handleSaveSettings}
+            className="mt-8 w-full bg-white text-black font-semibold py-4 rounded-2xl hover:scale-[1.02] transition flex items-center justify-center gap-2"
+          >
             <Save size={18} />
             Save Settings
           </button>
