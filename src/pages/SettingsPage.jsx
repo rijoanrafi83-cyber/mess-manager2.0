@@ -1,18 +1,22 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+
 import {
   User,
-  Moon,
-  Sun,
-  Bell,
-  Shield,
-  Database,
-  Palette,
-  Save,
-  Camera,
-  Lock,
   Mail,
-  Smartphone,
+  Phone,
+  Shield,
+  Lock,
+  Bell,
+  Moon,
+  Database,
+  Save,
 } from "lucide-react";
+
+import {
+  doc,
+  getDoc,
+  setDoc,
+} from "firebase/firestore";
 
 import {
   updateProfile,
@@ -21,56 +25,39 @@ import {
   reauthenticateWithCredential,
 } from "firebase/auth";
 
-import {
-  doc,
-  getDoc,
-  setDoc,
-} from "firebase/firestore";
-
 import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
-export function SettingsPage() {
+export default function SettingsPage() {
   const { user } = useAuth();
 
-  const [loading, setLoading] =
-    useState(true);
+  const currentUser = auth.currentUser;
 
-  const [saving, setSaving] =
-    useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const [darkMode, setDarkMode] =
-    useState(true);
+  const [darkMode, setDarkMode] = useState(true);
+  const [notifications, setNotifications] = useState(true);
+  const [autoBackup, setAutoBackup] = useState(true);
 
-  const [notifications, setNotifications] =
-    useState(true);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
-  const [autoBackup, setAutoBackup] =
-    useState(true);
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+  });
 
-  const [currentPassword, setCurrentPassword] =
-    useState("");
-
-  const [newPassword, setNewPassword] =
-    useState("");
-
-  const [formData, setFormData] =
-    useState({
-      fullName: "",
-      email: "",
-      phone: "",
-    });
-
-  // Load user settings from Firestore
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        if (!user) return;
+        if (!currentUser) return;
 
         const userRef = doc(
           db,
           "users",
-          user.uid
+          currentUser.uid
         );
 
         const snap = await getDoc(userRef);
@@ -81,15 +68,14 @@ export function SettingsPage() {
           setFormData({
             fullName:
               data.fullName ||
-              user.displayName ||
+              currentUser.displayName ||
               "",
 
             email:
-              data.email ||
-              user.email ||
-              "",
+              currentUser.email || "",
 
-            phone: data.phone || "",
+            phone:
+              data.phone || "",
           });
 
           setDarkMode(
@@ -104,258 +90,195 @@ export function SettingsPage() {
             data.autoBackup ?? true
           );
         } else {
-          // first time user
           setFormData({
             fullName:
-              user.displayName || "",
+              currentUser.displayName || "",
 
             email:
-              user.email || "",
+              currentUser.email || "",
 
             phone: "",
           });
         }
       } catch (error) {
         console.error(error);
-        alert(error.message);
       } finally {
         setLoading(false);
       }
     };
 
     loadUserData();
-  }, [user]);
+  }, [currentUser]);
 
-  // Save settings
   const handleSaveSettings = async () => {
     try {
-      if (!user) return;
+      if (!currentUser) {
+        alert("User not logged in");
+        return;
+      }
 
       setSaving(true);
 
-      // Update auth profile
-      await updateProfile(auth.currentUser, {
-        displayName:
-          formData.fullName,
+      await updateProfile(currentUser, {
+        displayName: formData.fullName,
       });
 
-      // Save Firestore data
       await setDoc(
-        doc(db, "users", user.uid),
+        doc(db, "users", currentUser.uid),
         {
-          fullName:
-            formData.fullName,
-
-          email: formData.email,
-
+          fullName: formData.fullName,
+          email: currentUser.email,
           phone: formData.phone,
 
           darkMode,
           notifications,
           autoBackup,
 
-          updatedAt:
-            new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
         { merge: true }
       );
 
-      alert(
-        "Settings saved successfully 😎"
-      );
+      alert("Settings saved successfully 😎");
     } catch (error) {
       console.error(error);
-
       alert(error.message);
     } finally {
       setSaving(false);
     }
   };
 
-  // Change password
-  const handlePasswordChange =
-    async () => {
-      try {
-        if (
-          !currentPassword ||
-          !newPassword
-        ) {
-          return alert(
-            "Fill all password fields"
-          );
-        }
-
-        if (newPassword.length < 6) {
-          return alert(
-            "Password must be at least 6 characters"
-          );
-        }
-
-        const credential =
-          EmailAuthProvider.credential(
-            user.email,
-            currentPassword
-          );
-
-        // Re-authenticate user
-        await reauthenticateWithCredential(
-          auth.currentUser,
-          credential
-        );
-
-        // Update password
-        await updatePassword(
-          auth.currentUser,
-          newPassword
-        );
-
-        setCurrentPassword("");
-        setNewPassword("");
-
-        alert(
-          "Password updated successfully 😎"
-        );
-      } catch (error) {
-        console.error(error);
-
-        alert(error.message);
+  const handlePasswordChange = async () => {
+    try {
+      if (!currentUser) {
+        alert("User not logged in");
+        return;
       }
-    };
+
+      if (!currentPassword || !newPassword) {
+        alert("Fill all password fields");
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        alert(
+          "Password must be at least 6 characters"
+        );
+        return;
+      }
+
+      const credential =
+        EmailAuthProvider.credential(
+          currentUser.email,
+          currentPassword
+        );
+
+      await reauthenticateWithCredential(
+        currentUser,
+        credential
+      );
+
+      await updatePassword(
+        currentUser,
+        newPassword
+      );
+
+      setCurrentPassword("");
+      setNewPassword("");
+
+      alert("Password changed successfully 🔥");
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#070b1a] flex items-center justify-center text-white text-2xl font-semibold">
-        Loading Settings...
+      <div className="flex items-center justify-center h-screen text-white text-xl">
+        Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#070b1a] text-white p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold">
-          Settings
-        </h1>
+    <div className="min-h-screen bg-[#060b23] text-white p-6">
+      <div className="grid lg:grid-cols-2 gap-6">
 
-        <p className="text-gray-400 mt-2">
-          Manage your account,
-          preferences and security.
-        </p>
-      </div>
+        {/* LEFT SIDE */}
 
-      {/* Profile Card */}
-      <div className="bg-white/5 border border-white/10 rounded-3xl p-6 mb-6 backdrop-blur-xl">
-        <div className="flex items-center gap-5">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-3xl font-bold shadow-lg">
-              {formData.fullName
-                ?.charAt(0)
-                ?.toUpperCase() ||
-                "U"}
-            </div>
+        <div className="space-y-6">
 
-            <button className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full bg-violet-600 hover:bg-violet-700 flex items-center justify-center transition">
-              <Camera size={16} />
-            </button>
-          </div>
+          {/* ACCOUNT SETTINGS */}
 
-          <div>
-            <h2 className="text-2xl font-semibold">
-              {formData.fullName ||
-                "Unknown User"}
-            </h2>
+          <div className="bg-[#0d132d] border border-white/10 rounded-3xl p-6">
 
-            <p className="text-gray-400">
-              {formData.email}
-            </p>
-
-            <div className="flex gap-3 mt-3">
-              <div className="px-3 py-1 rounded-full bg-violet-500/20 text-violet-300 text-sm border border-violet-500/20">
-                Premium User
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-violet-600/20 flex items-center justify-center">
+                <User className="text-violet-400" />
               </div>
 
-              <div className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-sm border border-emerald-500/20">
-                Active
+              <div>
+                <h2 className="text-3xl font-bold">
+                  Account Settings
+                </h2>
+
+                <p className="text-gray-400">
+                  Manage profile information
+                </p>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Account Settings */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-11 h-11 rounded-xl bg-violet-500/20 flex items-center justify-center">
-              <User className="text-violet-400" />
-            </div>
+            {/* FULL NAME */}
 
-            <div>
-              <h3 className="text-xl font-semibold">
-                Account Settings
-              </h3>
-
-              <p className="text-sm text-gray-400">
-                Manage profile information
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            {/* Full Name */}
-            <div>
-              <label className="text-sm text-gray-400 block mb-2">
+            <div className="mb-5">
+              <label className="text-gray-300 mb-2 block">
                 Full Name
               </label>
 
-              <input
-                type="text"
-                value={formData.fullName}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    fullName:
-                      e.target.value,
-                  })
-                }
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-violet-500"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formData.fullName}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      fullName: e.target.value,
+                    })
+                  }
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-5 text-white outline-none"
+                />
+              </div>
             </div>
 
-            {/* Email */}
-            <div>
-              <label className="text-sm text-gray-400 block mb-2">
+            {/* EMAIL */}
+
+            <div className="mb-5">
+              <label className="text-gray-300 mb-2 block">
                 Email Address
               </label>
 
               <div className="relative">
-                <Mail
-                  size={18}
-                  className="absolute left-4 top-4 text-gray-500"
-                />
+                <Mail className="absolute left-4 top-4 text-gray-500" />
 
                 <input
                   type="email"
-                  value={formData.email}
                   disabled
-                  className="w-full bg-black/30 border border-white/10 rounded-xl pl-11 pr-4 py-3 outline-none opacity-70"
+                  value={formData.email}
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-14 pr-5 text-gray-400 outline-none"
                 />
               </div>
             </div>
 
-            {/* Phone */}
+            {/* PHONE */}
+
             <div>
-              <label className="text-sm text-gray-400 block mb-2">
+              <label className="text-gray-300 mb-2 block">
                 Phone Number
               </label>
 
               <div className="relative">
-                <Smartphone
-                  size={18}
-                  className="absolute left-4 top-4 text-gray-500"
-                />
+                <Phone className="absolute left-4 top-4 text-gray-500" />
 
                 <input
                   type="text"
@@ -363,191 +286,39 @@ export function SettingsPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      phone:
-                        e.target.value,
+                      phone: e.target.value,
                     })
                   }
-                  className="w-full bg-black/30 border border-white/10 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-violet-500"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-14 pr-5 text-white outline-none"
                 />
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Preferences */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-11 h-11 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-              <Palette className="text-indigo-400" />
-            </div>
+          {/* SECURITY */}
 
-            <div>
-              <h3 className="text-xl font-semibold">
-                Preferences
-              </h3>
+          <div className="bg-[#0d132d] border border-white/10 rounded-3xl p-6">
 
-              <p className="text-sm text-gray-400">
-                Customize your experience
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            {/* Dark Mode */}
-            <div className="flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-4">
-              <div className="flex items-center gap-3">
-                {darkMode ? (
-                  <Moon className="text-violet-400" />
-                ) : (
-                  <Sun className="text-yellow-400" />
-                )}
-
-                <div>
-                  <p className="font-medium">
-                    Dark Mode
-                  </p>
-
-                  <p className="text-sm text-gray-400">
-                    Toggle dark interface
-                  </p>
-                </div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-red-600/20 flex items-center justify-center">
+                <Shield className="text-red-400" />
               </div>
 
-              <button
-                onClick={() =>
-                  setDarkMode(
-                    !darkMode
-                  )
-                }
-                className={`w-14 h-7 rounded-full transition relative ${
-                  darkMode
-                    ? "bg-violet-600"
-                    : "bg-gray-600"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-white rounded-full absolute top-1 transition ${
-                    darkMode
-                      ? "left-8"
-                      : "left-1"
-                  }`}
-                />
-              </button>
-            </div>
+              <div>
+                <h2 className="text-3xl font-bold">
+                  Security
+                </h2>
 
-            {/* Notifications */}
-            <div className="flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-4">
-              <div className="flex items-center gap-3">
-                <Bell className="text-pink-400" />
-
-                <div>
-                  <p className="font-medium">
-                    Notifications
-                  </p>
-
-                  <p className="text-sm text-gray-400">
-                    Receive system alerts
-                  </p>
-                </div>
+                <p className="text-gray-400">
+                  Secure your account
+                </p>
               </div>
-
-              <button
-                onClick={() =>
-                  setNotifications(
-                    !notifications
-                  )
-                }
-                className={`w-14 h-7 rounded-full transition relative ${
-                  notifications
-                    ? "bg-pink-600"
-                    : "bg-gray-600"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-white rounded-full absolute top-1 transition ${
-                    notifications
-                      ? "left-8"
-                      : "left-1"
-                  }`}
-                />
-              </button>
             </div>
 
-            {/* Backup */}
-            <div className="flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-4">
-              <div className="flex items-center gap-3">
-                <Database className="text-emerald-400" />
+            <div className="space-y-4">
 
-                <div>
-                  <p className="font-medium">
-                    Auto Backup
-                  </p>
+              {/* CURRENT PASSWORD */}
 
-                  <p className="text-sm text-gray-400">
-                    Secure cloud backup
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() =>
-                  setAutoBackup(
-                    !autoBackup
-                  )
-                }
-                className={`w-14 h-7 rounded-full transition relative ${
-                  autoBackup
-                    ? "bg-emerald-600"
-                    : "bg-gray-600"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-white rounded-full absolute top-1 transition ${
-                    autoBackup
-                      ? "left-8"
-                      : "left-1"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Security */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-11 h-11 rounded-xl bg-red-500/20 flex items-center justify-center">
-              <Shield className="text-red-400" />
-            </div>
-
-            <div>
-              <h3 className="text-xl font-semibold">
-                Security
-              </h3>
-
-              <p className="text-sm text-gray-400">
-                Secure your account
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <Lock className="text-yellow-400" />
-
-                <div>
-                  <p className="font-medium">
-                    Change Password
-                  </p>
-
-                  <p className="text-sm text-gray-400">
-                    Update your password
-                  </p>
-                </div>
-              </div>
-
-              {/* Current Password */}
               <input
                 type="password"
                 placeholder="Current password"
@@ -557,10 +328,11 @@ export function SettingsPage() {
                     e.target.value
                   )
                 }
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-violet-500 mb-4"
+                className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-5 text-white outline-none"
               />
 
-              {/* New Password */}
+              {/* NEW PASSWORD */}
+
               <input
                 type="password"
                 placeholder="New password"
@@ -570,14 +342,14 @@ export function SettingsPage() {
                     e.target.value
                   )
                 }
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-violet-500 mb-4"
+                className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-5 text-white outline-none"
               />
 
+              {/* CHANGE PASSWORD BUTTON */}
+
               <button
-                onClick={
-                  handlePasswordChange
-                }
-                className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 rounded-xl transition"
+                onClick={handlePasswordChange}
+                className="w-full py-4 rounded-2xl bg-yellow-600 hover:bg-yellow-500 transition font-bold text-black text-lg"
               >
                 Change Password
               </button>
@@ -585,33 +357,165 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* Save Changes */}
-        <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
-          <div>
-            <h3 className="text-2xl font-bold mb-3">
-              Save Changes
-            </h3>
+        {/* RIGHT SIDE */}
 
-            <p className="text-violet-100">
-              Apply and save all your
-              updated preferences
-              instantly.
-            </p>
+        <div className="space-y-6">
+
+          {/* PREFERENCES */}
+
+          <div className="bg-[#0d132d] border border-white/10 rounded-3xl p-6">
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center">
+                <Bell className="text-indigo-400" />
+              </div>
+
+              <div>
+                <h2 className="text-3xl font-bold">
+                  Preferences
+                </h2>
+
+                <p className="text-gray-400">
+                  Customize your experience
+                </p>
+              </div>
+            </div>
+
+            {/* DARK MODE */}
+
+            <div className="flex items-center justify-between bg-black/30 rounded-2xl p-5 mb-4">
+              <div className="flex items-center gap-4">
+                <Moon className="text-violet-400" />
+
+                <div>
+                  <h3 className="font-bold text-lg">
+                    Dark Mode
+                  </h3>
+
+                  <p className="text-gray-400 text-sm">
+                    Toggle dark interface
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() =>
+                  setDarkMode(!darkMode)
+                }
+                className={`w-16 h-8 rounded-full transition ${
+                  darkMode
+                    ? "bg-violet-600"
+                    : "bg-gray-600"
+                }`}
+              >
+                <div
+                  className={`w-7 h-7 bg-white rounded-full transition transform ${
+                    darkMode
+                      ? "translate-x-8"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* NOTIFICATIONS */}
+
+            <div className="flex items-center justify-between bg-black/30 rounded-2xl p-5 mb-4">
+              <div>
+                <h3 className="font-bold text-lg">
+                  Notifications
+                </h3>
+
+                <p className="text-gray-400 text-sm">
+                  Receive system alerts
+                </p>
+              </div>
+
+              <button
+                onClick={() =>
+                  setNotifications(
+                    !notifications
+                  )
+                }
+                className={`w-16 h-8 rounded-full transition ${
+                  notifications
+                    ? "bg-pink-600"
+                    : "bg-gray-600"
+                }`}
+              >
+                <div
+                  className={`w-7 h-7 bg-white rounded-full transition transform ${
+                    notifications
+                      ? "translate-x-8"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* BACKUP */}
+
+            <div className="flex items-center justify-between bg-black/30 rounded-2xl p-5">
+              <div className="flex items-center gap-4">
+                <Database className="text-green-400" />
+
+                <div>
+                  <h3 className="font-bold text-lg">
+                    Auto Backup
+                  </h3>
+
+                  <p className="text-gray-400 text-sm">
+                    Secure cloud backup
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() =>
+                  setAutoBackup(!autoBackup)
+                }
+                className={`w-16 h-8 rounded-full transition ${
+                  autoBackup
+                    ? "bg-green-600"
+                    : "bg-gray-600"
+                }`}
+              >
+                <div
+                  className={`w-7 h-7 bg-white rounded-full transition transform ${
+                    autoBackup
+                      ? "translate-x-8"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
-          <button
-            onClick={
-              handleSaveSettings
-            }
-            disabled={saving}
-            className="mt-8 w-full bg-white text-black font-semibold py-4 rounded-2xl hover:scale-[1.02] transition flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            <Save size={18} />
+          {/* SAVE SETTINGS */}
 
-            {saving
-              ? "Saving..."
-              : "Save Settings"}
-          </button>
+          <div className="bg-gradient-to-br from-violet-700 to-purple-600 rounded-3xl p-8">
+
+            <h2 className="text-4xl font-bold mb-4">
+              Save Changes
+            </h2>
+
+            <p className="text-white/80 mb-10 text-lg">
+              Apply and save all your updated
+              preferences instantly.
+            </p>
+
+            <button
+              onClick={handleSaveSettings}
+              disabled={saving}
+              className="w-full bg-white text-black font-bold py-5 rounded-2xl flex items-center justify-center gap-3 text-xl hover:scale-[1.02] transition"
+            >
+              <Save size={22} />
+
+              {saving
+                ? "Saving..."
+                : "Save Settings"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

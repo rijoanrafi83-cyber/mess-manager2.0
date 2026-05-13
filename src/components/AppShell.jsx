@@ -17,7 +17,7 @@ import { MealsPage } from "../pages/MealsPage";
 import { BazaarPage } from "../pages/BazaarPage";
 import { DepositsPage } from "../pages/DepositsPage";
 import { ReportsPage } from "../pages/ReportsPage";
-import { SettingsPage } from "../pages/SettingsPage";
+import SettingsPage from "../pages/SettingsPage";
 import { calculateMonthlyBill } from "../utils/billing";
 
 const NAV_ITEMS = [
