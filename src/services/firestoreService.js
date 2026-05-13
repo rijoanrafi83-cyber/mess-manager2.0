@@ -1,199 +1,166 @@
-// src/services/firestoreService.js
-// All Firestore operations. Every write stamps ownerId = currentUser.uid.
-// Every query filters by ownerId for complete data isolation.
-
 import {
-  collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
-  getDocs, onSnapshot, query, where, orderBy, serverTimestamp,
-  getDoc,
+  collection, addDoc, updateDoc, deleteDoc, doc,
+  onSnapshot, query, where, serverTimestamp,
+  getDocs, orderBy, limit, writeBatch, getDoc, setDoc
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { db, storage } from "../firebase";
 
-// ─── Generic helpers ──────────────────────────────────────────────────────────
+// ─── Generic helpers ───────────────────────────────────────────────────────────
 
-/** Real-time listener for an owner-scoped collection */
-export function subscribeCollection(colName, ownerId, order, callback, onError) {
-  const constraints = [where("ownerId", "==", ownerId)];
-  if (order) constraints.push(orderBy(order.field, order.dir || "asc"));
-  const q = query(collection(db, colName), ...constraints);
-  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), onError);
-}
+const col = (name) => collection(db, name);
+const docRef = (name, id) => doc(db, name, id);
 
-/** Add doc with ownerId stamped */
-export async function addOwned(colName, ownerId, data) {
-  return addDoc(collection(db, colName), {
-    ...data,
-    ownerId,
-    createdAt: serverTimestamp(),
+const ownerQuery = (name, ownerId, ...constraints) =>
+  query(col(name), where("ownerId", "==", ownerId), ...constraints);
+
+export const subscribeCollection = (collectionName, ownerId, callback, ...constraints) => {
+  const q = ownerQuery(collectionName, ownerId, ...constraints);
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  }, (err) => {
+    console.error(`subscribeCollection[${collectionName}]:`, err);
+    callback([]);
   });
-}
+};
 
-/** Update any doc */
-export async function updateOwned(colName, docId, data) {
-  return updateDoc(doc(db, colName, docId), { ...data, updatedAt: serverTimestamp() });
-}
+// ─── MEMBERS ────────────────────────────────────────────────────────────────
 
-/** Delete any doc */
-export async function deleteOwned(colName, docId) {
-  return deleteDoc(doc(db, colName, docId));
-}
+export const addMember = (ownerId, data) =>
+  addDoc(col("members"), { ...data, ownerId, createdAt: serverTimestamp() });
 
-/** SetDoc with merge (used for meals keyed by date_memberId) */
-export async function setMealDoc(docId, ownerId, data) {
-  return setDoc(doc(db, "meals", docId), { ...data, ownerId }, { merge: true });
-}
+export const updateMember = (id, data) =>
+  updateDoc(docRef("members", id), { ...data, updatedAt: serverTimestamp() });
 
-// ─── Admin profile ────────────────────────────────────────────────────────────
+export const deleteMember = async (id) => {
+  const batch = writeBatch(db);
+  batch.delete(docRef("members", id));
+  // cascade: meals, deposits owned by member stay but can be filtered
+  await batch.commit();
+};
 
-export async function getAdminProfile(uid) {
-  const snap = await getDoc(doc(db, "admins", uid));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
-}
+// ─── MEALS ──────────────────────────────────────────────────────────────────
 
-export async function updateAdminProfile(uid, data) {
-  return updateDoc(doc(db, "admins", uid), { ...data, updatedAt: serverTimestamp() });
-}
+export const addMeal = (ownerId, data) =>
+  addDoc(col("meals"), {
+    ...data, ownerId, createdAt: serverTimestamp(),
+    totalMeals: (Number(data.breakfast || 0) * 0.5) +
+                Number(data.lunch || 0) +
+                Number(data.dinner || 0),
+  });
 
-// ─── Members ──────────────────────────────────────────────────────────────────
-
-export function subscribeMembers(ownerId, callback, onError) {
-  return subscribeCollection("members", ownerId, { field: "createdAt", dir: "asc" }, callback, onError);
-}
-
-export async function addMember(ownerId, data) {
-  return addOwned("members", ownerId, data);
-}
-
-export async function updateMember(memberId, data) {
-  return updateOwned("members", memberId, data);
-}
-
-export async function deleteMember(memberId) {
-  return deleteOwned("members", memberId);
-}
-
-// ─── Meals ────────────────────────────────────────────────────────────────────
-
-export function subscribeMeals(ownerId, callback, onError) {
-  const q = query(collection(db, "meals"), where("ownerId", "==", ownerId));
-  return onSnapshot(
-    q,
-    (snap) => {
-      const map = {};
-      snap.docs.forEach((d) => { map[d.id] = { id: d.id, ...d.data() }; });
-      callback(map);
-    },
-    onError
-  );
-}
-
-export async function toggleMeal(docId, ownerId, data) {
-  return setMealDoc(docId, ownerId, data);
-}
-
-// ─── Bazaar ───────────────────────────────────────────────────────────────────
-
-export function subscribeBazaar(ownerId, callback, onError) {
-  return subscribeCollection("bazaar", ownerId, { field: "date", dir: "desc" }, callback, onError);
-}
-
-export async function addBazaar(ownerId, data) {
-  return addOwned("bazaar", ownerId, data);
-}
-
-export async function updateBazaar(docId, data) {
-  return updateOwned("bazaar", docId, data);
-}
-
-export async function deleteBazaar(docId) {
-  return deleteOwned("bazaar", docId);
-}
-
-// ─── Deposits ─────────────────────────────────────────────────────────────────
-
-export function subscribeDeposits(ownerId, callback, onError) {
-  return subscribeCollection("deposits", ownerId, { field: "date", dir: "desc" }, callback, onError);
-}
-
-export async function addDeposit(ownerId, data) {
-  return addOwned("deposits", ownerId, data);
-}
-
-export async function deleteDeposit(docId) {
-  return deleteOwned("deposits", docId);
-}
-
-// ─── Extra Charges ────────────────────────────────────────────────────────────
-
-export function subscribeExtraCharges(ownerId, callback, onError) {
-  return subscribeCollection("extraCharges", ownerId, { field: "date", dir: "desc" }, callback, onError);
-}
-
-export async function addExtraCharge(ownerId, data) {
-  return addOwned("extraCharges", ownerId, data);
-}
-
-export async function deleteExtraCharge(docId) {
-  return deleteOwned("extraCharges", docId);
-}
-
-// ─── Guest Meals ──────────────────────────────────────────────────────────────
-
-export function subscribeGuestMeals(ownerId, callback, onError) {
-  return subscribeCollection("guestMeals", ownerId, { field: "date", dir: "desc" }, callback, onError);
-}
-
-export async function addGuestMeal(ownerId, data) {
-  return addOwned("guestMeals", ownerId, data);
-}
-
-export async function deleteGuestMeal(docId) {
-  return deleteOwned("guestMeals", docId);
-}
-
-// ─── Member Accounts (login linking) ─────────────────────────────────────────
-
-export function subscribeMemberAccounts(ownerId, callback, onError) {
-  return subscribeCollection("memberAccounts", ownerId, null, callback, onError);
-}
-
-export async function setMemberAccount(ownerId, accountData) {
-  // accountData: { memberId, memberUid, name, email }
-  // Use memberId as doc key under owner scope to allow upsert
-  const docId = `${ownerId}_${accountData.memberId}`;
-  return setDoc(doc(db, "memberAccounts", docId), {
-    ...accountData,
-    ownerId,
+export const updateMeal = (id, data) =>
+  updateDoc(docRef("meals", id), {
+    ...data,
+    totalMeals: (Number(data.breakfast || 0) * 0.5) +
+                Number(data.lunch || 0) +
+                Number(data.dinner || 0),
     updatedAt: serverTimestamp(),
+  });
+
+export const deleteMeal = (id) => deleteDoc(docRef("meals", id));
+
+// ─── GUEST MEALS ────────────────────────────────────────────────────────────
+
+export const addGuestMeal = (ownerId, data) =>
+  addDoc(col("guestMeals"), {
+    ...data, ownerId, createdAt: serverTimestamp(),
+    totalGuestMeals: (Number(data.breakfast || 0) * 0.5) +
+                     Number(data.lunch || 0) +
+                     Number(data.dinner || 0),
+  });
+
+export const updateGuestMeal = (id, data) =>
+  updateDoc(docRef("guestMeals", id), { ...data, updatedAt: serverTimestamp() });
+
+export const deleteGuestMeal = (id) => deleteDoc(docRef("guestMeals", id));
+
+// ─── BAZAAR ─────────────────────────────────────────────────────────────────
+
+export const addBazaar = async (ownerId, data, receiptFile = null) => {
+  let receiptURL = null;
+  if (receiptFile && storage) {
+    const storageRef = ref(storage, `receipts/${ownerId}/${Date.now()}_${receiptFile.name}`);
+    const snap = await uploadBytes(storageRef, receiptFile);
+    receiptURL = await getDownloadURL(snap.ref);
+  }
+  return addDoc(col("bazaar"), {
+    ...data, ownerId, receiptURL, createdAt: serverTimestamp(),
+  });
+};
+
+export const updateBazaar = (id, data) =>
+  updateDoc(docRef("bazaar", id), { ...data, updatedAt: serverTimestamp() });
+
+export const deleteBazaar = (id) => deleteDoc(docRef("bazaar", id));
+
+// ─── DEPOSITS ───────────────────────────────────────────────────────────────
+
+export const addDeposit = (ownerId, data) =>
+  addDoc(col("deposits"), { ...data, ownerId, createdAt: serverTimestamp() });
+
+export const updateDeposit = (id, data) =>
+  updateDoc(docRef("deposits", id), { ...data, updatedAt: serverTimestamp() });
+
+export const deleteDeposit = (id) => deleteDoc(docRef("deposits", id));
+
+// ─── EXTRA COSTS ────────────────────────────────────────────────────────────
+
+export const addExtraCost = (ownerId, data) =>
+  addDoc(col("extraCosts"), { ...data, ownerId, createdAt: serverTimestamp() });
+
+export const deleteExtraCost = (id) => deleteDoc(docRef("extraCosts", id));
+
+// ─── NOTICES ────────────────────────────────────────────────────────────────
+
+export const addNotice = (ownerId, data) =>
+  addDoc(col("notices"), { ...data, ownerId, createdAt: serverTimestamp() });
+
+export const deleteNotice = (id) => deleteDoc(docRef("notices", id));
+
+// ─── NOTIFICATIONS ──────────────────────────────────────────────────────────
+
+export const addNotification = (ownerId, { title, message, type = "info" }) =>
+  addDoc(col("notifications"), {
+    ownerId, title, message, type,
+    read: false, createdAt: serverTimestamp(),
+  });
+
+export const markNotificationRead = (id) =>
+  updateDoc(docRef("notifications", id), { read: true });
+
+export const markAllNotificationsRead = async (ownerId) => {
+  const q = ownerQuery("notifications", ownerId, where("read", "==", false));
+  const snap = await getDocs(q);
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => batch.update(d.ref, { read: true }));
+  await batch.commit();
+};
+
+// ─── SETTINGS ───────────────────────────────────────────────────────────────
+
+export const getSettings = async (ownerId) => {
+  const ref = docRef("settings", ownerId);
+  const snap = await getDoc(ref);
+  return snap.exists() ? snap.data() : null;
+};
+
+export const updateSettings = (ownerId, data) =>
+  setDoc(docRef("settings", ownerId), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+
+export const subscribeSettings = (ownerId, callback) =>
+  onSnapshot(docRef("settings", ownerId), (snap) => {
+    callback(snap.exists() ? snap.data() : null);
+  });
+
+// ─── MONTHLY REPORTS ────────────────────────────────────────────────────────
+
+export const saveMonthlyReport = (ownerId, month, data) =>
+  setDoc(docRef("monthlyReports", `${ownerId}_${month}`), {
+    ...data, ownerId, month, savedAt: serverTimestamp(),
   }, { merge: true });
-}
 
-export async function deleteMemberAccount(docId) {
-  return deleteOwned("memberAccounts", docId);
-}
-
-// ─── Member-scoped reads (for member portal) ──────────────────────────────────
-
-/** A member can read their own meals by querying memberLinkedUid */
-export function subscribeMemberMeals(memberUid, callback, onError) {
-  const q = query(collection(db, "meals"), where("memberLinkedUid", "==", memberUid));
-  return onSnapshot(
-    q,
-    (snap) => {
-      const map = {};
-      snap.docs.forEach((d) => { map[d.id] = { id: d.id, ...d.data() }; });
-      callback(map);
-    },
-    onError
-  );
-}
-
-export function subscribeMemberDeposits(memberLinkedUid, callback, onError) {
-  const q = query(collection(db, "deposits"), where("memberLinkedUid", "==", memberLinkedUid));
-  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), onError);
-}
-
-export function subscribeMemberExtraCharges(memberLinkedUid, callback, onError) {
-  const q = query(collection(db, "extraCharges"), where("memberLinkedUid", "==", memberLinkedUid));
-  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), onError);
-}
+export const getMonthlyReport = async (ownerId, month) => {
+  const snap = await getDoc(docRef("monthlyReports", `${ownerId}_${month}`));
+  return snap.exists() ? snap.data() : null;
+};

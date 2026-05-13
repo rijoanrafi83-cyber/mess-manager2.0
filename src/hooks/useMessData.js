@@ -1,52 +1,45 @@
-// src/hooks/useMessData.js
-// Single hook that sets up all real-time Firestore listeners for an admin.
-// Returns all state needed by admin pages.
+import { useEffect, useState, useCallback } from "react";
+import { subscribeCollection, subscribeSettings } from "../services/firestoreService";
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  subscribeMembers, subscribeMeals, subscribeBazaar,
-  subscribeDeposits, subscribeExtraCharges, subscribeGuestMeals,
-  subscribeMemberAccounts,
-} from "../firestoreService";
-
-export function useMessData(ownerId, notify) {
-  const [members, setMembers] = useState([]);
-  const [meals, setMeals] = useState({});
-  const [bazaar, setBazaar] = useState([]);
-  const [deposits, setDeposits] = useState([]);
-  const [extraCharges, setExtraCharges] = useState([]);
-  const [guestMeals, setGuestMeals] = useState([]);
-  const [memberAccounts, setMemberAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
+export function useMessData(ownerId) {
+  const [members,       setMembers]       = useState([]);
+  const [meals,         setMeals]         = useState([]);
+  const [guestMeals,    setGuestMeals]    = useState([]);
+  const [bazaar,        setBazaar]        = useState([]);
+  const [deposits,      setDeposits]      = useState([]);
+  const [extraCosts,    setExtraCosts]    = useState([]);
+  const [notices,       setNotices]       = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [settings,      setSettings]      = useState(null);
+  const [loading,       setLoading]       = useState(true);
 
   useEffect(() => {
-    if (!ownerId) return;
-    setLoading(true);
+    if (!ownerId) { setLoading(false); return; }
 
-    const err = (label) => (e) => {
-      console.error(label, e);
-      notify?.(`Failed to load ${label}`, "error");
-    };
+    let loadCount = 0;
+    const total = 8;
+    const onLoad = () => { loadCount++; if (loadCount >= total) setLoading(false); };
 
-    let membersLoaded = false;
+    const wrap = (setter) => (data) => { setter(data); onLoad(); };
+
     const unsubs = [
-      subscribeMembers(ownerId, (data) => {
-        setMembers(data);
-        if (!membersLoaded) { membersLoaded = true; setLoading(false); }
-      }, err("members")),
-      subscribeMeals(ownerId, setMeals, err("meals")),
-      subscribeBazaar(ownerId, setBazaar, err("bazaar")),
-      subscribeDeposits(ownerId, setDeposits, err("deposits")),
-      subscribeExtraCharges(ownerId, setExtraCharges, err("extraCharges")),
-      subscribeGuestMeals(ownerId, setGuestMeals, err("guestMeals")),
-      subscribeMemberAccounts(ownerId, setMemberAccounts, err("memberAccounts")),
+      subscribeCollection("members",       ownerId, wrap(setMembers)),
+      subscribeCollection("meals",         ownerId, wrap(setMeals)),
+      subscribeCollection("guestMeals",    ownerId, wrap(setGuestMeals)),
+      subscribeCollection("bazaar",        ownerId, wrap(setBazaar)),
+      subscribeCollection("deposits",      ownerId, wrap(setDeposits)),
+      subscribeCollection("extraCosts",    ownerId, wrap(setExtraCosts)),
+      subscribeCollection("notices",       ownerId, wrap(setNotices)),
+      subscribeCollection("notifications", ownerId, wrap(setNotifications)),
+      subscribeSettings(ownerId, setSettings),
     ];
 
-    // Fallback: if members fires error, stop loading
-    setTimeout(() => setLoading(false), 5000);
+    return () => unsubs.forEach((fn) => fn && fn());
+  }, [ownerId]);
 
-    return () => unsubs.forEach((u) => u());
-  }, [ownerId]); // eslint-disable-line
-
-  return { members, meals, bazaar, deposits, extraCharges, guestMeals, memberAccounts, loading };
+  return {
+    members, meals, guestMeals, bazaar,
+    deposits, extraCosts, notices, notifications,
+    settings, loading,
+  };
 }

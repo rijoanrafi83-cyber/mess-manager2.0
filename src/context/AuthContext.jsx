@@ -1,287 +1,225 @@
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
-  useState
+  useState,
 } from "react";
 
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
+  onAuthStateChanged,
   signOut,
-  onAuthStateChanged
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 
 import {
   doc,
-  setDoc,
   getDoc,
-  serverTimestamp
+  setDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export function AuthProvider({ children }) {
+  const [userProfile, setUserProfile] = useState(null);
+  const [status, setStatus] = useState("loading");
 
-export const AuthProvider = ({ children }) => {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (firebaseUser) => {
+        try {
+          if (!firebaseUser) {
+            setUserProfile(null);
+            setStatus("guest");
+            return;
+          }
 
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+          // admin profile check
+          const adminRef = doc(
+            db,
+            "adminProfiles",
+            firebaseUser.uid
+          );
 
-  // =========================
-  // REGISTER
-  // =========================
-  const register = async (name, email, password) => {
+          const adminSnap = await getDoc(adminRef);
 
+          if (adminSnap.exists()) {
+            const data = adminSnap.data();
+
+            setUserProfile({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName:
+                data.displayName ||
+                firebaseUser.email,
+              role: "admin",
+              ownerId: firebaseUser.uid,
+            });
+
+            setStatus("authed");
+            return;
+          }
+
+          // member profile check
+          const memberRef = doc(
+            db,
+            "memberAccess",
+            firebaseUser.uid
+          );
+
+          const memberSnap = await getDoc(memberRef);
+
+          if (memberSnap.exists()) {
+            const data = memberSnap.data();
+
+            setUserProfile({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName:
+                data.displayName ||
+                firebaseUser.email,
+              role: "member",
+              ownerId: data.ownerId,
+              memberId: data.memberId,
+            });
+
+            setStatus("authed");
+            return;
+          }
+
+          // no profile
+          setUserProfile(null);
+          setStatus("guest");
+
+        } catch (err) {
+          console.error(err);
+          setUserProfile(null);
+          setStatus("guest");
+        }
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // login
+  const login = async (email, password) => {
     try {
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      // CREATE USER
-      const userCredential =
+      return {
+        success: true,
+      };
+
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message,
+      };
+    }
+  };
+
+  // register
+  const register = async (
+    displayName,
+    email,
+    password
+  ) => {
+    try {
+      const cred =
         await createUserWithEmailAndPassword(
           auth,
           email,
           password
         );
 
-      const user = userCredential.user;
-
-      // SAVE USER PROFILE
       await setDoc(
-        doc(db, "users", user.uid),
+        doc(db, "adminProfiles", cred.user.uid),
         {
-          uid: user.uid,
-          name: name,
-          email: email,
-          role: "admin",
-          createdAt: serverTimestamp()
-        }
-      );
-
-      // GET SAVED USER
-      const savedUser = await getDoc(
-        doc(db, "users", user.uid)
-      );
-
-      // SET CURRENT USER
-      if (savedUser.exists()) {
-        setCurrentUser(savedUser.data());
-      }
-
-      return {
-        success: true
-      };
-
-    } catch (error) {
-
-      console.error("REGISTER ERROR:", error);
-
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-  };
-
-  // =========================
-  // LOGIN
-  // =========================
-  const login = async (email, password) => {
-
-    try {
-
-      // LOGIN USER
-      const userCredential =
-        await signInWithEmailAndPassword(
-          auth,
+          displayName,
           email,
-          password
-        );
-
-      const user = userCredential.user;
-
-      // LOAD USER PROFILE
-      const userDoc = await getDoc(
-        doc(db, "users", user.uid)
-      );
-
-      // IF PROFILE NOT FOUND
-      if (!userDoc.exists()) {
-
-        // CREATE PROFILE AUTOMATICALLY
-        await setDoc(
-          doc(db, "users", user.uid),
-          {
-            uid: user.uid,
-            name: user.displayName || "User",
-            email: user.email,
-            role: "admin",
-            createdAt: serverTimestamp()
-          }
-        );
-
-        // LOAD AGAIN
-        const newUserDoc = await getDoc(
-          doc(db, "users", user.uid)
-        );
-
-        if (newUserDoc.exists()) {
-
-          setCurrentUser(newUserDoc.data());
-
-          return {
-            success: true,
-            user: newUserDoc.data()
-          };
+          role: "admin",
+          createdAt: serverTimestamp(),
         }
-      }
-
-      // NORMAL LOGIN
-      setCurrentUser(userDoc.data());
+      );
 
       return {
         success: true,
-        user: userDoc.data()
       };
 
-    } catch (error) {
-
-      console.error("LOGIN ERROR:", error);
-
-      let customMessage = "Login failed";
-
-      switch (error.code) {
-
-        case "auth/user-not-found":
-          customMessage = "No account found";
-          break;
-
-        case "auth/wrong-password":
-          customMessage = "Wrong password";
-          break;
-
-        case "auth/invalid-credential":
-          customMessage = "Invalid email or password";
-          break;
-
-        case "auth/invalid-email":
-          customMessage = "Invalid email";
-          break;
-
-        default:
-          customMessage = error.message;
-      }
+    } catch (err) {
+      console.error(err);
 
       return {
         success: false,
-        message: customMessage
+        message: err.message,
       };
     }
   };
 
-  // =========================
-  // LOGOUT
-  // =========================
+  // logout
   const logout = async () => {
-
     try {
-
       await signOut(auth);
-
-      setCurrentUser(null);
-
-    } catch (error) {
-
-      console.error("LOGOUT ERROR:", error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // =========================
-  // AUTO LOGIN CHECK
-  // =========================
-  useEffect(() => {
+  // reset password
+  const sendReset = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
 
-    const unsubscribe =
-      onAuthStateChanged(auth, async (user) => {
+      return {
+        success: true,
+      };
 
-        try {
-
-          if (user) {
-
-            const userDoc = await getDoc(
-              doc(db, "users", user.uid)
-            );
-
-            if (userDoc.exists()) {
-
-              setCurrentUser(userDoc.data());
-
-            } else {
-
-              // AUTO CREATE PROFILE
-              await setDoc(
-                doc(db, "users", user.uid),
-                {
-                  uid: user.uid,
-                  name: user.displayName || "User",
-                  email: user.email,
-                  role: "admin",
-                  createdAt: serverTimestamp()
-                }
-              );
-
-              const newDoc = await getDoc(
-                doc(db, "users", user.uid)
-              );
-
-              if (newDoc.exists()) {
-                setCurrentUser(newDoc.data());
-              }
-            }
-
-          } else {
-
-            setCurrentUser(null);
-          }
-
-        } catch (error) {
-
-          console.error(
-            "AUTH STATE ERROR:",
-            error
-          );
-
-          setCurrentUser(null);
-
-        } finally {
-
-          setLoading(false);
-        }
-      });
-
-    return () => unsubscribe();
-
-  }, []);
-
-  // =========================
-  // CONTEXT VALUE
-  // =========================
-  const value = {
-    currentUser,
-    register,
-    login,
-    logout
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message,
+      };
+    }
   };
 
-  // =========================
-  // PROVIDER
-  // =========================
+  const value = {
+    userProfile,
+    status,
+
+    isLoading: status === "loading",
+    isAuthed: status === "authed",
+
+    login,
+    register,
+    logout,
+    sendReset,
+  };
+
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
-};
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+
+  if (!ctx) {
+    throw new Error(
+      "useAuth must be used inside AuthProvider"
+    );
+  }
+
+  return ctx;
+}

@@ -1,0 +1,230 @@
+import { useState, useMemo, useCallback } from "react";
+import { AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
+import { ShoppingCart, Plus, Trash2, Edit2, TrendingDown, Tag } from "lucide-react";
+import {
+  PageWrapper, PageHeader, Card, CardHeader, Button, Input, Select,
+  Textarea, Modal, Badge, EmptyState, SearchInput, Table, StatCard
+} from "../components/ui";
+import { addBazaar, updateBazaar, deleteBazaar } from "../services/firestoreService";
+import { formatCurrency } from "../utils/billing";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+const CATEGORIES = ["Grocery", "Vegetables", "Fish & Meat", "Spices", "Cooking Gas", "Utilities", "Cleaning", "Other"];
+
+const defaultForm = {
+  title: "", amount: "", category: "Grocery",
+  buyerName: "", date: new Date().toISOString().split("T")[0], note: "",
+};
+
+function BazaarForm({ initial, ownerId, members, onClose }) {
+  const [form, setForm] = useState(initial || defaultForm);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const validate = () => {
+    const e = {};
+    if (!form.title.trim())  e.title  = "Title required";
+    if (!form.amount || isNaN(Number(form.amount))) e.amount = "Valid amount required";
+    setErrors(e);
+    return !Object.keys(e).length;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      const data = { ...form, amount: Number(form.amount) };
+      if (initial?.id) await updateBazaar(initial.id, data);
+      else await addBazaar(ownerId, data);
+      toast.success(initial ? "Expense updated!" : "Expense added!");
+      onClose();
+    } catch {
+      toast.error("Failed to save expense");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <Input label="Title" value={form.title} onChange={e => set("title", e.target.value)} error={errors.title} required />
+        <Input label="Amount (৳)" type="number" min="0" step="0.01" value={form.amount} onChange={e => set("amount", e.target.value)} error={errors.amount} required />
+        <Select label="Category" value={form.category} onChange={e => set("category", e.target.value)}>
+          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </Select>
+        <Input label="Buyer Name" value={form.buyerName} onChange={e => set("buyerName", e.target.value)} placeholder="Who bought this?" />
+        <Input label="Date" type="date" value={form.date} onChange={e => set("date", e.target.value)} required />
+      </div>
+      <Textarea label="Note" value={form.note} onChange={e => set("note", e.target.value)} placeholder="Optional details..." />
+      <div className="flex gap-3">
+        <Button type="submit" loading={loading} className="flex-1">
+          {initial ? "Update Expense" : "Add Expense"}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+      </div>
+    </form>
+  );
+}
+
+export function BazaarPage({ bazaar = [], members = [], ownerId }) {
+  const [showAdd,      setShowAdd]      = useState(false);
+  const [editItem,     setEditItem]     = useState(null);
+  const [delId,        setDelId]        = useState(null);
+  const [search,       setSearch]       = useState("");
+  const [filterCat,    setFilterCat]    = useState("all");
+  const [loading,      setLoading]      = useState(false);
+
+  const filtered = useMemo(() => {
+    let list = bazaar;
+    if (filterCat !== "all") list = list.filter(b => b.category === filterCat);
+    if (search) list = list.filter(b =>
+      b.title?.toLowerCase().includes(search.toLowerCase()) ||
+      b.buyerName?.toLowerCase().includes(search.toLowerCase())
+    );
+    return [...list].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  }, [bazaar, filterCat, search]);
+
+  const totalFiltered = useMemo(() => filtered.reduce((s, b) => s + Number(b.amount || 0), 0), [filtered]);
+  const totalAll      = useMemo(() => bazaar.reduce((s, b) => s + Number(b.amount || 0), 0), [bazaar]);
+
+  // Category chart data
+  const catChartData = useMemo(() => {
+    const map = {};
+    bazaar.forEach(b => {
+      const cat = b.category || "Other";
+      map[cat] = (map[cat] || 0) + Number(b.amount || 0);
+    });
+    return Object.entries(map).map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total);
+  }, [bazaar]);
+
+  const handleDelete = useCallback(async () => {
+    if (!delId) return;
+    setLoading(true);
+    try {
+      await deleteBazaar(delId);
+      toast.success("Expense deleted");
+      setDelId(null);
+    } catch {
+      toast.error("Failed to delete");
+    } finally {
+      setLoading(false);
+    }
+  }, [delId]);
+
+  const columns = [
+    {
+      key: "title", label: "Expense",
+      render: (v, row) => (
+        <div>
+          <p className="font-medium text-sm text-gray-900 dark:text-white">{v}</p>
+          {row.note && <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{row.note}</p>}
+        </div>
+      )
+    },
+    { key: "date",      label: "Date" },
+    { key: "buyerName", label: "Buyer", render: (v) => v || "—" },
+    {
+      key: "category", label: "Category",
+      render: (v) => <Badge variant="info">{v}</Badge>
+    },
+    {
+      key: "amount", label: "Amount",
+      render: (v) => <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(v)}</span>
+    },
+    {
+      key: "id", label: "",
+      render: (id, row) => (
+        <div className="flex gap-1">
+          <Button variant="ghost" size="xs" onClick={e => { e.stopPropagation(); setEditItem(row); }}><Edit2 size={12} /></Button>
+          <Button variant="danger" size="xs" onClick={e => { e.stopPropagation(); setDelId(id); }}><Trash2 size={12} /></Button>
+        </div>
+      )
+    },
+  ];
+
+  return (
+    <PageWrapper>
+      <PageHeader
+        title="Bazaar"
+        subtitle={`${bazaar.length} expense entries · Total: ${formatCurrency(totalAll)}`}
+        actions={
+          <Button onClick={() => setShowAdd(true)}>
+            <Plus size={16} /> Add Expense
+          </Button>
+        }
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Total Expenses" value={formatCurrency(totalAll)} icon={TrendingDown} iconBg="bg-red-500/10" iconColor="text-red-500" />
+        <StatCard label="This Filter" value={formatCurrency(totalFiltered)} icon={ShoppingCart} iconBg="bg-orange-500/10" iconColor="text-orange-500" />
+        <StatCard label="Entries" value={bazaar.length} icon={Tag} iconBg="bg-blue-500/10" iconColor="text-blue-500" />
+        <StatCard label="Categories" value={catChartData.length} icon={Tag} iconBg="bg-teal-500/10" iconColor="text-teal-500" />
+      </div>
+
+      {/* Category chart */}
+      {catChartData.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader title="Expense by Category" />
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={catChartData} barSize={24}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(v) => [`৳${v}`, "Amount"]} contentStyle={{ background: "#111827", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#fff" }} />
+              <Bar dataKey="total" fill="#f97316" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search expenses..." className="flex-1" />
+        <Select value={filterCat} onChange={e => setFilterCat(e.target.value)} wrapperClass="sm:w-44">
+          <option value="all">All Categories</option>
+          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </Select>
+      </div>
+
+      <Card noPad>
+        <Table
+          columns={columns}
+          data={filtered}
+          emptyState={
+            <div className="p-12">
+              <EmptyState icon={ShoppingCart} title="No expenses found" description="Start tracking your mess expenses." action={<Button onClick={() => setShowAdd(true)}><Plus size={16}/>Add Expense</Button>} />
+            </div>
+          }
+        />
+      </Card>
+
+      <AnimatePresence>
+        {showAdd && (
+          <Modal open onClose={() => setShowAdd(false)} title="Add Expense" subtitle="Record a new bazaar or mess expense">
+            <BazaarForm ownerId={ownerId} members={members} onClose={() => setShowAdd(false)} />
+          </Modal>
+        )}
+        {editItem && (
+          <Modal open onClose={() => setEditItem(null)} title="Edit Expense">
+            <BazaarForm initial={editItem} ownerId={ownerId} members={members} onClose={() => setEditItem(null)} />
+          </Modal>
+        )}
+        {delId && (
+          <Modal open onClose={() => setDelId(null)} title="Delete Expense" size="sm">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Permanently delete this expense entry?</p>
+            <div className="flex gap-3">
+              <Button variant="danger" loading={loading} onClick={handleDelete} className="flex-1">Delete</Button>
+              <Button variant="secondary" onClick={() => setDelId(null)} className="flex-1">Cancel</Button>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
+    </PageWrapper>
+  );
+}
