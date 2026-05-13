@@ -2429,24 +2429,30 @@ function SettingsPage({ dark, setDark, onLogout, notify, userProfile, isAdmin, m
 
       {/* Account Info */}
       <Card title="ℹ️ Account Info">
-        <div className="space-y-2.5 text-sm">
-          {[
-            ["Role", userProfile.role],
-            ["Firebase UID", userProfile.uid],
-            ...(isAdmin ? [["Owner ID (data silo)", userProfile.ownerId]] : []),
-          ].map(([key, val])=>(
-            <div key={key} className="flex items-start gap-3 py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wide w-36 flex-shrink-0 mt-0.5">{key}</span>
-              <span className={`text-gray-700 dark:text-gray-300 font-mono text-xs break-all ${key==="Role"?"capitalize font-semibold font-sans":""}`}>{val}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
+  <div className="space-y-2.5 text-sm">
+    {[
+      ["Role", userProfile.role],
+    ].map(([key, val]) => (
+      <div
+        key={key}
+        className="flex items-start gap-3 py-2 border-b border-gray-50 dark:border-gray-800 last:border-b-0"
+      >
+        <span className="text-xs font-bold text-gray-400 uppercase tracking-wide w-36 flex-shrink-0 mt-0.5">
+          {key}
+        </span>
+
+        <span className="text-gray-700 dark:text-gray-300 capitalize font-semibold font-sans">
+          {val}
+        </span>
+      </div>
+    ))}
+  </div>
+</Card>
 
       {/* About */}
       <Card title="🚀 About MessManager v5.0">
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <strong className="text-gray-900 dark:text-white">MessManager v5.0</strong> — Premium SaaS edition with multi-tenant Firebase, half-breakfast support, GitHub-style heatmap, advanced analytics, and full PDF billing.
+          <strong className="text-gray-900 dark:text-white">MessManager v5.0</strong> — SaaS edition, advanced analytics, and full PDF billing.
         </p>
         <div className="flex flex-wrap gap-2 mb-5">
           {techBadges.map(t=>(
