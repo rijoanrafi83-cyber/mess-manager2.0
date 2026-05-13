@@ -41,6 +41,7 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { db, auth } from "./firebase";
+import { sendEmailVerification } from "firebase/auth";
 
 // ─── Framer Motion (graceful degradation if not installed) ───────────────────
 let motion, AnimatePresence;
@@ -637,14 +638,47 @@ function LoginPage() {
   if (userProfile) return <Navigate to={from} replace/>;
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) { setError("Email and password required."); return; }
-    setBusy(true); setError("");
-    try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      navigate(from, { replace: true });
-    } catch { setError("Invalid credentials. Please try again."); }
-    finally { setBusy(false); }
-  };
+
+  if (!email.trim() || !password.trim()) {
+    setError("Email and password required.");
+    return;
+  }
+
+  setBusy(true);
+  setError("");
+
+  try {
+
+    const cred = await signInWithEmailAndPassword(
+      auth,
+      email.trim(),
+      password
+    );
+
+    if (!cred.user.emailVerified) {
+
+      await signOut(auth);
+
+      setError("Please verify your email first.");
+
+      setBusy(false);
+
+      return;
+    }
+
+    navigate(from, { replace: true });
+
+  } catch (err) {
+
+    console.error(err);
+
+    setError("Invalid credentials. Please try again.");
+
+  } finally {
+
+    setBusy(false);
+  }
+};
 
   return (
     <AuthLayout>
@@ -697,23 +731,67 @@ function RegisterPage() {
   if (userProfile) return <Navigate to="/" replace/>;
 
   const handleRegister = async () => {
-    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) { setError("All fields required."); return; }
-    if (form.password.length < 6) { setError("Password must be at least 6 characters."); return; }
-    if (form.password !== form.confirm) { setError("Passwords do not match."); return; }
-    setBusy(true); setError("");
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, form.email.trim(), form.password);
-      await firestoreService.createAdminProfile(cred.user.uid, { displayName: form.name.trim(), email: form.email.trim() });
-      setSuccess("Account created! Redirecting…");
-      setTimeout(() => navigate("/"), 1200);
-    } catch (err) {
-      setError(
-  err.code === "auth/email-already-in-use"
-    ? "Email already in use."
-    : "Something went wrong. Please try again."
-);
-    } finally { setBusy(false); }
-  };
+
+  if (
+    !form.name.trim() ||
+    !form.email.trim() ||
+    !form.password.trim()
+  ) {
+    setError("All fields required.");
+    return;
+  }
+
+  if (form.password.length < 6) {
+    setError("Password must be at least 6 characters.");
+    return;
+  }
+
+  if (form.password !== form.confirm) {
+    setError("Passwords do not match.");
+    return;
+  }
+
+  setBusy(true);
+  setError("");
+
+  try {
+
+    const cred =
+      await createUserWithEmailAndPassword(
+        auth,
+        form.email.trim(),
+        form.password
+      );
+
+    await sendEmailVerification(cred.user);
+
+    await firestoreService.createAdminProfile(
+      cred.user.uid,
+      {
+        displayName: form.name.trim(),
+        email: form.email.trim()
+      }
+    );
+
+    setSuccess(
+      "Account created successfully! Please verify your email."
+    );
+
+    setTimeout(() => {
+      navigate("/login");
+    }, 1500);
+
+  } catch (err) {
+
+    console.error(err);
+
+    setError("Registration failed.");
+
+  } finally {
+
+    setBusy(false);
+  }
+};
 
   return (
     <AuthLayout>
@@ -2315,6 +2393,8 @@ function SettingsPage({ dark, setDark, onLogout, notify, userProfile, isAdmin, m
     setMemberLoginBusy(true);
     try {
       const cred = await createUserWithEmailAndPassword(auth, memberLoginForm.email.trim(), memberLoginForm.password);
+      await sendEmailVerification(cred.user);
+      notify("Verification email sent.");
       await firestoreService.setMemberAccess(cred.user.uid, { ownerId, memberId:memberLoginForm.memberId, displayName:member.name, email:memberLoginForm.email.trim(), role:"member" });
       await signInWithEmailAndPassword(auth, userProfile.email, memberLoginForm.password);
       notify(`Login created for ${member.name} ✓`, "warning");

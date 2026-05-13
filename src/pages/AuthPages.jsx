@@ -38,24 +38,29 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) { setError("Please fill in all fields."); return; }
-    setLoading(true);
-    setError("");
-    try {
-      await login(email, password);
-      navigate("/dashboard");
-    } catch (err) {
-      const msgs = {
-        "auth/user-not-found": "No account found with this email.",
-        "auth/wrong-password": "Incorrect password.",
-        "auth/invalid-email": "Invalid email address.",
-        "auth/too-many-requests": "Too many attempts. Try again later.",
-        "auth/invalid-credential": "Invalid email or password.",
-      };
-      setError(msgs[err.code] || "Login failed. Please try again.");
-    }
-    setLoading(false);
-  };
+
+  if (!email || !password) {
+    setError("Please fill in all fields.");
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  const result = await login(email, password);
+
+  if (result.success) {
+
+    navigate("/dashboard");
+
+  } else {
+
+    setError(result.message || "Invalid credentials.");
+
+  }
+
+  setLoading(false);
+};
 
   return (
     <AuthCard sub="v3.0 — Firebase Meal Management">
@@ -101,65 +106,130 @@ export function LoginPage() {
 
 // ── Register ───────────────────────────────────────────────────────────────────
 export function RegisterPage() {
-  const { registerAdmin } = useAuth();
+  const { register } = useAuth();
+
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
+
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirm: ""
+  });
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    setError("");
-    if (!form.name.trim()) { setError("Name is required."); return; }
-    if (!form.email.trim()) { setError("Email is required."); return; }
-    if (form.password.length < 6) { setError("Password must be at least 6 characters."); return; }
-    if (form.password !== form.confirm) { setError("Passwords do not match."); return; }
 
-    setLoading(true);
-    try {
-      await registerAdmin(form.name.trim(), form.email.trim(), form.password);
-      navigate("/dashboard");
-    } catch (err) {
-      const msgs = {
-        "auth/email-already-in-use": "An account with this email already exists.",
-        "auth/invalid-email": "Invalid email address.",
-        "auth/weak-password": "Password is too weak.",
-      };
-      setError(msgs[err.code] || "Registration failed. Please try again.");
-    }
-    setLoading(false);
-  };
+  setError("");
+
+  if (!form.name.trim()) {
+    setError("Name is required.");
+    return;
+  }
+
+  if (!form.email.trim()) {
+    setError("Email is required.");
+    return;
+  }
+
+  if (form.password.length < 6) {
+    setError("Password must be at least 6 characters.");
+    return;
+  }
+
+  if (form.password !== form.confirm) {
+    setError("Passwords do not match.");
+    return;
+  }
+
+  setLoading(true);
+
+  const result = await register(
+    form.name.trim(),
+    form.email.trim(),
+    form.password
+  );
+
+  if (result.success) {
+
+    navigate("/dashboard");
+
+  } else {
+
+    setError(result.message || "Registration failed.");
+
+  }
+
+  setLoading(false);
+};
 
   return (
-    <AuthCard sub="Create your admin account" title="Create Admin Account">
+    <AuthCard
+      sub="Create your admin account"
+      title="Create Admin Account"
+    >
+
       {error && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm border border-red-200 dark:border-red-800">
           {error}
         </div>
       )}
+
       <div className="space-y-4">
+
         {[
           ["Full Name", "name", "text", "Your name"],
           ["Email", "email", "email", "admin@example.com"],
           ["Password", "password", "password", "Min 6 characters"],
           ["Confirm Password", "confirm", "password", "Re-enter password"],
         ].map(([label, key, type, placeholder]) => (
+
           <div key={key}>
             <label className={labelCls}>{label}</label>
-            <input type={type} value={form[key]} placeholder={placeholder}
-              onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-              onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-              className={inputCls} />
+
+            <input
+              type={type}
+              value={form[key]}
+              placeholder={placeholder}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  [key]: e.target.value
+                }))
+              }
+              onKeyDown={(e) =>
+                e.key === "Enter" && handleRegister()
+              }
+              className={inputCls}
+            />
           </div>
+
         ))}
-        <button onClick={handleRegister} disabled={loading}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900 transition-all disabled:opacity-60">
+
+        <button
+          onClick={handleRegister}
+          disabled={loading}
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900 transition-all disabled:opacity-60"
+        >
           {loading ? "Creating account…" : "Create Account"}
         </button>
+
       </div>
+
       <p className="mt-5 text-center text-sm text-gray-500 dark:text-gray-400">
         Already have an account?{" "}
-        <Link to="/login" className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">Sign in</Link>
+
+        <Link
+          to="/login"
+          className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
+        >
+          Sign in
+        </Link>
+
       </p>
+
     </AuthCard>
   );
 }

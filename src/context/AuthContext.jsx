@@ -1,115 +1,287 @@
-// src/context/AuthContext.jsx
-import { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState
+} from "react";
+
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  updateProfile,
+  onAuthStateChanged
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+
+import {
+  doc,
+  setDoc,
+  getDoc,
+  serverTimestamp
+} from "firebase/firestore";
+
 import { auth, db } from "../firebase";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
+
+export const AuthProvider = ({ children }) => {
+
   const [currentUser, setCurrentUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null); // Firestore profile
-  const [authLoading, setAuthLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Register new admin
-  async function registerAdmin(name, email, password) {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: name });
-    // Create admin profile in Firestore
-    await setDoc(doc(db, "admins", cred.user.uid), {
-      uid: cred.user.uid,
-      name,
-      email,
-      role: "admin",
-      createdAt: serverTimestamp(),
-    });
-    return cred.user;
-  }
+  // =========================
+  // REGISTER
+  // =========================
+  const register = async (name, email, password) => {
 
-  // Login
-  async function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
-  }
-
-  // Logout
-  async function logout() {
-    await signOut(auth);
-    setUserProfile(null);
-  }
-
-  // Forgot password
-  async function resetPassword(email) {
-    return sendPasswordResetEmail(auth, email);
-  }
-
-  // Load Firestore profile (admin OR member)
-  async function loadProfile(user) {
-    setProfileLoading(true);
     try {
-      // Try admin profile first
-      const adminDoc = await getDoc(doc(db, "admins", user.uid));
-      if (adminDoc.exists()) {
-        setUserProfile({ ...adminDoc.data(), role: "admin" });
-        setProfileLoading(false);
-        return;
+
+      // CREATE USER
+      const userCredential =
+        await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+      const user = userCredential.user;
+
+      // SAVE USER PROFILE
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          uid: user.uid,
+          name: name,
+          email: email,
+          role: "admin",
+          createdAt: serverTimestamp()
+        }
+      );
+
+      // GET SAVED USER
+      const savedUser = await getDoc(
+        doc(db, "users", user.uid)
+      );
+
+      // SET CURRENT USER
+      if (savedUser.exists()) {
+        setCurrentUser(savedUser.data());
       }
-      // Try member account
-      const { getDocs, collection, query, where } = await import("firebase/firestore");
-      const q = query(collection(db, "memberAccounts"), where("memberUid", "==", user.uid));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const data = snap.docs[0].data();
-        setUserProfile({ ...data, role: "member" });
-        setProfileLoading(false);
-        return;
-      }
-      // Unknown user
-      setUserProfile(null);
-    } catch (err) {
-      console.error("loadProfile error:", err);
-      setUserProfile(null);
+
+      return {
+        success: true
+      };
+
+    } catch (error) {
+
+      console.error("REGISTER ERROR:", error);
+
+      return {
+        success: false,
+        message: error.message
+      };
     }
-    setProfileLoading(false);
-  }
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        await loadProfile(user);
-      } else {
-        setUserProfile(null);
-      }
-      setAuthLoading(false);
-    });
-    return unsub;
-  }, []);
-
-  const value = {
-    currentUser,
-    userProfile,
-    authLoading,
-    profileLoading,
-    registerAdmin,
-    login,
-    logout,
-    resetPassword,
-    loadProfile,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+  // =========================
+  // LOGIN
+  // =========================
+  const login = async (email, password) => {
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
-  return ctx;
-}
+    try {
+
+      // LOGIN USER
+      const userCredential =
+        await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+      const user = userCredential.user;
+
+      // LOAD USER PROFILE
+      const userDoc = await getDoc(
+        doc(db, "users", user.uid)
+      );
+
+      // IF PROFILE NOT FOUND
+      if (!userDoc.exists()) {
+
+        // CREATE PROFILE AUTOMATICALLY
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            uid: user.uid,
+            name: user.displayName || "User",
+            email: user.email,
+            role: "admin",
+            createdAt: serverTimestamp()
+          }
+        );
+
+        // LOAD AGAIN
+        const newUserDoc = await getDoc(
+          doc(db, "users", user.uid)
+        );
+
+        if (newUserDoc.exists()) {
+
+          setCurrentUser(newUserDoc.data());
+
+          return {
+            success: true,
+            user: newUserDoc.data()
+          };
+        }
+      }
+
+      // NORMAL LOGIN
+      setCurrentUser(userDoc.data());
+
+      return {
+        success: true,
+        user: userDoc.data()
+      };
+
+    } catch (error) {
+
+      console.error("LOGIN ERROR:", error);
+
+      let customMessage = "Login failed";
+
+      switch (error.code) {
+
+        case "auth/user-not-found":
+          customMessage = "No account found";
+          break;
+
+        case "auth/wrong-password":
+          customMessage = "Wrong password";
+          break;
+
+        case "auth/invalid-credential":
+          customMessage = "Invalid email or password";
+          break;
+
+        case "auth/invalid-email":
+          customMessage = "Invalid email";
+          break;
+
+        default:
+          customMessage = error.message;
+      }
+
+      return {
+        success: false,
+        message: customMessage
+      };
+    }
+  };
+
+  // =========================
+  // LOGOUT
+  // =========================
+  const logout = async () => {
+
+    try {
+
+      await signOut(auth);
+
+      setCurrentUser(null);
+
+    } catch (error) {
+
+      console.error("LOGOUT ERROR:", error);
+    }
+  };
+
+  // =========================
+  // AUTO LOGIN CHECK
+  // =========================
+  useEffect(() => {
+
+    const unsubscribe =
+      onAuthStateChanged(auth, async (user) => {
+
+        try {
+
+          if (user) {
+
+            const userDoc = await getDoc(
+              doc(db, "users", user.uid)
+            );
+
+            if (userDoc.exists()) {
+
+              setCurrentUser(userDoc.data());
+
+            } else {
+
+              // AUTO CREATE PROFILE
+              await setDoc(
+                doc(db, "users", user.uid),
+                {
+                  uid: user.uid,
+                  name: user.displayName || "User",
+                  email: user.email,
+                  role: "admin",
+                  createdAt: serverTimestamp()
+                }
+              );
+
+              const newDoc = await getDoc(
+                doc(db, "users", user.uid)
+              );
+
+              if (newDoc.exists()) {
+                setCurrentUser(newDoc.data());
+              }
+            }
+
+          } else {
+
+            setCurrentUser(null);
+          }
+
+        } catch (error) {
+
+          console.error(
+            "AUTH STATE ERROR:",
+            error
+          );
+
+          setCurrentUser(null);
+
+        } finally {
+
+          setLoading(false);
+        }
+      });
+
+    return () => unsubscribe();
+
+  }, []);
+
+  // =========================
+  // CONTEXT VALUE
+  // =========================
+  const value = {
+    currentUser,
+    register,
+    login,
+    logout
+  };
+
+  // =========================
+  // PROVIDER
+  // =========================
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+};
