@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 
 import {
-  updatePassword,
   updateProfile,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from "firebase/auth";
 
 import {
@@ -31,30 +33,45 @@ import { useAuth } from "../context/AuthContext";
 export function SettingsPage() {
   const { user } = useAuth();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [darkMode, setDarkMode] = useState(true);
+  const [saving, setSaving] =
+    useState(false);
+
+  const [darkMode, setDarkMode] =
+    useState(true);
+
   const [notifications, setNotifications] =
     useState(true);
+
   const [autoBackup, setAutoBackup] =
     useState(true);
+
+  const [currentPassword, setCurrentPassword] =
+    useState("");
 
   const [newPassword, setNewPassword] =
     useState("");
 
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-  });
+  const [formData, setFormData] =
+    useState({
+      fullName: "",
+      email: "",
+      phone: "",
+    });
 
-  // Load user settings
+  // Load user settings from Firestore
   useEffect(() => {
     const loadUserData = async () => {
       try {
         if (!user) return;
 
-        const userRef = doc(db, "users", user.uid);
+        const userRef = doc(
+          db,
+          "users",
+          user.uid
+        );
 
         const snap = await getDoc(userRef);
 
@@ -87,17 +104,20 @@ export function SettingsPage() {
             data.autoBackup ?? true
           );
         } else {
+          // first time user
           setFormData({
             fullName:
               user.displayName || "",
 
-            email: user.email || "",
+            email:
+              user.email || "",
 
             phone: "",
           });
         }
       } catch (error) {
         console.error(error);
+        alert(error.message);
       } finally {
         setLoading(false);
       }
@@ -111,24 +131,31 @@ export function SettingsPage() {
     try {
       if (!user) return;
 
+      setSaving(true);
+
       // Update auth profile
       await updateProfile(auth.currentUser, {
-        displayName: formData.fullName,
+        displayName:
+          formData.fullName,
       });
 
-      // Save to firestore
+      // Save Firestore data
       await setDoc(
         doc(db, "users", user.uid),
         {
-          fullName: formData.fullName,
+          fullName:
+            formData.fullName,
+
           email: formData.email,
+
           phone: formData.phone,
 
           darkMode,
           notifications,
           autoBackup,
 
-          updatedAt: new Date(),
+          updatedAt:
+            new Date().toISOString(),
         },
         { merge: true }
       );
@@ -140,42 +167,64 @@ export function SettingsPage() {
       console.error(error);
 
       alert(error.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   // Change password
-  const handlePasswordChange = async () => {
-    try {
-      if (!newPassword) {
-        return alert(
-          "Enter a new password"
+  const handlePasswordChange =
+    async () => {
+      try {
+        if (
+          !currentPassword ||
+          !newPassword
+        ) {
+          return alert(
+            "Fill all password fields"
+          );
+        }
+
+        if (newPassword.length < 6) {
+          return alert(
+            "Password must be at least 6 characters"
+          );
+        }
+
+        const credential =
+          EmailAuthProvider.credential(
+            user.email,
+            currentPassword
+          );
+
+        // Re-authenticate user
+        await reauthenticateWithCredential(
+          auth.currentUser,
+          credential
         );
-      }
 
-      if (newPassword.length < 6) {
-        return alert(
-          "Password must be at least 6 characters"
+        // Update password
+        await updatePassword(
+          auth.currentUser,
+          newPassword
         );
+
+        setCurrentPassword("");
+        setNewPassword("");
+
+        alert(
+          "Password updated successfully 😎"
+        );
+      } catch (error) {
+        console.error(error);
+
+        alert(error.message);
       }
-
-      await updatePassword(
-        auth.currentUser,
-        newPassword
-      );
-
-      setNewPassword("");
-
-      alert("Password updated 😎");
-    } catch (error) {
-      console.error(error);
-
-      alert(error.message);
-    }
-  };
+    };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#070b1a] flex items-center justify-center text-white text-xl">
+      <div className="min-h-screen bg-[#070b1a] flex items-center justify-center text-white text-2xl font-semibold">
         Loading Settings...
       </div>
     );
@@ -185,13 +234,13 @@ export function SettingsPage() {
     <div className="min-h-screen bg-[#070b1a] text-white p-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight">
+        <h1 className="text-4xl font-bold">
           Settings
         </h1>
 
         <p className="text-gray-400 mt-2">
-          Manage your mess application
-          preferences and account settings.
+          Manage your account,
+          preferences and security.
         </p>
       </div>
 
@@ -200,7 +249,9 @@ export function SettingsPage() {
         <div className="flex items-center gap-5">
           <div className="relative">
             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-3xl font-bold shadow-lg">
-              {formData.fullName?.charAt(0) ||
+              {formData.fullName
+                ?.charAt(0)
+                ?.toUpperCase() ||
                 "U"}
             </div>
 
@@ -216,7 +267,7 @@ export function SettingsPage() {
             </h2>
 
             <p className="text-gray-400">
-              Administrator
+              {formData.email}
             </p>
 
             <div className="flex gap-3 mt-3">
@@ -232,7 +283,7 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* Main Grid */}
+      {/* Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Account Settings */}
         <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xl">
@@ -265,7 +316,8 @@ export function SettingsPage() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    fullName: e.target.value,
+                    fullName:
+                      e.target.value,
                   })
                 }
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-violet-500"
@@ -287,13 +339,8 @@ export function SettingsPage() {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      email: e.target.value,
-                    })
-                  }
-                  className="w-full bg-black/30 border border-white/10 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-violet-500"
+                  disabled
+                  className="w-full bg-black/30 border border-white/10 rounded-xl pl-11 pr-4 py-3 outline-none opacity-70"
                 />
               </div>
             </div>
@@ -316,7 +363,8 @@ export function SettingsPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      phone: e.target.value,
+                      phone:
+                        e.target.value,
                     })
                   }
                   className="w-full bg-black/30 border border-white/10 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-violet-500"
@@ -367,7 +415,9 @@ export function SettingsPage() {
 
               <button
                 onClick={() =>
-                  setDarkMode(!darkMode)
+                  setDarkMode(
+                    !darkMode
+                  )
                 }
                 className={`w-14 h-7 rounded-full transition relative ${
                   darkMode
@@ -441,7 +491,9 @@ export function SettingsPage() {
 
               <button
                 onClick={() =>
-                  setAutoBackup(!autoBackup)
+                  setAutoBackup(
+                    !autoBackup
+                  )
                 }
                 className={`w-14 h-7 rounded-full transition relative ${
                   autoBackup
@@ -479,8 +531,7 @@ export function SettingsPage() {
             </div>
           </div>
 
-          <div className="space-y-5">
-            {/* Change Password */}
+          <div className="space-y-4">
             <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
               <div className="flex items-center gap-3 mb-4">
                 <Lock className="text-yellow-400" />
@@ -496,9 +547,23 @@ export function SettingsPage() {
                 </div>
               </div>
 
+              {/* Current Password */}
               <input
                 type="password"
-                placeholder="Enter new password"
+                placeholder="Current password"
+                value={currentPassword}
+                onChange={(e) =>
+                  setCurrentPassword(
+                    e.target.value
+                  )
+                }
+                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-violet-500 mb-4"
+              />
+
+              {/* New Password */}
+              <input
+                type="password"
+                placeholder="New password"
                 value={newPassword}
                 onChange={(e) =>
                   setNewPassword(
@@ -520,7 +585,7 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* Save Settings */}
+        {/* Save Changes */}
         <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
           <div>
             <h3 className="text-2xl font-bold mb-3">
@@ -529,16 +594,23 @@ export function SettingsPage() {
 
             <p className="text-violet-100">
               Apply and save all your
-              updated preferences instantly.
+              updated preferences
+              instantly.
             </p>
           </div>
 
           <button
-            onClick={handleSaveSettings}
-            className="mt-8 w-full bg-white text-black font-semibold py-4 rounded-2xl hover:scale-[1.02] transition flex items-center justify-center gap-2"
+            onClick={
+              handleSaveSettings
+            }
+            disabled={saving}
+            className="mt-8 w-full bg-white text-black font-semibold py-4 rounded-2xl hover:scale-[1.02] transition flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Save size={18} />
-            Save Settings
+
+            {saving
+              ? "Saving..."
+              : "Save Settings"}
           </button>
         </div>
       </div>
