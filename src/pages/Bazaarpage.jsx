@@ -9,6 +9,7 @@ import {
 import { addBazaar, updateBazaar, deleteBazaar } from "../services/firestoreService";
 import { formatCurrency } from "../utils/billing";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useChartTheme } from "../hooks/useChartTheme";
 
 const CATEGORIES = ["Grocery", "Vegetables", "Fish & Meat", "Spices", "Cooking Gas", "Utilities", "Cleaning", "Other"];
 
@@ -17,7 +18,7 @@ const defaultForm = {
   buyerName: "", date: new Date().toISOString().split("T")[0], note: "",
 };
 
-function BazaarForm({ initial, ownerId, members, onClose }) {
+function BazaarForm({ initial, ownerId, onClose }) {
   const [form, setForm] = useState(initial || defaultForm);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -71,13 +72,14 @@ function BazaarForm({ initial, ownerId, members, onClose }) {
   );
 }
 
-export function BazaarPage({ bazaar = [], members = [], ownerId }) {
+export function BazaarPage({ bazaar = [], ownerId }) {
   const [showAdd,      setShowAdd]      = useState(false);
   const [editItem,     setEditItem]     = useState(null);
   const [delId,        setDelId]        = useState(null);
   const [search,       setSearch]       = useState("");
   const [filterCat,    setFilterCat]    = useState("all");
   const [loading,      setLoading]      = useState(false);
+  const chartTheme = useChartTheme();
 
   const filtered = useMemo(() => {
     let list = bazaar;
@@ -121,8 +123,8 @@ export function BazaarPage({ bazaar = [], members = [], ownerId }) {
       key: "title", label: "Expense",
       render: (v, row) => (
         <div>
-          <p className="font-medium text-sm text-gray-900 dark:text-white">{v}</p>
-          {row.note && <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{row.note}</p>}
+          <p className="font-medium text-sm theme-text">{v}</p>
+          {row.note && <p className="text-xs theme-muted-text truncate max-w-[200px]">{row.note}</p>}
         </div>
       )
     },
@@ -134,7 +136,7 @@ export function BazaarPage({ bazaar = [], members = [], ownerId }) {
     },
     {
       key: "amount", label: "Amount",
-      render: (v) => <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(v)}</span>
+      render: (v) => <span className="font-semibold theme-text">{formatCurrency(v)}</span>
     },
     {
       key: "id", label: "",
@@ -173,11 +175,21 @@ export function BazaarPage({ bazaar = [], members = [], ownerId }) {
           <CardHeader title="Expense by Category" />
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={catChartData} barSize={24}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v) => [`৳${v}`, "Amount"]} contentStyle={{ background: "#111827", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#fff" }} />
-              <Bar dataKey="total" fill="#f97316" radius={[6, 6, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="name" tick={{ fill: chartTheme.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: chartTheme.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                formatter={(v) => [`৳${v}`, "Amount"]}
+                contentStyle={{
+                  background: chartTheme.tooltip.background,
+                  border: `1px solid ${chartTheme.tooltip.border}`,
+                  borderRadius: 12,
+                  color: chartTheme.tooltip.color,
+                  boxShadow: "var(--shadow-soft)",
+                }}
+                labelStyle={{ color: chartTheme.tooltip.color }}
+              />
+              <Bar dataKey="total" fill={chartTheme.accent} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -207,12 +219,12 @@ export function BazaarPage({ bazaar = [], members = [], ownerId }) {
       <AnimatePresence>
         {showAdd && (
           <Modal open onClose={() => setShowAdd(false)} title="Add Expense" subtitle="Record a new bazaar or mess expense">
-            <BazaarForm ownerId={ownerId} members={members} onClose={() => setShowAdd(false)} />
+            <BazaarForm ownerId={ownerId} onClose={() => setShowAdd(false)} />
           </Modal>
         )}
         {editItem && (
           <Modal open onClose={() => setEditItem(null)} title="Edit Expense">
-            <BazaarForm initial={editItem} ownerId={ownerId} members={members} onClose={() => setEditItem(null)} />
+            <BazaarForm initial={editItem} ownerId={ownerId} onClose={() => setEditItem(null)} />
           </Modal>
         )}
         {delId && (

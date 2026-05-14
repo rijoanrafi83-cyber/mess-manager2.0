@@ -34,7 +34,7 @@ export function StatCard({ label, value, sub, icon: Icon, iconBg = "bg-violet-50
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="theme-card border rounded-2xl p-5 flex items-start gap-4"
+      className="theme-card theme-hover border rounded-2xl p-5 flex items-start gap-4"
     >
       {Icon && (
         <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
@@ -58,7 +58,7 @@ export function StatCard({ label, value, sub, icon: Icon, iconBg = "bg-violet-50
 // ─── Card ─────────────────────────────────────────────────────────────────────
 export function Card({ children, className = "", noPad = false }) {
   return (
-    <div className={`theme-card border rounded-2xl ${noPad ? "" : "p-6"} ${className}`}>
+    <div className={`theme-card theme-gradient-border border rounded-2xl ${noPad ? "" : "p-6"} ${className}`}>
       {children}
     </div>
   );
@@ -77,7 +77,7 @@ export function CardHeader({ title, subtitle, actions, className = "" }) {
 }
 
 // ─── Button ───────────────────────────────────────────────────────────────────
-const btnBase = "inline-flex items-center gap-2 font-medium rounded-xl transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2";
+const btnBase = "inline-flex items-center gap-2 font-medium rounded-xl transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent)_22%,transparent)]";
 const btnSizes = {
   xs: "px-2.5 py-1.5 text-xs",
   sm: "px-3 py-2 text-sm",
@@ -85,11 +85,11 @@ const btnSizes = {
   lg: "px-5 py-3 text-base",
 };
 const btnVariants = {
-  primary: "theme-accent-bg hover:brightness-110 active:scale-[.98] text-white focus:ring-violet-500",
-  secondary: "theme-muted hover:bg-white/15 theme-subtext focus:ring-gray-400",
-  danger: "bg-red-500/10 hover:bg-red-500/20 text-red-500 focus:ring-red-500",
-  ghost: "hover:bg-gray-100 dark:hover:bg-white/8 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:ring-gray-400",
-  success: "bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 focus:ring-green-500",
+  primary: "theme-accent-bg hover:brightness-110 active:scale-[.98] text-white shadow-lg shadow-[color-mix(in_srgb,var(--accent)_22%,transparent)]",
+  secondary: "theme-muted hover:bg-white/15 theme-subtext",
+  danger: "bg-red-500/10 hover:bg-red-500/20 text-red-500",
+  ghost: "hover:bg-[var(--bg-card-muted)] theme-subtext hover:text-[var(--text-primary)]",
+  success: "bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400",
 };
 
 export function Button({ children, variant = "primary", size = "md", loading = false, className = "", ...props }) {
@@ -119,7 +119,7 @@ export function Input({ label, error, helper, className = "", wrapperClass = "",
         className={`w-full px-3 py-2.5 rounded-xl text-sm theme-field border
           ${error ? "border-red-500 focus:ring-red-500" : "theme-focus"}
           placeholder:text-gray-400 dark:placeholder:text-gray-600
-          focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all ${className}`}
+          focus:outline-none transition-all ${className}`}
         {...props}
       />
       {error  && <p className="text-xs text-red-500">{error}</p>}
@@ -136,7 +136,7 @@ export function Select({ label, error, className = "", wrapperClass = "", childr
       <select
         className={`w-full px-3 py-2.5 rounded-xl text-sm theme-field border
           ${error ? "border-red-500" : "theme-focus"}
-          focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all ${className}`}
+          focus:outline-none transition-all ${className}`}
         {...props}
       >
         {children}
@@ -156,7 +156,7 @@ export function Textarea({ label, error, className = "", wrapperClass = "", ...p
         className={`w-full px-3 py-2.5 rounded-xl text-sm theme-field border
           ${error ? "border-red-500" : "theme-focus"}
           placeholder:text-gray-400 dark:placeholder:text-gray-600
-          focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all resize-none ${className}`}
+          focus:outline-none transition-all resize-none ${className}`}
         {...props}
       />
       {error && <p className="text-xs text-red-500">{error}</p>}
@@ -191,7 +191,7 @@ export function Modal({ open, onClose, title, subtitle, children, size = "md" })
           </div>
           <button
             onClick={onClose}
-            className="ml-4 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/8 transition-colors flex-shrink-0"
+            className="ml-4 p-1.5 rounded-lg hover:bg-[var(--bg-card-muted)] transition-colors flex-shrink-0 theme-focus"
           >
             <X size={16} className="text-gray-500" />
           </button>
@@ -265,23 +265,23 @@ export function Table({ columns, data, onRowClick, loading, emptyState }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-100 dark:border-white/8">
+          <tr className="border-b">
             {columns.map((col) => (
-              <th key={col.key} className={`text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ${col.className || ""}`}>
+              <th key={col.key} className={`text-left py-3 px-4 text-xs font-semibold theme-muted-text uppercase tracking-wider ${col.className || ""}`}>
                 {col.label}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50 dark:divide-white/5">
+        <tbody className="divide-y divide-[var(--border-soft)]">
           {data.map((row, i) => (
             <tr
               key={row.id || i}
               onClick={() => onRowClick?.(row)}
-              className={`transition-colors ${onRowClick ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/3" : ""}`}
+              className={`transition-colors ${onRowClick ? "cursor-pointer hover:bg-[var(--bg-card-muted)]" : ""}`}
             >
               {columns.map((col) => (
-                <td key={col.key} className={`py-3.5 px-4 text-gray-700 dark:text-gray-300 ${col.className || ""}`}>
+                <td key={col.key} className={`py-3.5 px-4 theme-subtext ${col.className || ""}`}>
                   {col.render ? col.render(row[col.key], row) : row[col.key]}
                 </td>
               ))}
@@ -298,12 +298,12 @@ import { Search } from "lucide-react";
 export function SearchInput({ value, onChange, placeholder = "Search...", className = "" }) {
   return (
     <div className={`relative ${className}`}>
-      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 theme-muted-text" />
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all"
+        className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm theme-field border placeholder:text-gray-400 focus:outline-none theme-focus transition-all"
       />
     </div>
   );

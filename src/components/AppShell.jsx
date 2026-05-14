@@ -107,6 +107,9 @@ export function AppShell() {
   const {
     dark,
     themeMode,
+    themeId,
+    themePreset,
+    themeTokens,
     setThemeMode,
   } =
     useTheme();
@@ -144,7 +147,6 @@ export function AppShell() {
     bazaar,
     deposits,
     extraCosts,
-    notices,
     notifications,
     settings,
     loading,
@@ -254,7 +256,7 @@ export function AppShell() {
             : ""
         }`}
       >
-        <div className="w-10 h-10 rounded-2xl theme-accent-bg flex items-center justify-center shadow-2xl shadow-violet-500/20">
+        <div className="w-10 h-10 rounded-2xl theme-accent-bg flex items-center justify-center shadow-2xl shadow-[color-mix(in_srgb,var(--accent)_24%,transparent)]">
           <Coffee
             size={18}
             className="text-white"
@@ -302,7 +304,7 @@ export function AppShell() {
             : "flex items-center gap-3"
         }`}
       >
-        <div className="w-10 h-10 rounded-xl theme-accent-bg flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-violet-500/20">
+        <div className="w-10 h-10 rounded-xl theme-accent-bg flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-[color-mix(in_srgb,var(--accent)_24%,transparent)]">
           {initials}
         </div>
 
@@ -362,7 +364,7 @@ export function AppShell() {
                     : ""
                 } ${
                   isActive
-                    ? "theme-accent-bg text-white shadow-xl shadow-violet-500/20"
+                ? "theme-accent-bg text-white shadow-xl shadow-[color-mix(in_srgb,var(--accent)_24%,transparent)]"
                     : "theme-muted-text hover:bg-white/10 hover:text-[var(--text-primary)]"
                 }`
               }
@@ -487,10 +489,28 @@ export function AppShell() {
       {/* TOASTER */}
 
       <Toaster
+        key={themeId}
         position="top-right"
         toastOptions={{
           className:
             "theme-card border",
+          style: {
+            background:
+              themeTokens["--bg-elevated"] ||
+              themeTokens["--bg-card"],
+            color:
+              themeTokens["--text-primary"],
+            border:
+              `1px solid ${themeTokens["--border-soft"]}`,
+            boxShadow:
+              themeTokens["--shadow-soft"],
+          },
+          iconTheme: {
+            primary: themePreset.accent,
+            secondary:
+              themeTokens["--bg-elevated"] ||
+              themeTokens["--bg-card"],
+          },
           duration: 3000,
         }}
       />
@@ -682,7 +702,7 @@ export function AppShell() {
 
           <div className="flex items-center gap-3 pl-4 border-l">
 
-            <div className="w-10 h-10 rounded-2xl theme-accent-bg flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-violet-500/20">
+            <div className="w-10 h-10 rounded-2xl theme-accent-bg flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-[color-mix(in_srgb,var(--accent)_24%,transparent)]">
               {initials}
             </div>
 

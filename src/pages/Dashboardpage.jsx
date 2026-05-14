@@ -44,17 +44,7 @@ import {
   groupBazaarByCategory,
 } from "../utils/billing";
 
-
-
-const COLORS = [
-  "#7c3aed",
-  "#6366f1",
-  "#3b82f6",
-  "#0ea5e9",
-  "#14b8a6",
-  "#22c55e",
-];
-
+import { useChartTheme } from "../hooks/useChartTheme";
 
 
 /* =========================================================
@@ -77,7 +67,7 @@ const CustomTooltip = ({
 
   return (
 
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-3 shadow-xl text-xs">
+    <div className="theme-card border rounded-xl p-3 shadow-xl text-xs">
 
       <p className="font-semibold text-gray-900 dark:text-white mb-2">
         {label}
@@ -134,8 +124,6 @@ export function DashboardPage({
 
   guestMeals = [],
 
-  mealSettings = [],
-
   bazaar = [],
 
   deposits = [],
@@ -160,6 +148,8 @@ export function DashboardPage({
     totalMeals = 0,
 
   } = billData;
+
+  const chartTheme = useChartTheme();
 
 
 
@@ -608,7 +598,7 @@ export function DashboardPage({
 
                   <stop
                     offset="5%"
-                    stopColor="#7c3aed"
+                    stopColor={chartTheme.accent}
                     stopOpacity={
                       0.3
                     }
@@ -616,7 +606,7 @@ export function DashboardPage({
 
                   <stop
                     offset="95%"
-                    stopColor="#7c3aed"
+                    stopColor={chartTheme.accent}
                     stopOpacity={0}
                   />
 
@@ -628,13 +618,13 @@ export function DashboardPage({
 
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.06)"
+                stroke={chartTheme.grid}
               />
 
               <XAxis
                 dataKey="label"
                 tick={{
-                  fill: "#9ca3af",
+                  fill: chartTheme.axis,
                   fontSize: 11,
                 }}
                 axisLine={false}
@@ -643,7 +633,7 @@ export function DashboardPage({
 
               <YAxis
                 tick={{
-                  fill: "#9ca3af",
+                  fill: chartTheme.axis,
                   fontSize: 11,
                 }}
                 axisLine={false}
@@ -663,7 +653,7 @@ export function DashboardPage({
 
                 name="Meals"
 
-                stroke="#7c3aed"
+                stroke={chartTheme.accent}
 
                 strokeWidth={2}
 
@@ -671,14 +661,14 @@ export function DashboardPage({
 
                 dot={{
                   fill:
-                    "#7c3aed",
+                    chartTheme.accent,
                   r: 3,
                 }}
 
                 activeDot={{
                   r: 5,
                   fill:
-                    "#7c3aed",
+                    chartTheme.accent,
                 }}
               />
 
@@ -729,9 +719,9 @@ export function DashboardPage({
                         <Cell
                           key={i}
                           fill={
-                            COLORS[
+                            chartTheme.colors[
                               i %
-                                COLORS.length
+                                chartTheme.colors.length
                             ]
                           }
                         />
@@ -740,7 +730,15 @@ export function DashboardPage({
 
                   </Pie>
 
-                  <Tooltip />
+                  <Tooltip
+                    content={
+                      <CustomTooltip
+                        currency={
+                          settings?.currency
+                        }
+                      />
+                    }
+                  />
 
                 </PieChart>
 
@@ -795,13 +793,13 @@ export function DashboardPage({
 
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="rgba(255,255,255,0.06)"
+                  stroke={chartTheme.grid}
                 />
 
                 <XAxis
                   dataKey="name"
                   tick={{
-                    fill: "#9ca3af",
+                    fill: chartTheme.axis,
                     fontSize: 10,
                   }}
                   axisLine={false}
@@ -810,7 +808,7 @@ export function DashboardPage({
 
                 <YAxis
                   tick={{
-                    fill: "#9ca3af",
+                    fill: chartTheme.axis,
                     fontSize: 11,
                   }}
                   axisLine={false}
@@ -826,7 +824,7 @@ export function DashboardPage({
                 <Bar
                   dataKey="meals"
                   name="Meals"
-                  fill="#7c3aed"
+                  fill={chartTheme.accent}
                   radius={[
                     6,
                     6,

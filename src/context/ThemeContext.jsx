@@ -6,28 +6,32 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
-import {
-  onAuthStateChanged,
-} from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 
 import {
   doc,
   getDoc,
+  setDoc,
 } from "firebase/firestore";
 
+import { auth, db } from "../firebase";
+
 import {
-  auth,
-  db,
-} from "../firebase";
-
-const THEME_STORAGE_KEY = "mm_theme_mode";
-const LEGACY_THEME_STORAGE_KEY = "mm_theme";
-const ACCENT_STORAGE_KEY = "mm_accent_color";
-
-const DEFAULT_ACCENT = "#8b5cf6";
+  ACCENT_STORAGE_KEY,
+  DEFAULT_THEME_ID,
+  LEGACY_THEME_STORAGE_KEY,
+  REDUCED_MOTION_STORAGE_KEY,
+  THEME_NAME_STORAGE_KEY,
+  THEME_OPTIONS,
+  THEME_STORAGE_KEY,
+  getThemePreset,
+  normalizeThemeId,
+  normalizeThemeMode,
+} from "../theme/themeConfig";
 
 const ThemeContext = createContext(null);
 
@@ -52,9 +56,7 @@ const getInitialThemeMode = () => {
   }
 
   const stored =
-    localStorage.getItem(
-      THEME_STORAGE_KEY
-    );
+    localStorage.getItem(THEME_STORAGE_KEY);
 
   if (
     stored === "light" ||
@@ -76,63 +78,103 @@ const getInitialThemeMode = () => {
   return "system";
 };
 
+const getInitialThemeId = () => {
+  if (typeof window === "undefined") {
+    return DEFAULT_THEME_ID;
+  }
+
+  return normalizeThemeId(
+    localStorage.getItem(
+      THEME_NAME_STORAGE_KEY
+    )
+  );
+};
+
 const getInitialAccentColor = () => {
   if (typeof window === "undefined") {
-    return DEFAULT_ACCENT;
+    return getThemePreset(
+      DEFAULT_THEME_ID
+    ).accent;
   }
 
   return (
     localStorage.getItem(
       ACCENT_STORAGE_KEY
-    ) || DEFAULT_ACCENT
+    ) ||
+    getThemePreset(
+      getInitialThemeId()
+    ).accent
   );
 };
 
-const normalizeThemeMode = (
-  value
-) => {
-  if (
-    value === "light" ||
-    value === "dark" ||
-    value === "system"
-  ) {
-    return value;
+const getInitialReducedMotion = () => {
+  if (typeof window === "undefined") {
+    return false;
   }
 
-  return "system";
+  const stored = localStorage.getItem(
+    REDUCED_MOTION_STORAGE_KEY
+  );
+
+  if (stored === "true") return true;
+  if (stored === "false") return false;
+
+  return window.matchMedia?.(
+    "(prefers-reduced-motion: reduce)"
+  ).matches;
 };
 
-export function ThemeProvider({
-  children,
-}) {
-  const [
-    themeMode,
-    setThemeModeState,
-  ] = useState(getInitialThemeMode);
+const setCssVars = (root, tokens) => {
+  Object.entries(tokens).forEach(
+    ([key, value]) => {
+      root.style.setProperty(key, value);
+    }
+  );
+};
 
-  const [
-    systemTheme,
-    setSystemTheme,
-  ] = useState(getSystemTheme);
+export function ThemeProvider({ children }) {
+  const [themeMode, setThemeModeState] =
+    useState(getInitialThemeMode);
+  const [themeId, setThemeIdState] =
+    useState(getInitialThemeId);
+  const [systemTheme, setSystemTheme] =
+    useState(getSystemTheme);
+  const [accentColor, setAccentColorState] =
+    useState(getInitialAccentColor);
+  const [reducedMotion, setReducedMotionState] =
+    useState(getInitialReducedMotion);
+  const activeUserRef = useRef(null);
+  const cloudReadyRef = useRef(false);
+  const saveTimerRef = useRef(null);
 
-  const [
-    accentColor,
-    setAccentColorState,
-  ] = useState(getInitialAccentColor);
-
+  const themePreset = getThemePreset(themeId);
   const resolvedTheme =
     themeMode === "system"
       ? systemTheme
       : themeMode;
-
-  const dark =
-    resolvedTheme === "dark";
+  const dark = resolvedTheme === "dark";
+  const themeTokens = themePreset.tokens;
+  const chartColors = themePreset.chart;
 
   const setThemeMode = useCallback(
     (nextMode) => {
       setThemeModeState(
         normalizeThemeMode(nextMode)
       );
+    },
+    []
+  );
+
+  const setTheme = useCallback(
+    (nextThemeId) => {
+      const normalized =
+        normalizeThemeId(nextThemeId);
+      const preset =
+        getThemePreset(normalized);
+
+      setThemeIdState(normalized);
+      setAccentColorState(preset.accent);
+      setThemeModeState(preset.mode);
     },
     []
   );
@@ -146,8 +188,7 @@ export function ThemeProvider({
             : currentMode;
 
         const nextValue =
-          typeof valueOrUpdater ===
-          "function"
+          typeof valueOrUpdater === "function"
             ? valueOrUpdater(
                 currentResolved === "dark"
               )
@@ -166,8 +207,15 @@ export function ThemeProvider({
   const setAccentColor = useCallback(
     (nextColor) => {
       setAccentColorState(
-        nextColor || DEFAULT_ACCENT
+        nextColor || themePreset.accent
       );
+    },
+    [themePreset.accent]
+  );
+
+  const setReducedMotion = useCallback(
+    (nextValue) => {
+      setReducedMotionState(Boolean(nextValue));
     },
     []
   );
@@ -185,9 +233,7 @@ export function ThemeProvider({
         "(prefers-color-scheme: dark)"
       );
 
-    const handleChange = (
-      event
-    ) => {
+    const handleChange = (event) => {
       setSystemTheme(
         event.matches ? "dark" : "light"
       );
@@ -210,26 +256,36 @@ export function ThemeProvider({
     const root =
       document.documentElement;
 
-    root.classList.toggle(
-      "dark",
-      dark
-    );
-
-    root.classList.toggle(
-      "light",
-      !dark
-    );
-
-    root.dataset.theme =
+    root.classList.toggle("dark", dark);
+    root.classList.toggle("light", !dark);
+    root.dataset.theme = themeId;
+    root.dataset.palette = themeId;
+    root.dataset.themeMode = themeMode;
+    root.dataset.resolvedTheme =
       resolvedTheme;
+    root.dataset.reduceMotion =
+      reducedMotion ? "true" : "false";
 
-    root.dataset.themeMode =
-      themeMode;
+    setCssVars(root, themeTokens);
 
     root.style.setProperty(
       "--accent",
       accentColor
     );
+
+    root.style.setProperty(
+      "--chart-1",
+      chartColors[0]
+    );
+
+    chartColors
+      .slice(0, 8)
+      .forEach((color, index) => {
+        root.style.setProperty(
+          `--chart-${index + 1}`,
+          color
+        );
+      });
 
     const metaThemeColor =
       document.querySelector(
@@ -244,7 +300,7 @@ export function ThemeProvider({
 
     metaThemeColor.setAttribute(
       "content",
-      dark ? "#050816" : "#f8fafc"
+      themePreset.meta
     );
 
     if (!metaThemeColor.parentNode) {
@@ -257,21 +313,43 @@ export function ThemeProvider({
       THEME_STORAGE_KEY,
       themeMode
     );
-
     localStorage.setItem(
       LEGACY_THEME_STORAGE_KEY,
       dark ? "dark" : "light"
     );
-
+    localStorage.setItem(
+      THEME_NAME_STORAGE_KEY,
+      themeId
+    );
     localStorage.setItem(
       ACCENT_STORAGE_KEY,
       accentColor
     );
+    localStorage.setItem(
+      REDUCED_MOTION_STORAGE_KEY,
+      String(reducedMotion)
+    );
+
+    if (!reducedMotion) {
+      root.classList.remove(
+        "theme-transitioning"
+      );
+      window.requestAnimationFrame(() => {
+        root.classList.add(
+          "theme-transitioning"
+        );
+      });
+    }
   }, [
     accentColor,
+    chartColors,
     dark,
+    reducedMotion,
     resolvedTheme,
+    themeId,
     themeMode,
+    themePreset.meta,
+    themeTokens,
   ]);
 
   useEffect(() => {
@@ -279,6 +357,10 @@ export function ThemeProvider({
       onAuthStateChanged(
         auth,
         async (firebaseUser) => {
+          activeUserRef.current =
+            firebaseUser?.uid || null;
+          cloudReadyRef.current = false;
+
           if (!firebaseUser) {
             return;
           }
@@ -293,6 +375,7 @@ export function ThemeProvider({
             );
 
             if (!snap.exists()) {
+              cloudReadyRef.current = true;
               return;
             }
 
@@ -300,6 +383,9 @@ export function ThemeProvider({
             const preferences =
               data.preferences || {};
 
+            const nextTheme =
+              preferences.themeId ||
+              data.themeId;
             const nextMode =
               preferences.themeMode ||
               data.themeMode ||
@@ -309,20 +395,32 @@ export function ThemeProvider({
                   ? "dark"
                   : "light"
                 : null);
+            const nextAccent =
+              preferences.accentColor ||
+              data.accentColor;
+
+            if (nextTheme) {
+              setThemeIdState(
+                normalizeThemeId(nextTheme)
+              );
+            }
 
             if (nextMode) {
-              setThemeMode(
-                nextMode
+              setThemeMode(nextMode);
+            }
+
+            if (nextAccent) {
+              setAccentColorState(
+                nextAccent
               );
             }
 
             if (
-              preferences.accentColor ||
-              data.accentColor
+              typeof preferences.reduceMotion ===
+              "boolean"
             ) {
-              setAccentColor(
-                preferences.accentColor ||
-                  data.accentColor
+              setReducedMotionState(
+                preferences.reduceMotion
               );
             }
           } catch (error) {
@@ -330,52 +428,127 @@ export function ThemeProvider({
               "Theme sync failed:",
               error
             );
+          } finally {
+            setTimeout(() => {
+              cloudReadyRef.current = true;
+            }, 0);
           }
         }
       );
 
     return () => unsubscribe();
+  }, [setThemeMode]);
+
+  useEffect(() => {
+    if (
+      !activeUserRef.current ||
+      !cloudReadyRef.current
+    ) {
+      return undefined;
+    }
+
+    clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = setTimeout(
+      async () => {
+        try {
+          await setDoc(
+            doc(
+              db,
+              "users",
+              activeUserRef.current
+            ),
+            {
+              darkMode: dark,
+              themeMode,
+              themeId,
+              accentColor,
+              preferences: {
+                themeMode,
+                themeId,
+                accentColor,
+                reduceMotion:
+                  reducedMotion,
+              },
+              updatedAt:
+                new Date().toISOString(),
+            },
+            { merge: true }
+          );
+        } catch (error) {
+          console.error(
+            "Theme cloud save failed:",
+            error
+          );
+        }
+      },
+      700
+    );
+
+    return () => {
+      clearTimeout(saveTimerRef.current);
+    };
   }, [
-    setAccentColor,
-    setThemeMode,
+    accentColor,
+    dark,
+    reducedMotion,
+    themeId,
+    themeMode,
   ]);
 
   const value = useMemo(
     () => ({
       themeMode,
+      themeId,
+      themePreset,
+      themeOptions: THEME_OPTIONS,
+      themeTokens,
+      chartColors,
       resolvedTheme,
       systemTheme,
       dark,
       accentColor,
+      reducedMotion,
       setThemeMode,
+      setTheme,
       setAccentColor,
+      setReducedMotion,
       setDark,
       toggle,
     }),
     [
       accentColor,
+      chartColors,
       dark,
+      reducedMotion,
       resolvedTheme,
       setAccentColor,
       setDark,
+      setReducedMotion,
+      setTheme,
       setThemeMode,
       systemTheme,
+      themeId,
       themeMode,
+      themePreset,
+      themeTokens,
       toggle,
     ]
   );
 
   return (
     <ThemeContext.Provider value={value}>
+      <div
+        aria-hidden="true"
+        className="theme-transition-overlay"
+      />
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useTheme() {
-  const ctx = useContext(
-    ThemeContext
-  );
+  const ctx = useContext(ThemeContext);
 
   if (!ctx) {
     throw new Error(

@@ -63,6 +63,10 @@ import toast from "react-hot-toast";
 import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import {
+  DEFAULT_THEME_ID,
+  THEME_OPTIONS,
+} from "../theme/themeConfig";
 
 const ACCENT_COLORS = [
   {
@@ -109,6 +113,7 @@ const DEFAULT_PREFERENCES = {
   compactMode: false,
   reduceMotion: false,
   themeMode: "system",
+  themeId: DEFAULT_THEME_ID,
   accentColor: "#8b5cf6",
   density: 2,
 };
@@ -276,7 +281,7 @@ const Field = ({
         {...props}
         className={`w-full rounded-2xl border theme-field py-3.5 ${
           Icon ? "pl-12" : "pl-4"
-        } pr-4 text-sm outline-none transition placeholder:text-slate-500 focus:border-violet-400/70 focus:ring-4 focus:ring-violet-500/10 disabled:cursor-not-allowed disabled:opacity-60`}
+        } pr-4 text-sm outline-none transition placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60`}
       />
     </span>
     {helper && (
@@ -300,7 +305,7 @@ const SmartSwitch = ({
     type="button"
     disabled={disabled}
     onClick={() => onChange(!checked)}
-    className="group flex w-full items-center justify-between gap-4 rounded-2xl border theme-muted p-4 text-left transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+    className="group flex w-full items-center justify-between gap-4 rounded-2xl border theme-muted p-4 text-left transition hover:bg-[var(--bg-card)] disabled:cursor-not-allowed disabled:opacity-60"
   >
     <span className="flex min-w-0 items-center gap-3">
       {Icon && (
@@ -326,7 +331,7 @@ const SmartSwitch = ({
 
     <span
       className={`relative h-7 w-12 shrink-0 rounded-full p-1 transition ${
-        checked ? "" : "bg-slate-700"
+        checked ? "" : "theme-elevated"
       }`}
       style={{
         backgroundColor: checked ? accent : undefined,
@@ -373,8 +378,12 @@ export default function SettingsPage({
   const authContext = useAuth();
   const {
     resolvedTheme,
+    themeId,
+    themePreset,
+    setTheme,
     setThemeMode,
     setAccentColor,
+    setReducedMotion,
   } = useTheme();
   const currentUser = auth.currentUser;
   const fileInputRef = useRef(null);
@@ -405,6 +414,7 @@ export default function SettingsPage({
 
   const selectedAccent =
     preferences.accentColor ||
+    themePreset.accent ||
     DEFAULT_PREFERENCES.accentColor;
 
   const settingsSnapshot = useMemo(
@@ -471,7 +481,9 @@ export default function SettingsPage({
                 ? resolvedTheme === "dark"
                 : preferences.themeMode === "dark",
             themeMode: preferences.themeMode,
+            themeId: preferences.themeId,
             accentColor: preferences.accentColor,
+            reduceMotion: preferences.reduceMotion,
             notifications: preferences.notifications,
             autoBackup: preferences.autoBackup,
             preferences,
@@ -510,8 +522,10 @@ export default function SettingsPage({
           );
         }
 
+        setTheme(preferences.themeId);
         applyThemePreference(preferences.themeMode);
         setAccentColor(preferences.accentColor);
+        setReducedMotion(preferences.reduceMotion);
 
         const now = new Date().toISOString();
         setLastSavedAt(now);
@@ -546,6 +560,8 @@ export default function SettingsPage({
       profile,
       resolvedTheme,
       setAccentColor,
+      setReducedMotion,
+      setTheme,
     ]
   );
 
@@ -578,6 +594,10 @@ export default function SettingsPage({
                 ? "dark"
                 : "light"
               : DEFAULT_PREFERENCES.themeMode),
+          themeId:
+            data.preferences?.themeId ||
+            data.themeId ||
+            DEFAULT_PREFERENCES.themeId,
           darkMode:
             data.darkMode ??
             DEFAULT_PREFERENCES.darkMode,
@@ -604,8 +624,10 @@ export default function SettingsPage({
         setLastSavedAt(data.updatedAt || null);
         setSyncStatus(snap.exists() ? "Synced" : "Local defaults");
 
+        setTheme(savedPreferences.themeId);
         applyThemePreference(savedPreferences.themeMode);
         setAccentColor(savedPreferences.accentColor);
+        setReducedMotion(savedPreferences.reduceMotion);
       } catch (error) {
         console.error(error);
         toast.error("Failed to load settings");
@@ -621,6 +643,8 @@ export default function SettingsPage({
     currentUser,
     profile?.displayName,
     setAccentColor,
+    setReducedMotion,
+    setTheme,
   ]);
 
   useEffect(() => {
@@ -777,13 +801,22 @@ export default function SettingsPage({
           "",
       }));
 
-      setPreferences({
+      const importedPreferences = {
         ...DEFAULT_PREFERENCES,
         ...imported.preferences,
+        themeId:
+          imported.preferences.themeId ||
+          DEFAULT_PREFERENCES.themeId,
         accentColor:
           imported.preferences.accentColor ||
           DEFAULT_PREFERENCES.accentColor,
-      });
+      };
+
+      setPreferences(importedPreferences);
+      setTheme(importedPreferences.themeId);
+      applyThemePreference(importedPreferences.themeMode);
+      setAccentColor(importedPreferences.accentColor);
+      setReducedMotion(importedPreferences.reduceMotion);
 
       toast.success("Settings imported. Review and save.");
     } catch (error) {
@@ -797,6 +830,10 @@ export default function SettingsPage({
 
   const handleResetPreferences = async () => {
     setPreferences(DEFAULT_PREFERENCES);
+    setTheme(DEFAULT_PREFERENCES.themeId);
+    applyThemePreference(DEFAULT_PREFERENCES.themeMode);
+    setAccentColor(DEFAULT_PREFERENCES.accentColor);
+    setReducedMotion(DEFAULT_PREFERENCES.reduceMotion);
     setResetOpen(false);
 
     toast.success("Preferences reset. Save to sync.");
@@ -1055,9 +1092,10 @@ export default function SettingsPage({
                 />
                 <SmartSwitch
                   checked={preferences.reduceMotion}
-                  onChange={(value) =>
-                    updatePreference("reduceMotion", value)
-                  }
+                  onChange={(value) => {
+                    updatePreference("reduceMotion", value);
+                    setReducedMotion(value);
+                  }}
                   title="Reduced Motion"
                   description="Minimize non-essential animation."
                   icon={Activity}
@@ -1090,17 +1128,96 @@ export default function SettingsPage({
                       Number(event.target.value)
                     )
                   }
-                  className="mt-5 h-2 w-full accent-[var(--settings-accent)]"
+                  className="mt-5 h-2 w-full accent-[var(--accent)]"
                 />
               </div>
             </SectionCard>
 
             <SectionCard
               title="Theme Customization"
-              subtitle="Choose the accent used for saved preferences and new surfaces"
+              subtitle="Preview premium palettes instantly and sync them across devices"
               icon={Palette}
               tone="fuchsia"
             >
+              <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {THEME_OPTIONS.map((theme) => {
+                  const active =
+                    preferences.themeId === theme.id ||
+                    (!preferences.themeId &&
+                      themeId === theme.id);
+
+                  return (
+                    <button
+                      type="button"
+                      key={theme.id}
+                      onClick={() => {
+                        updatePreference("themeId", theme.id);
+                        updatePreference("themeMode", theme.mode);
+                        updatePreference("darkMode", theme.mode === "dark");
+                        updatePreference("accentColor", theme.accent);
+                        setTheme(theme.id);
+                      }}
+                      className={`group rounded-2xl border p-3 text-left transition theme-hover ${
+                        active
+                          ? "border-[var(--accent)] theme-card"
+                          : "theme-muted hover:border-[var(--accent)]"
+                      }`}
+                    >
+                      <span
+                        className="mb-3 flex h-16 overflow-hidden rounded-xl border"
+                        style={{
+                          borderColor: "rgba(255,255,255,0.14)",
+                        }}
+                      >
+                        {theme.preview.map((color) => (
+                          <span
+                            key={color}
+                            className="flex-1"
+                            style={{
+                              background: color,
+                            }}
+                          />
+                        ))}
+                      </span>
+                      <span className="flex items-center justify-between gap-2">
+                        <span>
+                          <span className="block text-xs font-bold theme-text">
+                            {theme.label}
+                          </span>
+                          <span className="mt-1 block text-[11px] uppercase tracking-wider theme-muted-text">
+                            {theme.mode}
+                          </span>
+                        </span>
+                        {active && (
+                          <CheckCircle2
+                            size={16}
+                            className="theme-accent-text"
+                          />
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mb-4 flex items-center justify-between gap-4 rounded-2xl border theme-muted p-4">
+                <div>
+                  <p className="text-sm font-semibold theme-text">
+                    Accent Override
+                  </p>
+                  <p className="mt-1 text-xs theme-muted-text">
+                    Fine tune buttons, focus rings, charts, and highlights.
+                  </p>
+                </div>
+                <span
+                  className="h-9 w-9 rounded-xl border shadow-lg"
+                  style={{
+                    background: selectedAccent,
+                    borderColor: "var(--border-soft)",
+                  }}
+                />
+              </div>
+
               <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {ACCENT_COLORS.map((color) => (
                   <button
