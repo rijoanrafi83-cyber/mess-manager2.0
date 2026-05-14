@@ -68,7 +68,7 @@ export default function ReportsPage({
     [memberBills]
   );
 
-  // PDF DOWNLOAD
+  // FULL PDF DOWNLOAD
 
   const handlePDFDownload = () => {
     const doc = new jsPDF();
@@ -176,7 +176,7 @@ export default function ReportsPage({
     doc.save(`mess-report-${month}.pdf`);
   };
 
-  // PRINT FIXED
+  // FULL REPORT PRINT
 
   const handlePrint = () => {
     const printContent = `
@@ -244,24 +244,6 @@ export default function ReportsPage({
               margin-top: 30px;
               font-size: 12px;
               color: #666;
-            }
-
-            @media print {
-              body {
-                padding: 10px;
-              }
-
-              .card {
-                break-inside: avoid;
-              }
-
-              table {
-                break-inside: auto;
-              }
-
-              tr {
-                break-inside: avoid;
-              }
             }
           </style>
         </head>
@@ -400,7 +382,241 @@ export default function ReportsPage({
     }, 500);
   };
 
-  // CSV
+  // INDIVIDUAL MEMBER PDF
+
+  const handleMemberPDF = (member) => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(24);
+
+    doc.text(
+      "Individual Member Report",
+      20,
+      20
+    );
+
+    doc.setFontSize(12);
+
+    doc.text(
+      `Generated: ${new Date().toLocaleString()}`,
+      20,
+      32
+    );
+
+    doc.setFontSize(16);
+
+    doc.text(
+      `Member Name: ${member.name}`,
+      20,
+      50
+    );
+
+    doc.text(
+      `Month: ${month}`,
+      20,
+      62
+    );
+
+    doc.line(20, 70, 190, 70);
+
+    doc.setFontSize(14);
+
+    doc.text(
+      `Total Meals: ${member.meals.toFixed(
+        1
+      )}`,
+      20,
+      90
+    );
+
+    doc.text(
+      `Meal Cost: ${formatCurrency(
+        member.mealCost.toFixed(2),
+        currency
+      )}`,
+      20,
+      105
+    );
+
+    doc.text(
+      `Deposit: ${formatCurrency(
+        member.deposit.toFixed(2),
+        currency
+      )}`,
+      20,
+      120
+    );
+
+    doc.text(
+      `Total Bill: ${formatCurrency(
+        member.total.toFixed(2),
+        currency
+      )}`,
+      20,
+      135
+    );
+
+    doc.text(
+      `Due / Advance: ${formatCurrency(
+        member.due.toFixed(2),
+        currency
+      )}`,
+      20,
+      150
+    );
+
+    doc.line(20, 165, 190, 165);
+
+    doc.setFontSize(11);
+
+    doc.text(
+      "Meal Formula: (Meals × Meal Rate) − Deposit",
+      20,
+      180
+    );
+
+    doc.save(
+      `${member.name}-report.pdf`
+    );
+  };
+
+  // INDIVIDUAL MEMBER PRINT
+
+  const handleMemberPrint = (member) => {
+    const printContent = `
+      <html>
+        <head>
+          <title>${member.name} Report</title>
+
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 40px;
+              color: #111;
+            }
+
+            h1 {
+              margin-bottom: 10px;
+            }
+
+            .sub {
+              color: #666;
+              margin-bottom: 30px;
+            }
+
+            .card {
+              border: 1px solid #ddd;
+              border-radius: 10px;
+              padding: 20px;
+              margin-bottom: 15px;
+            }
+
+            .label {
+              font-size: 14px;
+              color: #666;
+              margin-bottom: 6px;
+            }
+
+            .value {
+              font-size: 24px;
+              font-weight: bold;
+            }
+
+            .footer {
+              margin-top: 40px;
+              font-size: 12px;
+              color: #777;
+            }
+          </style>
+        </head>
+
+        <body>
+
+          <h1>Individual Member Report</h1>
+
+          <p class="sub">${month}</p>
+
+          <div class="card">
+            <div class="label">Member Name</div>
+            <div class="value">${member.name}</div>
+          </div>
+
+          <div class="card">
+            <div class="label">Total Meals</div>
+            <div class="value">
+              ${member.meals.toFixed(1)}
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="label">Meal Cost</div>
+            <div class="value">
+              ${formatCurrency(
+                member.mealCost.toFixed(2),
+                currency
+              )}
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="label">Deposit</div>
+            <div class="value">
+              ${formatCurrency(
+                member.deposit.toFixed(2),
+                currency
+              )}
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="label">Total Bill</div>
+            <div class="value">
+              ${formatCurrency(
+                member.total.toFixed(2),
+                currency
+              )}
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="label">Due / Advance</div>
+            <div class="value">
+              ${formatCurrency(
+                member.due.toFixed(2),
+                currency
+              )}
+            </div>
+          </div>
+
+          <div class="footer">
+            Generated on ${new Date().toLocaleString()}
+          </div>
+
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open(
+      "",
+      "_blank",
+      "width=900,height=700"
+    );
+
+    printWindow.document.write(
+      printContent
+    );
+
+    printWindow.document.close();
+
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  };
+
+  // CSV EXPORT
 
   const handleCSVExport = () => {
     const rows = [
@@ -519,15 +735,46 @@ export default function ReportsPage({
         </div>
       ),
     },
+
+    {
+      key: "actions",
+      label: "Actions",
+
+      render: (_, row) => (
+        <div className="flex gap-2">
+
+          <Button
+            size="sm"
+            onClick={() =>
+              handleMemberPDF(row)
+            }
+          >
+            PDF
+          </Button>
+
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() =>
+              handleMemberPrint(row)
+            }
+          >
+            Print
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   return (
     <PageWrapper>
+
       <PageHeader
         title="Monthly Report"
         subtitle={month}
         actions={
           <div className="flex gap-2 flex-wrap">
+
             <Button
               variant="secondary"
               onClick={handleCSVExport}
@@ -689,7 +936,10 @@ export default function ReportsPage({
 
         <Table
           columns={tableColumns}
-          data={sortedByDue}
+          data={sortedByDue.map((m) => ({
+            ...m,
+            actions: m,
+          }))}
         />
       </Card>
 
