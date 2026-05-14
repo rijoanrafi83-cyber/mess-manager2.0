@@ -44,6 +44,100 @@ import {
 
 
 
+const PDF_SAFE_REPORT_CSS = `
+  #report-summary,
+  #report-summary * {
+    color-scheme: light !important;
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+  }
+
+  #report-summary {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  #report-summary [class*="bg-white"],
+  #report-summary [class*="dark:bg-white"] {
+    background: #ffffff !important;
+  }
+
+  #report-summary [class*="bg-gray-50"],
+  #report-summary [class*="dark:bg-white/5"],
+  #report-summary [class*="dark:hover:bg-white"] {
+    background: #f9fafb !important;
+  }
+
+  #report-summary [class*="bg-gray-100"] {
+    background: #f3f4f6 !important;
+  }
+
+  #report-summary [class*="bg-green-500/10"] {
+    background: #ecfdf5 !important;
+  }
+
+  #report-summary [class*="bg-red-500/10"] {
+    background: #fef2f2 !important;
+  }
+
+  #report-summary [class*="border-gray-100"],
+  #report-summary [class*="dark:border-white"] {
+    border-color: #f3f4f6 !important;
+  }
+
+  #report-summary [class*="border-gray-200"] {
+    border-color: #e5e7eb !important;
+  }
+
+  #report-summary [class*="text-gray-900"],
+  #report-summary [class*="dark:text-white"] {
+    color: #111827 !important;
+  }
+
+  #report-summary [class*="text-gray-700"],
+  #report-summary [class*="text-gray-600"] {
+    color: #4b5563 !important;
+  }
+
+  #report-summary [class*="text-gray-500"],
+  #report-summary [class*="dark:text-gray-400"] {
+    color: #6b7280 !important;
+  }
+
+  #report-summary [class*="text-violet-500"],
+  #report-summary [class*="text-violet-600"] {
+    color: #8b5cf6 !important;
+  }
+
+  #report-summary [class*="text-blue-500"] {
+    color: #3b82f6 !important;
+  }
+
+  #report-summary [class*="text-orange-500"] {
+    color: #f97316 !important;
+  }
+
+  #report-summary [class*="text-green-500"],
+  #report-summary [class*="text-green-600"],
+  #report-summary [class*="dark:text-green-400"] {
+    color: #22c55e !important;
+  }
+
+  #report-summary [class*="text-red-500"],
+  #report-summary [class*="text-red-600"] {
+    color: #ef4444 !important;
+  }
+
+  #report-summary button {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+    border-color: #e5e7eb !important;
+  }
+`;
+
+
+
 /* =========================================================
    MEMBER PDF EXPORT
 ========================================================= */
@@ -277,6 +371,20 @@ export default function ReportsPage({
 
       try {
 
+        const reportElement =
+          document.getElementById(
+            "report-summary"
+          );
+
+        if (
+          !reportElement
+        ) {
+
+          throw new Error(
+            "Report summary section was not found."
+          );
+        }
+
         toast.loading(
           "Generating PDF...",
           {
@@ -285,16 +393,103 @@ export default function ReportsPage({
         );
 
 
+        if (
+          document.fonts?.ready
+        ) {
+
+          await document.fonts.ready;
+        }
 
         const canvas =
           await html2canvas(
-            reportRef.current,
+            reportElement,
             {
-              scale: 2,
+              scale: Math.min(
+                2,
+                window.devicePixelRatio ||
+                  1
+              ),
+
               backgroundColor:
-                "#0b1020",
+                "#ffffff",
+
+              useCORS: true,
+
+              allowTaint: false,
+
+              logging: false,
+
+              scrollX: 0,
+
+              scrollY:
+                -window.scrollY,
+
+              windowWidth:
+                reportElement.scrollWidth,
+
+              windowHeight:
+                reportElement.scrollHeight,
+
+              onclone: (
+                clonedDocument
+              ) => {
+
+                clonedDocument.documentElement.classList.remove(
+                  "dark"
+                );
+
+                clonedDocument.body.style.background =
+                  "#ffffff";
+
+                clonedDocument.body.style.color =
+                  "#111827";
+
+                const style =
+                  clonedDocument.createElement(
+                    "style"
+                  );
+
+                style.textContent =
+                  PDF_SAFE_REPORT_CSS;
+
+                clonedDocument.head.appendChild(
+                  style
+                );
+
+                const clonedReport =
+                  clonedDocument.getElementById(
+                    "report-summary"
+                  );
+
+                if (
+                  clonedReport
+                ) {
+
+                  clonedReport.style.background =
+                    "#ffffff";
+
+                  clonedReport.style.color =
+                    "#111827";
+
+                  clonedReport.style.width =
+                    `${reportElement.scrollWidth}px`;
+
+                  clonedReport.style.minHeight =
+                    `${reportElement.scrollHeight}px`;
+                }
+              },
             }
           );
+
+        if (
+          !canvas.width ||
+          !canvas.height
+        ) {
+
+          throw new Error(
+            "Report summary rendered as an empty canvas."
+          );
+        }
 
 
 
@@ -314,24 +509,67 @@ export default function ReportsPage({
 
 
 
-        const width =
+        const pageWidth =
           pdf.internal.pageSize.getWidth();
 
-        const height =
+        const pageHeight =
+          pdf.internal.pageSize.getHeight();
+
+        const margin = 10;
+
+        const imgWidth =
+          pageWidth -
+          margin * 2;
+
+        const imgHeight =
           (canvas.height *
-            width) /
+            imgWidth) /
           canvas.width;
 
+        let heightLeft =
+          imgHeight;
+
+        let position =
+          margin;
 
 
         pdf.addImage(
           img,
           "PNG",
-          0,
-          0,
-          width,
-          height
+          margin,
+          position,
+          imgWidth,
+          imgHeight
         );
+
+        heightLeft -=
+          pageHeight -
+          margin * 2;
+
+        while (
+          heightLeft > 0
+        ) {
+
+          position =
+            heightLeft -
+            imgHeight +
+            margin;
+
+          pdf.addPage();
+
+          pdf.addImage(
+            img,
+            "PNG",
+            margin,
+            position,
+            imgWidth,
+            imgHeight
+          );
+
+          heightLeft -=
+            pageHeight -
+            margin * 2;
+        }
 
 
 
@@ -605,6 +843,7 @@ export default function ReportsPage({
 
 
       <div
+        id="report-summary"
         ref={reportRef}
         className="space-y-6"
       >
