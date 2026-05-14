@@ -9,7 +9,7 @@ export function PageWrapper({ children, className = "" }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className={`p-6 md:p-8 max-w-7xl mx-auto ${className}`}
+      className={`p-6 md:p-8 max-w-7xl mx-auto theme-app ${className}`}
     >
       {children}
     </motion.div>
@@ -21,8 +21,8 @@ export function PageHeader({ title, subtitle, actions }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>}
+        <h1 className="text-2xl font-bold theme-text tracking-tight">{title}</h1>
+        {subtitle && <p className="text-sm theme-muted-text mt-1">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-3 flex-shrink-0">{actions}</div>}
     </div>
@@ -34,7 +34,7 @@ export function StatCard({ label, value, sub, icon: Icon, iconBg = "bg-violet-50
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="bg-white dark:bg-white/4 border border-gray-200 dark:border-white/8 rounded-2xl p-5 flex items-start gap-4"
+      className="theme-card border rounded-2xl p-5 flex items-start gap-4"
     >
       {Icon && (
         <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
@@ -42,9 +42,9 @@ export function StatCard({ label, value, sub, icon: Icon, iconBg = "bg-violet-50
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider mb-1">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-        {sub && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{sub}</p>}
+        <p className="text-xs theme-muted-text font-medium uppercase tracking-wider mb-1">{label}</p>
+        <p className="text-2xl font-bold theme-text">{value}</p>
+        {sub && <p className="text-xs theme-muted-text mt-0.5">{sub}</p>}
         {trend && (
           <p className={`text-xs font-medium mt-1 ${trendUp ? "text-green-500" : "text-red-500"}`}>
             {trendUp ? "↑" : "↓"} {trend}
@@ -58,7 +58,7 @@ export function StatCard({ label, value, sub, icon: Icon, iconBg = "bg-violet-50
 // ─── Card ─────────────────────────────────────────────────────────────────────
 export function Card({ children, className = "", noPad = false }) {
   return (
-    <div className={`bg-white dark:bg-white/4 border border-gray-200 dark:border-white/8 rounded-2xl ${noPad ? "" : "p-6"} ${className}`}>
+    <div className={`theme-card border rounded-2xl ${noPad ? "" : "p-6"} ${className}`}>
       {children}
     </div>
   );
@@ -68,8 +68,8 @@ export function CardHeader({ title, subtitle, actions, className = "" }) {
   return (
     <div className={`flex items-center justify-between gap-4 mb-6 ${className}`}>
       <div>
-        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{title}</h3>
-        {subtitle && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
+        <h3 className="font-semibold theme-text text-sm">{title}</h3>
+        {subtitle && <p className="text-xs theme-muted-text mt-0.5">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
@@ -85,8 +85,8 @@ const btnSizes = {
   lg: "px-5 py-3 text-base",
 };
 const btnVariants = {
-  primary: "bg-violet-600 hover:bg-violet-700 active:scale-[.98] text-white focus:ring-violet-500",
-  secondary: "bg-gray-100 dark:bg-white/8 hover:bg-gray-200 dark:hover:bg-white/12 text-gray-700 dark:text-gray-300 focus:ring-gray-400",
+  primary: "theme-accent-bg hover:brightness-110 active:scale-[.98] text-white focus:ring-violet-500",
+  secondary: "theme-muted hover:bg-white/15 theme-subtext focus:ring-gray-400",
   danger: "bg-red-500/10 hover:bg-red-500/20 text-red-500 focus:ring-red-500",
   ghost: "hover:bg-gray-100 dark:hover:bg-white/8 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:ring-gray-400",
   success: "bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 focus:ring-green-500",
@@ -110,20 +110,20 @@ export function Input({ label, error, helper, className = "", wrapperClass = "",
   return (
     <div className={`space-y-1.5 ${wrapperClass}`}>
       {label && (
-        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-xs font-medium theme-subtext">
           {label}
           {props.required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
       <input
-        className={`w-full px-3 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border
-          ${error ? "border-red-500 focus:ring-red-500" : "border-gray-200 dark:border-white/10 focus:border-violet-500 dark:focus:border-violet-500"}
-          text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600
+        className={`w-full px-3 py-2.5 rounded-xl text-sm theme-field border
+          ${error ? "border-red-500 focus:ring-red-500" : "theme-focus"}
+          placeholder:text-gray-400 dark:placeholder:text-gray-600
           focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all ${className}`}
         {...props}
       />
       {error  && <p className="text-xs text-red-500">{error}</p>}
-      {helper && <p className="text-xs text-gray-500 dark:text-gray-400">{helper}</p>}
+      {helper && <p className="text-xs theme-muted-text">{helper}</p>}
     </div>
   );
 }
@@ -132,11 +132,11 @@ export function Input({ label, error, helper, className = "", wrapperClass = "",
 export function Select({ label, error, className = "", wrapperClass = "", children, ...props }) {
   return (
     <div className={`space-y-1.5 ${wrapperClass}`}>
-      {label && <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">{label}</label>}
+      {label && <label className="block text-xs font-medium theme-subtext">{label}</label>}
       <select
-        className={`w-full px-3 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border
-          ${error ? "border-red-500" : "border-gray-200 dark:border-white/10 focus:border-violet-500"}
-          text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all ${className}`}
+        className={`w-full px-3 py-2.5 rounded-xl text-sm theme-field border
+          ${error ? "border-red-500" : "theme-focus"}
+          focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all ${className}`}
         {...props}
       >
         {children}
@@ -150,12 +150,12 @@ export function Select({ label, error, className = "", wrapperClass = "", childr
 export function Textarea({ label, error, className = "", wrapperClass = "", ...props }) {
   return (
     <div className={`space-y-1.5 ${wrapperClass}`}>
-      {label && <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">{label}</label>}
+      {label && <label className="block text-xs font-medium theme-subtext">{label}</label>}
       <textarea
         rows={3}
-        className={`w-full px-3 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border
-          ${error ? "border-red-500" : "border-gray-200 dark:border-white/10 focus:border-violet-500"}
-          text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600
+        className={`w-full px-3 py-2.5 rounded-xl text-sm theme-field border
+          ${error ? "border-red-500" : "theme-focus"}
+          placeholder:text-gray-400 dark:placeholder:text-gray-600
           focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all resize-none ${className}`}
         {...props}
       />
@@ -182,12 +182,12 @@ export function Modal({ open, onClose, title, subtitle, children, size = "md" })
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className={`relative w-full ${widths[size]} bg-white dark:bg-[#0d1526] rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl max-h-[90vh] flex flex-col`}
+        className={`relative w-full ${widths[size]} theme-card rounded-2xl border shadow-2xl max-h-[90vh] flex flex-col`}
       >
         <div className="flex items-start justify-between p-6 pb-0 flex-shrink-0">
           <div>
-            <h2 className="font-bold text-gray-900 dark:text-white text-base">{title}</h2>
-            {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>}
+            <h2 className="font-bold theme-text text-base">{title}</h2>
+            {subtitle && <p className="text-sm theme-muted-text mt-1">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
@@ -222,12 +222,12 @@ export function Badge({ children, variant = "default", className = "" }) {
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 export function Skeleton({ className = "" }) {
-  return <div className={`animate-pulse bg-gray-200 dark:bg-white/8 rounded-xl ${className}`} />;
+  return <div className={`animate-pulse theme-muted rounded-xl ${className}`} />;
 }
 
 export function SkeletonCard() {
   return (
-    <div className="bg-white dark:bg-white/4 border border-gray-200 dark:border-white/8 rounded-2xl p-5 space-y-3">
+    <div className="theme-card border rounded-2xl p-5 space-y-3">
       <Skeleton className="h-4 w-24" />
       <Skeleton className="h-8 w-32" />
       <Skeleton className="h-3 w-16" />
@@ -240,12 +240,12 @@ export function EmptyState({ icon: Icon, title, description, action }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       {Icon && (
-        <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-4">
+        <div className="w-14 h-14 rounded-2xl theme-muted flex items-center justify-center mb-4">
           <Icon size={24} className="text-gray-400" />
         </div>
       )}
-      <p className="font-semibold text-gray-900 dark:text-white mb-1">{title}</p>
-      {description && <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">{description}</p>}
+      <p className="font-semibold theme-text mb-1">{title}</p>
+      {description && <p className="text-sm theme-muted-text max-w-xs">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );

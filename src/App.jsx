@@ -9,8 +9,7 @@ import {
 } from "react-router-dom";
 
 import {
-  ThemeProvider,
-  useTheme
+  ThemeProvider
 } from "./context/ThemeContext";
 
 import {
@@ -140,15 +139,9 @@ function PWAManifest() {
 ========================================================= */
 
 function AppWithTheme() {
-
-  const { dark } =
-    useTheme();
-
-
-
   return (
 
-    <div className={dark ? "dark" : ""}>
+    <>
 
       <PWAManifest />
 
@@ -212,7 +205,7 @@ function AppWithTheme() {
 
       </BrowserRouter>
 
-    </div>
+    </>
   );
 }
 
@@ -226,14 +219,13 @@ export default function App() {
 
   return (
 
-    <ThemeProvider>
+    <AuthProvider>
 
-      <AuthProvider>
-
+      <ThemeProvider>
         <AppWithTheme />
 
-      </AuthProvider>
+      </ThemeProvider>
 
-    </ThemeProvider>
+    </AuthProvider>
   );
 }

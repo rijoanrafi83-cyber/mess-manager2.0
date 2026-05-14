@@ -1,1 +1,158 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+
+  --accent: #8b5cf6;
+  --bg-app: #f8fafc;
+  --bg-shell: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-topbar: rgba(255, 255, 255, 0.86);
+  --bg-card: #ffffff;
+  --bg-card-muted: #f1f5f9;
+  --bg-field: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-soft: rgba(15, 23, 42, 0.1);
+  --shadow-soft: 0 24px 80px rgba(15, 23, 42, 0.08);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --bg-app: #050816;
+  --bg-shell: #080d1f;
+  --bg-sidebar: rgba(8, 16, 40, 0.96);
+  --bg-topbar: rgba(8, 16, 40, 0.9);
+  --bg-card: rgba(255, 255, 255, 0.055);
+  --bg-card-muted: rgba(255, 255, 255, 0.08);
+  --bg-field: rgba(0, 0, 0, 0.25);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-soft: rgba(255, 255, 255, 0.1);
+  --shadow-soft: 0 24px 90px rgba(0, 0, 0, 0.28);
+}
+
+html {
+  min-height: 100%;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  transition:
+    background-color 220ms ease,
+    color 220ms ease;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  transition:
+    background-color 220ms ease,
+    color 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+#root {
+  min-height: 100vh;
+  background: var(--bg-app);
+}
+
+* {
+  border-color: var(--border-soft);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    transition-property:
+      background-color,
+      border-color,
+      color,
+      fill,
+      stroke,
+      box-shadow,
+      opacity,
+      transform;
+    transition-duration: 180ms;
+    transition-timing-function: ease;
+  }
+}
+
+@layer components {
+  .theme-app {
+    background: var(--bg-app);
+    color: var(--text-primary);
+  }
+
+  .theme-shell {
+    background: var(--bg-shell);
+    color: var(--text-primary);
+  }
+
+  .theme-sidebar {
+    background: var(--bg-sidebar);
+    border-color: var(--border-soft);
+    color: var(--text-secondary);
+  }
+
+  .theme-topbar {
+    background: var(--bg-topbar);
+    border-color: var(--border-soft);
+    color: var(--text-secondary);
+  }
+
+  .theme-card {
+    background: var(--bg-card);
+    border-color: var(--border-soft);
+    box-shadow: var(--shadow-soft);
+    color: var(--text-primary);
+  }
+
+  .theme-muted {
+    background: var(--bg-card-muted);
+  }
+
+  .theme-field {
+    background: var(--bg-field);
+    border-color: var(--border-soft);
+    color: var(--text-primary);
+  }
+
+  .theme-text {
+    color: var(--text-primary);
+  }
+
+  .theme-subtext {
+    color: var(--text-secondary);
+  }
+
+  .theme-muted-text {
+    color: var(--text-muted);
+  }
+
+  .theme-accent-bg {
+    background: var(--accent);
+  }
+
+  .theme-accent-text {
+    color: var(--accent);
+  }
+
+  .theme-accent-ring {
+    --tw-ring-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+
+  .theme-focus {
+    outline: none;
+  }
+
+  .theme-focus:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+}

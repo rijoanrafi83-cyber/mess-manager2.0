@@ -31,6 +31,7 @@ import {
   X,
   Moon,
   Sun,
+  Monitor,
   Coffee,
 } from "lucide-react";
 
@@ -103,7 +104,11 @@ export function AppShell() {
   const { userProfile, logout } =
     useAuth();
 
-  const { dark, toggle } =
+  const {
+    dark,
+    themeMode,
+    setThemeMode,
+  } =
     useTheme();
 
   const navigate =
@@ -219,6 +224,17 @@ export function AppShell() {
       (n) => !n.read
     ).length;
 
+  const cycleThemeMode = () => {
+    const nextMode =
+      themeMode === "system"
+        ? "dark"
+        : themeMode === "dark"
+          ? "light"
+          : "system";
+
+    setThemeMode(nextMode);
+  };
+
   /* =========================================================
      SIDEBAR
   ========================================================= */
@@ -238,7 +254,7 @@ export function AppShell() {
             : ""
         }`}
       >
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-violet-500/30">
+        <div className="w-10 h-10 rounded-2xl theme-accent-bg flex items-center justify-center shadow-2xl shadow-violet-500/20">
           <Coffee
             size={18}
             className="text-white"
@@ -263,12 +279,12 @@ export function AppShell() {
               }}
               className="overflow-hidden"
             >
-              <p className="font-bold text-sm text-white whitespace-nowrap leading-none">
+              <p className="font-bold text-sm theme-text whitespace-nowrap leading-none">
                 {settings?.messName ||
                   "MessManager"}
               </p>
 
-              <p className="text-[10px] text-violet-400 font-medium whitespace-nowrap mt-1">
+              <p className="text-[10px] theme-accent-text font-medium whitespace-nowrap mt-1">
                 Premium Edition
               </p>
             </motion.div>
@@ -279,14 +295,14 @@ export function AppShell() {
       {/* USER */}
 
       <div
-        className={`mx-3 mb-4 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl ${
+        className={`mx-3 mb-4 p-3 rounded-2xl theme-muted border backdrop-blur-xl ${
           collapsed &&
           !isMobile
             ? "flex justify-center"
             : "flex items-center gap-3"
         }`}
       >
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-violet-500/20">
+        <div className="w-10 h-10 rounded-xl theme-accent-bg flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-violet-500/20">
           {initials}
         </div>
 
@@ -305,13 +321,13 @@ export function AppShell() {
               }}
               className="min-w-0 overflow-hidden"
             >
-              <p className="text-sm font-semibold text-white truncate">
+              <p className="text-sm font-semibold theme-text truncate">
                 {
                   userProfile?.displayName
                 }
               </p>
 
-              <p className="text-xs text-gray-400 truncate">
+              <p className="text-xs theme-muted-text truncate">
                 {userProfile?.role ===
                 "admin"
                   ? "Administrator"
@@ -346,8 +362,8 @@ export function AppShell() {
                     : ""
                 } ${
                   isActive
-                    ? "bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 text-white shadow-xl shadow-violet-500/30"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    ? "theme-accent-bg text-white shadow-xl shadow-violet-500/20"
+                    : "theme-muted-text hover:bg-white/10 hover:text-[var(--text-primary)]"
                 }`
               }
             >
@@ -360,7 +376,7 @@ export function AppShell() {
                     className={
                       isActive
                         ? "text-white"
-                        : "text-gray-400 group-hover:text-white"
+                        : "theme-muted-text group-hover:text-[var(--text-primary)]"
                     }
                   />
 
@@ -392,18 +408,20 @@ export function AppShell() {
 
       {/* BOTTOM */}
 
-      <div className="p-3 border-t border-white/10 space-y-2">
+      <div className="p-3 border-t space-y-2">
 
         <button
-          onClick={toggle}
-          className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all ${
+          onClick={cycleThemeMode}
+          className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium theme-muted-text hover:bg-white/10 hover:text-[var(--text-primary)] transition-all ${
             collapsed &&
             !isMobile
               ? "justify-center"
               : ""
           }`}
         >
-          {dark ? (
+          {themeMode === "system" ? (
+            <Monitor size={18} />
+          ) : dark ? (
             <Sun size={18} />
           ) : (
             <Moon size={18} />
@@ -412,7 +430,9 @@ export function AppShell() {
           {(!collapsed ||
             isMobile) && (
             <span>
-              {dark
+              {themeMode === "system"
+                ? "System Theme"
+                : dark
                 ? "Light Mode"
                 : "Dark Mode"}
             </span>
@@ -447,12 +467,12 @@ export function AppShell() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#050816] text-white">
+      <div className="h-screen flex items-center justify-center theme-app">
         <div className="flex flex-col items-center gap-4">
 
           <div className="w-14 h-14 rounded-3xl border-4 border-violet-500/30 border-t-violet-500 animate-spin" />
 
-          <p className="text-sm text-gray-400">
+          <p className="text-sm theme-muted-text">
             Loading MessManager...
           </p>
 
@@ -462,7 +482,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex h-screen bg-[#050816] overflow-hidden">
+    <div className="flex h-screen theme-app overflow-hidden">
 
       {/* TOASTER */}
 
@@ -470,7 +490,7 @@ export function AppShell() {
         position="top-right"
         toastOptions={{
           className:
-            "!bg-[#111827] !text-white !border !border-white/10",
+            "theme-card border",
           duration: 3000,
         }}
       />
@@ -486,7 +506,7 @@ export function AppShell() {
         transition={{
           duration: 0.2,
         }}
-        className="hidden md:flex flex-col flex-shrink-0 bg-[#081028]/95 backdrop-blur-2xl border-r border-white/10 relative"
+        className="hidden md:flex flex-col flex-shrink-0 theme-sidebar backdrop-blur-2xl border-r relative"
       >
         <SidebarContent />
 
@@ -498,7 +518,7 @@ export function AppShell() {
               !collapsed
             )
           }
-          className="absolute -right-3 top-16 w-7 h-7 bg-[#111827] border border-white/10 rounded-full flex items-center justify-center shadow-xl"
+          className="absolute -right-3 top-16 w-7 h-7 theme-card border rounded-full flex items-center justify-center shadow-xl"
         >
           <motion.div
             animate={{
@@ -510,7 +530,7 @@ export function AppShell() {
           >
             <ChevronLeft
               size={14}
-              className="text-white"
+              className="theme-text"
             />
           </motion.div>
         </button>
@@ -522,7 +542,7 @@ export function AppShell() {
 
         {/* TOPBAR */}
 
-        <header className="flex items-center gap-4 px-6 py-4 bg-[#081028]/90 backdrop-blur-2xl border-b border-white/10 flex-shrink-0">
+        <header className="flex items-center gap-4 px-6 py-4 theme-topbar backdrop-blur-2xl border-b flex-shrink-0">
 
           {/* MOBILE MENU */}
 
@@ -538,9 +558,9 @@ export function AppShell() {
               p-2.5
               rounded-xl
               border
-              border-white/10
-              bg-white/5
-              hover:bg-white/10
+              border
+              bg-white/10
+              hover:bg-white/15
               active:scale-95
               transition-all
               duration-200
@@ -548,7 +568,7 @@ export function AppShell() {
           >
             <Menu
               size={20}
-              className="text-gray-300"
+              className="theme-subtext"
             />
           </button>
 
@@ -568,7 +588,7 @@ export function AppShell() {
             >
               <Bell
                 size={20}
-                className="text-gray-300"
+                className="theme-subtext"
               />
 
               {unreadCount >
@@ -600,12 +620,12 @@ export function AppShell() {
                     opacity: 0,
                     y: 10,
                   }}
-                  className="absolute right-0 mt-3 w-80 rounded-2xl border border-white/10 bg-[#111827]/95 backdrop-blur-2xl shadow-2xl overflow-hidden z-[150]"
+                  className="absolute right-0 mt-3 w-80 rounded-2xl border theme-card backdrop-blur-2xl shadow-2xl overflow-hidden z-[150]"
                 >
 
-                  <div className="p-4 border-b border-white/10">
+                  <div className="p-4 border-b">
 
-                    <h3 className="font-semibold text-white">
+                    <h3 className="font-semibold theme-text">
                       Notifications
                     </h3>
 
@@ -629,15 +649,15 @@ export function AppShell() {
                               key={
                                 item.id
                               }
-                              className="p-4 border-b border-white/5 hover:bg-white/5 transition-all"
+                              className="p-4 border-b hover:bg-white/10 transition-all"
                             >
-                              <p className="text-sm text-white font-medium">
+                              <p className="text-sm theme-text font-medium">
                                 {
                                   item.title
                                 }
                               </p>
 
-                              <p className="text-xs text-gray-400 mt-1">
+                              <p className="text-xs theme-muted-text mt-1">
                                 {
                                   item.message
                                 }
@@ -646,7 +666,7 @@ export function AppShell() {
                           )
                         )
                     ) : (
-                      <div className="p-8 text-center text-sm text-gray-400">
+                      <div className="p-8 text-center text-sm theme-muted-text">
                         No notifications
                       </div>
                     )}
@@ -660,20 +680,20 @@ export function AppShell() {
 
           {/* PROFILE */}
 
-          <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+          <div className="flex items-center gap-3 pl-4 border-l">
 
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-violet-500/30">
+            <div className="w-10 h-10 rounded-2xl theme-accent-bg flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-violet-500/20">
               {initials}
             </div>
 
             <div className="hidden sm:block">
-              <p className="text-sm font-semibold text-white leading-none">
+              <p className="text-sm font-semibold theme-text leading-none">
                 {
                   userProfile?.displayName
                 }
               </p>
 
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs theme-muted-text mt-1">
                 {userProfile?.role ===
                 "admin"
                   ? "Admin"
@@ -726,7 +746,7 @@ export function AppShell() {
                   damping: 25,
                   stiffness: 200,
                 }}
-                className="fixed left-0 top-0 bottom-0 w-64 bg-[#0d1526]/95 backdrop-blur-2xl border-r border-white/10 z-[140] md:hidden flex flex-col shadow-2xl"
+                className="fixed left-0 top-0 bottom-0 w-64 theme-sidebar backdrop-blur-2xl border-r z-[140] md:hidden flex flex-col shadow-2xl"
               >
 
                 {/* CLOSE */}
@@ -741,7 +761,7 @@ export function AppShell() {
                 >
                   <X
                     size={18}
-                    className="text-gray-300"
+                    className="theme-subtext"
                   />
                 </button>
 
