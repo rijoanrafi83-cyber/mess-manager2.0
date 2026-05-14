@@ -1,6 +1,14 @@
-import { useState, useMemo, useCallback } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect
+} from "react";
+
 import { motion, AnimatePresence } from "framer-motion";
+
 import toast from "react-hot-toast";
+
 import {
   UtensilsCrossed,
   Plus,
@@ -32,7 +40,9 @@ import {
   updateMeal,
   deleteMeal,
   addGuestMeal,
-  deleteGuestMeal
+  deleteGuestMeal,
+  saveMealSettings,
+  subscribeMealSettings
 } from "../services/firestoreService";
 
 import { calculateMealCount } from "../utils/billing";
@@ -43,21 +53,32 @@ import { calculateMealCount } from "../utils/billing";
    MEAL ENTRY FORM
 ========================================================= */
 
-function MealEntryForm({ members, ownerId, initial, onClose }) {
+function MealEntryForm({
+  members,
+  ownerId,
+  initial,
+  onClose
+}) {
 
-  const today = new Date().toISOString().split("T")[0];
+  const today =
+    new Date()
+      .toISOString()
+      .split("T")[0];
 
-  const [form, setForm] = useState(
-    initial || {
-      memberId: members[0]?.id || "",
-      date: today,
-      breakfast: 0,
-      lunch: 0,
-      dinner: 0,
-    }
-  );
+  const [form, setForm] =
+    useState(
+      initial || {
+        memberId:
+          members[0]?.id || "",
+        date: today,
+        breakfast: 0,
+        lunch: 0,
+        dinner: 0,
+      }
+    );
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
   const set = (k, v) =>
     setForm((f) => ({
@@ -70,64 +91,118 @@ function MealEntryForm({ members, ownerId, initial, onClose }) {
     Number(form.lunch) +
     Number(form.dinner);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit =
+    async (e) => {
 
-    if (!form.memberId || !form.date) {
-      return toast.error("Please fill all required fields");
-    }
+      e.preventDefault();
 
-    setLoading(true);
-
-    try {
-      if (initial?.id) {
-        await updateMeal(initial.id, form);
-      } else {
-        await addMeal(ownerId, {
-          ...form,
-          type: "regular"
-        });
+      if (
+        !form.memberId ||
+        !form.date
+      ) {
+        return toast.error(
+          "Please fill all required fields"
+        );
       }
 
-      toast.success(initial ? "Meal updated!" : "Meal added!");
-      onClose();
+      setLoading(true);
 
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to save meal");
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+
+        if (initial?.id) {
+
+          await updateMeal(
+            initial.id,
+            form
+          );
+
+        } else {
+
+          await addMeal(
+            ownerId,
+            {
+              ...form,
+              type: "regular"
+            }
+          );
+        }
+
+        toast.success(
+          initial
+            ? "Meal updated!"
+            : "Meal added!"
+        );
+
+        onClose();
+
+      } catch (err) {
+
+        console.error(err);
+
+        toast.error(
+          "Failed to save meal"
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
+
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-5"
+    >
 
       <div className="grid grid-cols-2 gap-4">
 
         <Select
           label="Member"
           value={form.memberId}
-          onChange={(e) => set("memberId", e.target.value)}
+          onChange={(e) =>
+            set(
+              "memberId",
+              e.target.value
+            )
+          }
           required
         >
-          <option value="">Select member...</option>
+
+          <option value="">
+            Select member...
+          </option>
 
           {members.map((m) => (
-            <option key={m.id} value={m.id}>
+            <option
+              key={m.id}
+              value={m.id}
+            >
               {m.name}
             </option>
           ))}
+
         </Select>
 
         <Input
           label="Date"
           type="date"
           value={form.date}
-          onChange={(e) => set("date", e.target.value)}
+          onChange={(e) =>
+            set(
+              "date",
+              e.target.value
+            )
+          }
           required
         />
+
       </div>
+
+
 
       <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
 
@@ -140,23 +215,33 @@ function MealEntryForm({ members, ownerId, initial, onClose }) {
           <NumberInput
             label="Breakfast (×0.5)"
             value={form.breakfast}
-            onChange={(v) => set("breakfast", v)}
+            onChange={(v) =>
+              set("breakfast", v)
+            }
           />
 
           <NumberInput
             label="Lunch (×1)"
             value={form.lunch}
-            onChange={(v) => set("lunch", v)}
+            onChange={(v) =>
+              set("lunch", v)
+            }
           />
 
           <NumberInput
             label="Dinner (×1)"
             value={form.dinner}
-            onChange={(v) => set("dinner", v)}
+            onChange={(v) =>
+              set("dinner", v)
+            }
           />
+
         </div>
 
+
+
         <div className="mt-4 pt-3 border-t border-gray-200 dark:border-white/10 text-center">
+
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Total Units
           </p>
@@ -164,8 +249,12 @@ function MealEntryForm({ members, ownerId, initial, onClose }) {
           <p className="text-2xl font-bold text-violet-600">
             {totalUnits.toFixed(1)}
           </p>
+
         </div>
+
       </div>
+
+
 
       <div className="flex gap-3">
 
@@ -174,7 +263,9 @@ function MealEntryForm({ members, ownerId, initial, onClose }) {
           loading={loading}
           className="flex-1"
         >
-          {initial ? "Update Meal" : "Add Meal"}
+          {initial
+            ? "Update Meal"
+            : "Add Meal"}
         </Button>
 
         <Button
@@ -186,6 +277,7 @@ function MealEntryForm({ members, ownerId, initial, onClose }) {
         </Button>
 
       </div>
+
     </form>
   );
 }
@@ -196,21 +288,31 @@ function MealEntryForm({ members, ownerId, initial, onClose }) {
    GUEST MEAL FORM
 ========================================================= */
 
-function GuestMealForm({ members, ownerId, onClose }) {
+function GuestMealForm({
+  members,
+  ownerId,
+  onClose
+}) {
 
-  const today = new Date().toISOString().split("T")[0];
+  const today =
+    new Date()
+      .toISOString()
+      .split("T")[0];
 
-  const [form, setForm] = useState({
-    memberId: members[0]?.id || "",
-    guestName: "",
-    date: today,
-    breakfast: 0,
-    lunch: 0,
-    dinner: 0,
-    note: "",
-  });
+  const [form, setForm] =
+    useState({
+      memberId:
+        members[0]?.id || "",
+      guestName: "",
+      date: today,
+      breakfast: 0,
+      lunch: 0,
+      dinner: 0,
+      note: "",
+    });
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
   const set = (k, v) =>
     setForm((f) => ({
@@ -223,79 +325,136 @@ function GuestMealForm({ members, ownerId, onClose }) {
     Number(form.lunch) +
     Number(form.dinner);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit =
+    async (e) => {
 
-    e.preventDefault();
+      e.preventDefault();
 
-    if (!form.memberId || !form.guestName) {
-      return toast.error("Please fill required fields");
-    }
+      if (
+        !form.memberId ||
+        !form.guestName
+      ) {
+        return toast.error(
+          "Please fill required fields"
+        );
+      }
 
-    setLoading(true);
+      setLoading(true);
 
-    try {
+      try {
 
-      await addGuestMeal(ownerId, {
-        ...form,
-        type: "guest"
-      });
+        await addGuestMeal(
+          ownerId,
+          {
+            ...form,
+            type: "guest"
+          }
+        );
 
-      toast.success("Guest meal added!");
-      onClose();
+        toast.success(
+          "Guest meal added!"
+        );
 
-    } catch (err) {
+        onClose();
 
-      console.error(err);
-      toast.error("Failed to save guest meal");
+      } catch (err) {
 
-    } finally {
+        console.error(err);
 
-      setLoading(false);
-    }
-  };
+        toast.error(
+          "Failed to save guest meal"
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
+
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+    >
 
       <div className="grid grid-cols-2 gap-4">
 
         <Select
           label="Host Member"
           value={form.memberId}
-          onChange={(e) => set("memberId", e.target.value)}
+          onChange={(e) =>
+            set(
+              "memberId",
+              e.target.value
+            )
+          }
           required
         >
-          <option value="">Select member...</option>
+
+          <option value="">
+            Select member...
+          </option>
 
           {members.map((m) => (
-            <option key={m.id} value={m.id}>
+            <option
+              key={m.id}
+              value={m.id}
+            >
               {m.name}
             </option>
           ))}
+
         </Select>
+
+
 
         <Input
           label="Guest Name"
           value={form.guestName}
-          onChange={(e) => set("guestName", e.target.value)}
+          onChange={(e) =>
+            set(
+              "guestName",
+              e.target.value
+            )
+          }
           required
         />
+
+
 
         <Input
           label="Date"
           type="date"
           value={form.date}
-          onChange={(e) => set("date", e.target.value)}
+          onChange={(e) =>
+            set(
+              "date",
+              e.target.value
+            )
+          }
           required
         />
+
+
 
         <Input
           label="Note"
           value={form.note}
-          onChange={(e) => set("note", e.target.value)}
+          onChange={(e) =>
+            set(
+              "note",
+              e.target.value
+            )
+          }
           placeholder="Optional"
         />
+
       </div>
+
+
 
       <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
 
@@ -304,21 +463,30 @@ function GuestMealForm({ members, ownerId, onClose }) {
           <NumberInput
             label="Breakfast"
             value={form.breakfast}
-            onChange={(v) => set("breakfast", v)}
+            onChange={(v) =>
+              set("breakfast", v)
+            }
           />
 
           <NumberInput
             label="Lunch"
             value={form.lunch}
-            onChange={(v) => set("lunch", v)}
+            onChange={(v) =>
+              set("lunch", v)
+            }
           />
 
           <NumberInput
             label="Dinner"
             value={form.dinner}
-            onChange={(v) => set("dinner", v)}
+            onChange={(v) =>
+              set("dinner", v)
+            }
           />
+
         </div>
+
+
 
         <div className="mt-4 pt-3 border-t border-gray-200 dark:border-white/10 text-center">
 
@@ -329,8 +497,12 @@ function GuestMealForm({ members, ownerId, onClose }) {
           <p className="text-2xl font-bold text-orange-500">
             {totalUnits.toFixed(1)}
           </p>
+
         </div>
+
       </div>
+
+
 
       <div className="flex gap-3">
 
@@ -351,6 +523,7 @@ function GuestMealForm({ members, ownerId, onClose }) {
         </Button>
 
       </div>
+
     </form>
   );
 }
@@ -369,168 +542,253 @@ export function MealsPage({
   userProfile
 }) {
 
-  const [showAddMeal, setShowAddMeal] = useState(false);
-  const [showGuestMeal, setShowGuestMeal] = useState(false);
+  const [
+    showAddMeal,
+    setShowAddMeal
+  ] = useState(false);
 
-  const [editMeal, setEditMeal] = useState(null);
+  const [
+    showGuestMeal,
+    setShowGuestMeal
+  ] = useState(false);
 
-  const [search, setSearch] = useState("");
-  const [filterMember, setFilterMember] = useState("all");
-  const [filterDate, setFilterDate] = useState("");
+  const [editMeal, setEditMeal] =
+    useState(null);
 
-  const [delId, setDelId] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [search, setSearch] =
+    useState("");
 
-  const isAdmin = userProfile?.role === "admin";
-
-
-
-  /* =========================================================
-     COMBINED MEALS
-  ========================================================= */
-
-  const combinedMeals = useMemo(() => {
-
-    return [
-
-      ...meals.map((m) => ({
-        ...m,
-        type: "regular"
-      })),
-
-      ...guestMeals.map((g) => ({
-        ...g,
-        type: "guest"
-      }))
-
-    ];
-
-  }, [meals, guestMeals]);
-
-
-
-  /* =========================================================
-     FILTER
-  ========================================================= */
-
-  const filtered = useMemo(() => {
-
-    let list = combinedMeals;
-
-    if (filterMember !== "all") {
-      list = list.filter((m) => m.memberId === filterMember);
-    }
-
-    if (filterDate) {
-      list = list.filter((m) => m.date === filterDate);
-    }
-
-    if (search) {
-
-      const q = search.toLowerCase();
-
-      list = list.filter((m) => {
-
-        const member = members.find(
-          (mb) => mb.id === m.memberId
-        );
-
-        return (
-          member?.name?.toLowerCase().includes(q) ||
-          m.guestName?.toLowerCase().includes(q) ||
-          m.date?.includes(q)
-        );
-      });
-    }
-
-    return [...list].sort((a, b) =>
-      (b.date || "").localeCompare(a.date || "")
-    );
-
-  }, [
-    combinedMeals,
+  const [
     filterMember,
+    setFilterMember
+  ] = useState("all");
+
+  const [
     filterDate,
-    search,
-    members
-  ]);
+    setFilterDate
+  ] = useState("");
+
+  const [delId, setDelId] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [
+    mealSettings,
+    setMealSettings
+  ] = useState([]);
+
+  const isAdmin =
+    userProfile?.role === "admin";
 
 
 
-  /* =========================================================
-     TOTALS
-  ========================================================= */
+  useEffect(() => {
 
-  const totalUnits = useMemo(() => {
+    if (!ownerId) return;
 
-    return filtered.reduce(
-      (sum, meal) => sum + calculateMealCount(meal),
-      0
-    );
+    const unsub =
+      subscribeMealSettings(
+        ownerId,
+        setMealSettings
+      );
 
-  }, [filtered]);
+    return () => unsub();
+
+  }, [ownerId]);
 
 
 
-  /* =========================================================
-     DELETE
-  ========================================================= */
+  const getMealSetting =
+    (memberId) => {
 
-  const handleDelete = useCallback(async () => {
+      return (
+        mealSettings.find(
+          (m) =>
+            m.memberId === memberId
+        ) || {
+          breakfast: false,
+          lunch: false,
+          dinner: false,
+        }
+      );
+    };
 
-    if (!delId) return;
 
-    setLoading(true);
 
-    try {
+  const combinedMeals =
+    useMemo(() => {
 
-      const meal = filtered.find((m) => m.id === delId);
+      return [
 
-      if (meal?.type === "guest") {
-        await deleteGuestMeal(delId);
-      } else {
-        await deleteMeal(delId);
+        ...meals.map((m) => ({
+          ...m,
+          type: "regular"
+        })),
+
+        ...guestMeals.map((g) => ({
+          ...g,
+          type: "guest"
+        }))
+
+      ];
+
+    }, [meals, guestMeals]);
+
+
+
+  const filtered =
+    useMemo(() => {
+
+      let list = combinedMeals;
+
+      if (
+        filterMember !== "all"
+      ) {
+        list = list.filter(
+          (m) =>
+            m.memberId ===
+            filterMember
+        );
       }
 
-      toast.success("Meal deleted");
-      setDelId(null);
+      if (filterDate) {
+        list = list.filter(
+          (m) =>
+            m.date === filterDate
+        );
+      }
 
-    } catch (err) {
+      if (search) {
 
-      console.error(err);
-      toast.error("Failed to delete meal");
+        const q =
+          search.toLowerCase();
 
-    } finally {
+        list = list.filter((m) => {
 
-      setLoading(false);
-    }
+          const member =
+            members.find(
+              (mb) =>
+                mb.id ===
+                m.memberId
+            );
 
-  }, [delId, filtered]);
+          return (
+            member?.name
+              ?.toLowerCase()
+              .includes(q) ||
+
+            m.guestName
+              ?.toLowerCase()
+              .includes(q) ||
+
+            m.date?.includes(q)
+          );
+        });
+      }
+
+      return [...list].sort(
+        (a, b) =>
+          (b.date || "")
+            .localeCompare(
+              a.date || ""
+            )
+      );
+
+    }, [
+      combinedMeals,
+      filterMember,
+      filterDate,
+      search,
+      members
+    ]);
 
 
 
-  /* =========================================================
-     HELPERS
-  ========================================================= */
+  const totalUnits =
+    useMemo(() => {
+
+      return filtered.reduce(
+        (sum, meal) =>
+          sum +
+          calculateMealCount(
+            meal
+          ),
+        0
+      );
+
+    }, [filtered]);
+
+
+
+  const handleDelete =
+    useCallback(async () => {
+
+      if (!delId) return;
+
+      setLoading(true);
+
+      try {
+
+        const meal =
+          filtered.find(
+            (m) =>
+              m.id === delId
+          );
+
+        if (
+          meal?.type === "guest"
+        ) {
+
+          await deleteGuestMeal(
+            delId
+          );
+
+        } else {
+
+          await deleteMeal(delId);
+        }
+
+        toast.success(
+          "Meal deleted"
+        );
+
+        setDelId(null);
+
+      } catch (err) {
+
+        console.error(err);
+
+        toast.error(
+          "Failed to delete meal"
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+
+    }, [delId, filtered]);
+
+
 
   const memberName = (id) =>
-    members.find((m) => m.id === id)?.name || "Unknown";
+    members.find(
+      (m) => m.id === id
+    )?.name || "Unknown";
 
 
-
-  /* =========================================================
-     TABLE COLUMNS
-  ========================================================= */
 
   const columns = [
-
     {
       key: "memberId",
       label: "Member",
 
       render: (v, row) => {
 
-        const isGuest = row.type === "guest";
+        const isGuest =
+          row.type === "guest";
 
         return (
 
@@ -543,10 +801,14 @@ export function MealsPage({
                   : "bg-violet-500/10 text-violet-500"
               }`}
             >
+
               {isGuest
                 ? row.guestName?.charAt(0)
                 : memberName(v).charAt(0)}
+
             </div>
+
+
 
             <div className="flex flex-col">
 
@@ -565,6 +827,7 @@ export function MealsPage({
               )}
 
             </div>
+
           </div>
         );
       }
@@ -577,7 +840,9 @@ export function MealsPage({
       label: "Date",
 
       render: (v) => (
-        <span className="text-sm">{v}</span>
+        <span className="text-sm">
+          {v}
+        </span>
       )
     },
 
@@ -589,10 +854,19 @@ export function MealsPage({
 
       render: (v) => (
         <div className="flex items-center gap-1">
-          <Coffee size={12} className="text-orange-400" />
+          <Coffee
+            size={12}
+            className="text-orange-400"
+          />
+
           <span className="text-sm">
             {v || 0}
-            <span className="text-xs text-gray-400"> ×0.5</span>
+
+            <span className="text-xs text-gray-400">
+              {" "}
+              ×0.5
+            </span>
+
           </span>
         </div>
       )
@@ -606,8 +880,14 @@ export function MealsPage({
 
       render: (v) => (
         <div className="flex items-center gap-1">
-          <Sun size={12} className="text-yellow-400" />
-          <span className="text-sm">{v || 0}</span>
+          <Sun
+            size={12}
+            className="text-yellow-400"
+          />
+
+          <span className="text-sm">
+            {v || 0}
+          </span>
         </div>
       )
     },
@@ -620,8 +900,14 @@ export function MealsPage({
 
       render: (v) => (
         <div className="flex items-center gap-1">
-          <Moon size={12} className="text-blue-400" />
-          <span className="text-sm">{v || 0}</span>
+          <Moon
+            size={12}
+            className="text-blue-400"
+          />
+
+          <span className="text-sm">
+            {v || 0}
+          </span>
         </div>
       )
     },
@@ -635,9 +921,16 @@ export function MealsPage({
       render: (_, row) => (
 
         <Badge
-          variant={row.type === "guest" ? "warning" : "purple"}
+          variant={
+            row.type === "guest"
+              ? "warning"
+              : "purple"
+          }
         >
-          {calculateMealCount(row).toFixed(1)} units
+          {calculateMealCount(
+            row
+          ).toFixed(1)}{" "}
+          units
         </Badge>
       )
     },
@@ -650,17 +943,26 @@ export function MealsPage({
             key: "id",
             label: "",
 
-            render: (id, row) => (
+            render: (
+              id,
+              row
+            ) => (
 
               <div className="flex gap-1">
 
-                {row.type !== "guest" && (
+                {row.type !==
+                  "guest" && (
+
                   <Button
                     variant="ghost"
                     size="xs"
                     onClick={(e) => {
+
                       e.stopPropagation();
-                      setEditMeal(row);
+
+                      setEditMeal(
+                        row
+                      );
                     }}
                   >
                     <Edit2 size={12} />
@@ -671,12 +973,15 @@ export function MealsPage({
                   variant="danger"
                   size="xs"
                   onClick={(e) => {
+
                     e.stopPropagation();
+
                     setDelId(id);
                   }}
                 >
                   <Trash2 size={12} />
                 </Button>
+
               </div>
             )
           }
@@ -699,18 +1004,27 @@ export function MealsPage({
 
         actions={
           isAdmin && (
+
             <div className="flex gap-2">
 
               <Button
                 variant="secondary"
-                onClick={() => setShowGuestMeal(true)}
+                onClick={() =>
+                  setShowGuestMeal(
+                    true
+                  )
+                }
               >
                 <Users size={16} />
                 Guest Meal
               </Button>
 
               <Button
-                onClick={() => setShowAddMeal(true)}
+                onClick={() =>
+                  setShowAddMeal(
+                    true
+                  )
+                }
               >
                 <Plus size={16} />
                 Add Meal
@@ -735,33 +1049,52 @@ export function MealsPage({
         />
 
         {isAdmin && (
+
           <Select
             value={filterMember}
-            onChange={(e) => setFilterMember(e.target.value)}
+            onChange={(e) =>
+              setFilterMember(
+                e.target.value
+              )
+            }
             wrapperClass="sm:w-44"
           >
-            <option value="all">All Members</option>
+
+            <option value="all">
+              All Members
+            </option>
 
             {members.map((m) => (
-              <option key={m.id} value={m.id}>
+              <option
+                key={m.id}
+                value={m.id}
+              >
                 {m.name}
               </option>
             ))}
+
           </Select>
         )}
 
         <Input
           type="date"
           value={filterDate}
-          onChange={(e) => setFilterDate(e.target.value)}
+          onChange={(e) =>
+            setFilterDate(
+              e.target.value
+            )
+          }
           wrapperClass="sm:w-44"
         />
 
         {filterDate && (
+
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setFilterDate("")}
+            onClick={() =>
+              setFilterDate("")
+            }
           >
             Clear Date
           </Button>
@@ -771,79 +1104,125 @@ export function MealsPage({
 
 
 
-      {/* SUMMARY */}
+      {/* PERMANENT MEAL SYSTEM */}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <Card className="mb-6">
 
-        {[
-          {
-            label: "Breakfast Total",
-            value: filtered.reduce(
-              (s, m) => s + Number(m.breakfast || 0),
-              0
-            ),
-            icon: Coffee,
-            color: "text-orange-500",
-            bg: "bg-orange-500/10"
-          },
+        <div className="p-5">
 
-          {
-            label: "Lunch Total",
-            value: filtered.reduce(
-              (s, m) => s + Number(m.lunch || 0),
-              0
-            ),
-            icon: Sun,
-            color: "text-yellow-500",
-            bg: "bg-yellow-500/10"
-          },
+          <h2 className="text-lg font-bold mb-5">
+            Permanent Meal System
+          </h2>
 
-          {
-            label: "Dinner Total",
-            value: filtered.reduce(
-              (s, m) => s + Number(m.dinner || 0),
-              0
-            ),
-            icon: Moon,
-            color: "text-blue-500",
-            bg: "bg-blue-500/10"
-          },
+          <div className="space-y-4">
 
-          {
-            label: "Total Units",
-            value: totalUnits.toFixed(1),
-            icon: UtensilsCrossed,
-            color: "text-violet-500",
-            bg: "bg-violet-500/10"
-          }
+            {members.map((member) => {
 
-        ].map(({ label, value, icon: Icon, color, bg }) => (
+              const setting =
+                getMealSetting(
+                  member.id
+                );
 
-          <div
-            key={label}
-            className="flex items-center gap-3 p-4 bg-white dark:bg-white/4 border border-gray-200 dark:border-white/8 rounded-xl"
-          >
+              const toggleMeal =
+                async (field) => {
 
-            <div
-              className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}
-            >
-              <Icon size={15} className={color} />
-            </div>
+                  const updated = {
 
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {label}
-              </p>
+                    breakfast:
+                      setting.breakfast,
 
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {value}
-              </p>
-            </div>
+                    lunch:
+                      setting.lunch,
+
+                    dinner:
+                      setting.dinner,
+
+                    [field]:
+                      !setting[field],
+                  };
+
+                  try {
+
+                    await saveMealSettings(
+                      ownerId,
+                      member.id,
+                      updated
+                    );
+
+                    toast.success(
+                      `${member.name} ${field} ${
+                        updated[field]
+                          ? "ON"
+                          : "OFF"
+                      }`
+                    );
+
+                  } catch (err) {
+
+                    console.error(
+                      err
+                    );
+
+                    toast.error(
+                      "Update failed"
+                    );
+                  }
+                };
+
+
+
+              return (
+
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between p-4 border rounded-xl"
+                >
+
+                  <p className="font-medium">
+                    {member.name}
+                  </p>
+
+                  <div className="flex gap-2">
+
+                    {[
+                      "breakfast",
+                      "lunch",
+                      "dinner",
+                    ].map((meal) => (
+
+                      <Button
+                        key={meal}
+                        size="sm"
+
+                        variant={
+                          setting[
+                            meal
+                          ]
+                            ? "primary"
+                            : "secondary"
+                        }
+
+                        onClick={() =>
+                          toggleMeal(
+                            meal
+                          )
+                        }
+                      >
+                        {meal}
+                      </Button>
+                    ))}
+
+                  </div>
+
+                </div>
+              );
+            })}
 
           </div>
-        ))}
 
-      </div>
+        </div>
+
+      </Card>
 
 
 
@@ -856,10 +1235,14 @@ export function MealsPage({
           data={filtered}
 
           emptyState={
+
             <div className="p-12">
 
               <EmptyState
-                icon={UtensilsCrossed}
+                icon={
+                  UtensilsCrossed
+                }
+
                 title="No meals found"
 
                 description={
@@ -870,7 +1253,14 @@ export function MealsPage({
 
                 action={
                   isAdmin && (
-                    <Button onClick={() => setShowAddMeal(true)}>
+
+                    <Button
+                      onClick={() =>
+                        setShowAddMeal(
+                          true
+                        )
+                      }
+                    >
                       <Plus size={16} />
                       Add Meal
                     </Button>
@@ -891,59 +1281,92 @@ export function MealsPage({
       <AnimatePresence>
 
         {showAddMeal && (
+
           <Modal
             open
-            onClose={() => setShowAddMeal(false)}
+            onClose={() =>
+              setShowAddMeal(
+                false
+              )
+            }
             title="Add Meal Entry"
           >
+
             <MealEntryForm
               members={members}
               ownerId={ownerId}
-              onClose={() => setShowAddMeal(false)}
+              onClose={() =>
+                setShowAddMeal(
+                  false
+                )
+              }
             />
+
           </Modal>
         )}
 
 
 
         {editMeal && (
+
           <Modal
             open
-            onClose={() => setEditMeal(null)}
+            onClose={() =>
+              setEditMeal(null)
+            }
             title="Edit Meal"
           >
+
             <MealEntryForm
               members={members}
               ownerId={ownerId}
               initial={editMeal}
-              onClose={() => setEditMeal(null)}
+              onClose={() =>
+                setEditMeal(null)
+              }
             />
+
           </Modal>
         )}
 
 
 
         {showGuestMeal && (
+
           <Modal
             open
-            onClose={() => setShowGuestMeal(false)}
+            onClose={() =>
+              setShowGuestMeal(
+                false
+              )
+            }
             title="Add Guest Meal"
+
             subtitle="Track meals for guests hosted by members"
           >
+
             <GuestMealForm
               members={members}
               ownerId={ownerId}
-              onClose={() => setShowGuestMeal(false)}
+              onClose={() =>
+                setShowGuestMeal(
+                  false
+                )
+              }
             />
+
           </Modal>
         )}
 
 
 
         {delId && (
+
           <Modal
             open
-            onClose={() => setDelId(null)}
+            onClose={() =>
+              setDelId(null)
+            }
             title="Delete Meal"
             size="sm"
           >
@@ -957,7 +1380,9 @@ export function MealsPage({
               <Button
                 variant="danger"
                 loading={loading}
-                onClick={handleDelete}
+                onClick={
+                  handleDelete
+                }
                 className="flex-1"
               >
                 Delete
@@ -965,13 +1390,16 @@ export function MealsPage({
 
               <Button
                 variant="secondary"
-                onClick={() => setDelId(null)}
+                onClick={() =>
+                  setDelId(null)
+                }
                 className="flex-1"
               >
                 Cancel
               </Button>
 
             </div>
+
           </Modal>
         )}
 
