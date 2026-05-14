@@ -17,12 +17,13 @@ import {
   Moon,
   Users,
   Trash2,
-  Edit2
+  Edit2,
+  CalendarDays,
+  Activity
 } from "lucide-react";
 
 import {
   PageWrapper,
-  PageHeader,
   Card,
   Button,
   Input,
@@ -34,6 +35,14 @@ import {
   NumberInput,
   Table
 } from "../components/ui";
+import {
+  FilterSurface,
+  MetricCard,
+  MiniBarList,
+  PersonAvatar,
+  PremiumHero,
+  PremiumSection,
+} from "../components/PremiumUI";
 
 import {
   addMeal,
@@ -720,6 +729,55 @@ export function MealsPage({
 
     }, [filtered]);
 
+  const guestUnits =
+    useMemo(
+      () =>
+        guestMeals.reduce(
+          (sum, meal) =>
+            sum +
+            calculateMealCount(
+              meal
+            ),
+          0
+        ),
+      [guestMeals]
+    );
+
+  const activeMealSettings =
+    useMemo(
+      () =>
+        mealSettings.filter(
+          (setting) =>
+            setting.breakfast ||
+            setting.lunch ||
+            setting.dinner
+        ).length,
+      [mealSettings]
+    );
+
+  const memberMealSummary =
+    useMemo(
+      () =>
+        members
+          .map((member) => ({
+            id: member.id,
+            label: member.name,
+            value: combinedMeals
+              .filter((meal) => meal.memberId === member.id)
+              .reduce(
+                (sum, meal) =>
+                  sum +
+                  calculateMealCount(
+                    meal
+                  ),
+                0
+              ),
+          }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 8),
+      [members, combinedMeals]
+    );
+
 
 
   const handleDelete =
@@ -995,12 +1053,16 @@ export function MealsPage({
 
     <PageWrapper>
 
-      <PageHeader
+      <PremiumHero
+        eyebrow="Meal Operations"
         title="Meals"
-
-        subtitle={`${filtered.length} meal entries · ${totalUnits.toFixed(
-          1
-        )} total units`}
+        subtitle="Track daily meals, guest meals, recurring preferences, and member-level consumption from one responsive command view."
+        metrics={[
+          { label: "Entries", value: filtered.length, caption: "current filter" },
+          { label: "Meal Units", value: totalUnits.toFixed(1), caption: "filtered total" },
+          { label: "Guest Units", value: guestUnits.toFixed(1), caption: "hosted meals" },
+          { label: "Auto Plans", value: activeMealSettings, caption: "members enabled" },
+        ]}
 
         actions={
           isAdmin && (
@@ -1035,11 +1097,18 @@ export function MealsPage({
         }
       />
 
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <MetricCard label="Filtered Units" value={totalUnits.toFixed(1)} caption="meal units in view" icon={Activity} tone="accent" />
+        <MetricCard label="Regular Entries" value={meals.length} caption="member meal records" icon={UtensilsCrossed} tone="blue" />
+        <MetricCard label="Guest Entries" value={guestMeals.length} caption="guest meal records" icon={Users} tone="orange" />
+        <MetricCard label="Recurring Plans" value={activeMealSettings} caption="automatic daily meals" icon={CalendarDays} tone="green" />
+      </div>
+
 
 
       {/* FILTERS */}
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <FilterSurface>
 
         <SearchInput
           value={search}
@@ -1100,13 +1169,49 @@ export function MealsPage({
           </Button>
         )}
 
+      </FilterSurface>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+        <PremiumSection
+          className="xl:col-span-2"
+          title="Member Meal Heatmap"
+          subtitle="Relative consumption intensity for the selected period"
+        >
+          <MiniBarList
+            items={memberMealSummary}
+            format={(value) => `${value.toFixed(1)} units`}
+          />
+        </PremiumSection>
+
+        <PremiumSection title="Today Readiness" subtitle="Recurring meal switches">
+          <div className="space-y-3">
+            {members.slice(0, 5).map((member) => {
+              const setting = getMealSetting(member.id);
+              const enabled = ["breakfast", "lunch", "dinner"].filter((key) => setting[key]);
+              return (
+                <div key={member.id} className="flex items-center justify-between gap-3 rounded-2xl theme-muted p-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <PersonAvatar name={member.name} size="sm" status={enabled.length ? "active" : "inactive"} />
+                    <div className="min-w-0">
+                      <p className="font-bold theme-text text-sm truncate">{member.name}</p>
+                      <p className="text-xs theme-muted-text truncate">
+                        {enabled.length ? enabled.join(", ") : "No recurring meal"}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant={enabled.length ? "success" : "default"}>{enabled.length}/3</Badge>
+                </div>
+              );
+            })}
+          </div>
+        </PremiumSection>
       </div>
 
 
 
       {/* PERMANENT MEAL SYSTEM */}
 
-<Card className="mb-6 border border-white/10 bg-gradient-to-br from-[#111827] via-[#0f172a] to-[#111827] shadow-2xl overflow-hidden">
+<Card className="relative mb-6 border border-white/10 bg-gradient-to-br from-[#111827] via-[#0f172a] to-[#111827] shadow-2xl overflow-hidden">
 
 {/* TOP GLOW */}
 
@@ -1114,7 +1219,6 @@ export function MealsPage({
 
   <div className="relative p-6">
 
-```
 {/* HEADER */}
 
 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-7">
@@ -1374,8 +1478,6 @@ export function MealsPage({
   })}
 
 </div>
-```
-
   </div>
 
 </Card>

@@ -1,17 +1,25 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  Check,
   Eye,
   EyeOff,
-  Loader2,
-  Mail,
   Lock,
+  Mail,
   User,
-  CheckCircle2,
-  AlertCircle,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { useAuth } from "../../context/AuthContext";
+import {
+  AuthButton,
+  AuthShell,
+  AuthStatus,
+} from "../../components/auth/AuthShell";
+import {
+  AuthField,
+  IconButton,
+} from "../../components/auth/AuthField";
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -23,54 +31,79 @@ export function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  const [termsAccepted, setTermsAccepted] =
+    useState(false);
+  const [showPassword, setShowPassword] =
+    useState(false);
+  const [
+    showConfirmPassword,
+    setShowConfirmPassword,
+  ] = useState(false);
   const [busy, setBusy] = useState(false);
-
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [success, setSuccess] =
+    useState("");
 
-  // Password Strength
-  const passwordChecks = {
-    length: formData.password.length >= 8,
-    upper: /[A-Z]/.test(formData.password),
-    lower: /[a-z]/.test(formData.password),
-    number: /[0-9]/.test(formData.password),
-    special: /[^A-Za-z0-9]/.test(formData.password),
-  };
+  const passwordChecks = useMemo(
+    () => ({
+      length: formData.password.length >= 8,
+      upper: /[A-Z]/.test(formData.password),
+      lower: /[a-z]/.test(formData.password),
+      number: /[0-9]/.test(formData.password),
+      special: /[^A-Za-z0-9]/.test(
+        formData.password
+      ),
+    }),
+    [formData.password]
+  );
 
   const strengthScore =
-    Object.values(passwordChecks).filter(Boolean).length;
+    Object.values(passwordChecks).filter(Boolean)
+      .length;
 
-  const getStrengthColor = () => {
-    if (strengthScore <= 2) return "bg-red-500";
-    if (strengthScore <= 4) return "bg-yellow-500";
-    return "bg-green-500";
-  };
+  const strengthText =
+    strengthScore <= 2
+      ? "Weak"
+      : strengthScore <= 4
+        ? "Medium"
+        : "Strong";
 
-  const getStrengthText = () => {
-    if (strengthScore <= 2) return "Weak";
-    if (strengthScore <= 4) return "Medium";
-    return "Strong";
-  };
+  const strengthColor =
+    strengthScore <= 2
+      ? "#ef4444"
+      : strengthScore <= 4
+        ? "#f59e0b"
+        : "#22c55e";
 
-  const handleChange = (e) => {
+  const passwordsMatch =
+    formData.confirmPassword.length > 0 &&
+    formData.password ===
+      formData.confirmPassword;
+
+  const handleChange = (event) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [event.target.name]:
+        event.target.value,
     });
-
     setError("");
     setSuccess("");
   };
 
   const validateForm = () => {
-    const { displayName, email, password, confirmPassword } =
-      formData;
+    const {
+      displayName,
+      email,
+      password,
+      confirmPassword,
+    } = formData;
 
-    if (!displayName || !email || !password || !confirmPassword) {
+    if (
+      !displayName ||
+      !email ||
+      !password ||
+      !confirmPassword
+    ) {
       return "Please fill all fields";
     }
 
@@ -93,12 +126,15 @@ export function RegisterPage() {
       return "Passwords do not match";
     }
 
+    if (!termsAccepted) {
+      return "Please accept the terms to continue";
+    }
+
     return null;
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-
+  const handleRegister = async (event) => {
+    event.preventDefault();
     setError("");
     setSuccess("");
 
@@ -128,7 +164,10 @@ export function RegisterPage() {
           navigate("/login");
         }, 1800);
       } else {
-        setError(result.message || "Registration failed");
+        setError(
+          result.message ||
+            "Registration failed"
+        );
       }
     } catch (err) {
       console.error(err);
@@ -139,298 +178,233 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-purple-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        {/* Card */}
-        <div className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg mb-4">
-              <User className="text-white" size={34} />
-            </div>
+    <AuthShell
+      eyebrow="Start your workspace"
+      title="Create account"
+      subtitle="Set up your administrator profile and begin managing your mess operations."
+      sideTitle="Onboard once. Operate every day."
+      sideText="Your account creates an admin workspace with secure Firebase authentication and synced operational data."
+    >
+      <AnimatePresence mode="wait">
+        {error && (
+          <AuthStatus type="error">
+            {error}
+          </AuthStatus>
+        )}
+        {success && (
+          <AuthStatus type="success">
+            {success}
+          </AuthStatus>
+        )}
+      </AnimatePresence>
 
-            <h1 className="text-4xl font-black text-gray-900">
-              Create Account
-            </h1>
+      <form
+        onSubmit={handleRegister}
+        className="space-y-4"
+      >
+        <AuthField
+          label="Full name"
+          icon={User}
+          type="text"
+          name="displayName"
+          placeholder="Your full name"
+          value={formData.displayName}
+          onChange={handleChange}
+          autoComplete="name"
+        />
 
-            <p className="text-gray-500 mt-2">
-              Join the platform and start managing everything smarter.
-            </p>
-          </div>
+        <AuthField
+          label="Email address"
+          icon={Mail}
+          type="email"
+          name="email"
+          placeholder="you@example.com"
+          value={formData.email}
+          onChange={handleChange}
+          autoComplete="email"
+        />
 
-          {/* Error */}
-          {error && (
-            <div className="mb-5 flex items-start gap-3 bg-red-50 border border-red-200 text-red-600 rounded-2xl px-4 py-3">
-              <AlertCircle size={20} className="mt-0.5" />
-              <span className="text-sm font-medium">
-                {error}
-              </span>
-            </div>
-          )}
-
-          {/* Success */}
-          {success && (
-            <div className="mb-5 flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 rounded-2xl px-4 py-3">
-              <CheckCircle2 size={20} className="mt-0.5" />
-              <span className="text-sm font-medium">
-                {success}
-              </span>
-            </div>
-          )}
-
-          {/* Form */}
-          <form
-            onSubmit={handleRegister}
-            className="space-y-5"
-          >
-            {/* Name */}
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                Full Name
-              </label>
-
-              <div className="relative">
-                <User
-                  size={20}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-
-                <input
-                  type="text"
-                  name="displayName"
-                  placeholder="Enter your full name"
-                  value={formData.displayName}
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition"
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                Email Address
-              </label>
-
-              <div className="relative">
-                <Mail
-                  size={20}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                Password
-              </label>
-
-              <div className="relative">
-                <Lock
-                  size={20}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-
-                <input
-                  type={
-                    showPassword ? "text" : "password"
-                  }
-                  name="password"
-                  placeholder="Create a password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-14 py-3.5 rounded-2xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition"
-                />
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowPassword(!showPassword)
-                  }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} />
-                  ) : (
-                    <Eye size={20} />
-                  )}
-                </button>
-              </div>
-
-              {/* Password Strength */}
-              {formData.password && (
-                <div className="mt-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-medium text-gray-500">
-                      Password Strength
-                    </span>
-
-                    <span
-                      className={`text-xs font-bold ${
-                        strengthScore <= 2
-                          ? "text-red-500"
-                          : strengthScore <= 4
-                          ? "text-yellow-500"
-                          : "text-green-600"
-                      }`}
-                    >
-                      {getStrengthText()}
-                    </span>
-                  </div>
-
-                  <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
-                    <div
-                      className={`h-full ${getStrengthColor()} transition-all duration-300`}
-                      style={{
-                        width: `${(strengthScore / 5) * 100}%`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                    <div
-                      className={
-                        passwordChecks.length
-                          ? "text-green-600"
-                          : "text-gray-400"
-                      }
-                    >
-                      ✓ 8+ Characters
-                    </div>
-
-                    <div
-                      className={
-                        passwordChecks.upper
-                          ? "text-green-600"
-                          : "text-gray-400"
-                      }
-                    >
-                      ✓ Uppercase
-                    </div>
-
-                    <div
-                      className={
-                        passwordChecks.lower
-                          ? "text-green-600"
-                          : "text-gray-400"
-                      }
-                    >
-                      ✓ Lowercase
-                    </div>
-
-                    <div
-                      className={
-                        passwordChecks.number
-                          ? "text-green-600"
-                          : "text-gray-400"
-                      }
-                    >
-                      ✓ Number
-                    </div>
-
-                    <div
-                      className={
-                        passwordChecks.special
-                          ? "text-green-600"
-                          : "text-gray-400"
-                      }
-                    >
-                      ✓ Special Character
-                    </div>
-                  </div>
-                </div>
+        <AuthField
+          label="Password"
+          icon={Lock}
+          type={showPassword ? "text" : "password"}
+          name="password"
+          placeholder="Create a strong password"
+          value={formData.password}
+          onChange={handleChange}
+          autoComplete="new-password"
+          action={
+            <IconButton
+              label={
+                showPassword
+                  ? "Hide password"
+                  : "Show password"
+              }
+              onClick={() =>
+                setShowPassword(
+                  (value) => !value
+                )
+              }
+            >
+              {showPassword ? (
+                <EyeOff size={18} />
+              ) : (
+                <Eye size={18} />
               )}
-            </div>
+            </IconButton>
+          }
+        />
 
-            {/* Confirm Password */}
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                Confirm Password
-              </label>
+        <AnimatePresence>
+          {formData.password && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{
+                opacity: 1,
+                height: "auto",
+              }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="rounded-2xl border theme-muted p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider theme-muted-text">
+                    Password strength
+                  </span>
+                  <span
+                    className="text-xs font-black"
+                    style={{ color: strengthColor }}
+                  >
+                    {strengthText}
+                  </span>
+                </div>
 
-              <div className="relative">
-                <Lock
-                  size={20}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                />
+                <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-field)]">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{
+                      width: `${(strengthScore / 5) * 100}%`,
+                    }}
+                    className="h-full rounded-full"
+                    style={{
+                      background: strengthColor,
+                    }}
+                  />
+                </div>
 
-                <input
-                  type={
-                    showConfirmPassword
-                      ? "text"
-                      : "password"
-                  }
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-14 py-3.5 rounded-2xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition"
-                />
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowConfirmPassword(
-                      !showConfirmPassword
-                    )
-                  }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff size={20} />
-                  ) : (
-                    <Eye size={20} />
-                  )}
-                </button>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold">
+                  {[
+                    ["8+ Characters", passwordChecks.length],
+                    ["Uppercase", passwordChecks.upper],
+                    ["Lowercase", passwordChecks.lower],
+                    ["Number", passwordChecks.number],
+                    ["Special Character", passwordChecks.special],
+                  ].map(([label, pass]) => (
+                    <span
+                      key={label}
+                      className={
+                        pass
+                          ? "text-green-500"
+                          : "theme-muted-text"
+                      }
+                    >
+                      {pass ? "✓" : "•"} {label}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={busy}
-              className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-white transition-all duration-300 shadow-lg ${
-                busy
-                  ? "bg-indigo-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:scale-[1.02] hover:shadow-2xl"
+        <AuthField
+          label="Confirm password"
+          icon={Lock}
+          type={
+            showConfirmPassword
+              ? "text"
+              : "password"
+          }
+          name="confirmPassword"
+          placeholder="Confirm your password"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          autoComplete="new-password"
+          action={
+            <IconButton
+              label={
+                showConfirmPassword
+                  ? "Hide password"
+                  : "Show password"
+              }
+              onClick={() =>
+                setShowConfirmPassword(
+                  (value) => !value
+                )
+              }
+            >
+              {showConfirmPassword ? (
+                <EyeOff size={18} />
+              ) : (
+                <Eye size={18} />
+              )}
+            </IconButton>
+          }
+        />
+
+        <AnimatePresence>
+          {formData.confirmPassword && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-xs font-bold ${
+                passwordsMatch
+                  ? "border-green-500/25 bg-green-500/10 text-green-500"
+                  : "border-yellow-500/25 bg-yellow-500/10 text-yellow-500"
               }`}
             >
-              {busy ? (
-                <>
-                  <Loader2
-                    size={20}
-                    className="animate-spin"
-                  />
-                  Creating Account...
-                </>
-              ) : (
-                "Create Account"
-              )}
-            </button>
-          </form>
+              <Check size={15} />
+              {passwordsMatch
+                ? "Passwords match"
+                : "Confirm password must match"}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          {/* Footer */}
-          <p className="text-center mt-7 text-sm text-gray-500">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="font-bold text-indigo-600 hover:text-indigo-700"
-            >
-              Login
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+        <label className="flex items-start gap-3 rounded-2xl border theme-muted p-4 text-sm theme-subtext">
+          <input
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(event) => {
+              setTermsAccepted(event.target.checked);
+              setError("");
+            }}
+            className="mt-0.5 h-4 w-4 rounded border theme-field accent-[var(--accent)]"
+          />
+          <span>
+            I agree to create an admin workspace and keep account access secure.
+          </span>
+        </label>
+
+        <AuthButton
+          type="submit"
+          loading={busy}
+          loadingText="Creating account"
+        >
+          Create Account
+        </AuthButton>
+      </form>
+
+      <p className="mt-7 text-center text-sm theme-subtext">
+        Already have an account?{" "}
+        <Link
+          to="/login"
+          className="font-black theme-accent-text hover:brightness-110"
+        >
+          Sign in
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

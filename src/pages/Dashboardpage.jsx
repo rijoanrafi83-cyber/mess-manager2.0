@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 import {
   AreaChart,
@@ -27,16 +28,24 @@ import {
   Star,
   Calendar,
   Activity,
+  Plus,
+  FileText,
 } from "lucide-react";
 
 import {
   PageWrapper,
-  PageHeader,
-  StatCard,
   Card,
   CardHeader,
+  Button,
   EmptyState,
 } from "../components/ui";
+import {
+  ActivityTimeline,
+  MetricCard,
+  MiniBarList,
+  PremiumHero,
+  PremiumSection,
+} from "../components/PremiumUI";
 
 import {
   formatCurrency,
@@ -321,6 +330,32 @@ export function DashboardPage({
       [deposits]
     );
 
+  const activityItems =
+    useMemo(() => {
+      const expenseItems = recentBazaar.map((item) => ({
+        id: `bazaar-${item.id}`,
+        title: item.title || "Bazaar expense",
+        meta: `${item.date || "No date"} · ${item.category || "Other"}`,
+        value: formatCurrency(item.amount, settings?.currency || "৳"),
+        icon: <ShoppingCart size={14} />,
+        tone: "bg-orange-500/10 text-orange-500",
+      }));
+
+      const depositItems = recentDeposits.map((item) => {
+        const member = members.find((m) => m.id === item.memberId);
+        return {
+          id: `deposit-${item.id}`,
+          title: member?.name || "Member deposit",
+          meta: `${item.date || "No date"} · ${item.paymentMethod || "Cash"}`,
+          value: `+${formatCurrency(item.amount, settings?.currency || "৳")}`,
+          icon: <Wallet size={14} />,
+          tone: "bg-emerald-500/10 text-emerald-500",
+        };
+      });
+
+      return [...expenseItems, ...depositItems].slice(0, 8);
+    }, [members, recentBazaar, recentDeposits, settings?.currency]);
+
 
 
   const currency =
@@ -516,13 +551,32 @@ export function DashboardPage({
 
     <PageWrapper>
 
-      <PageHeader
-        title={`${
-          settings?.messName ||
-          "MessManager"
-        } Dashboard`}
-
-        subtitle={`Welcome back! Here's what's happening in your mess.`}
+      <PremiumHero
+        eyebrow="Realtime Mess Command Center"
+        title={settings?.messName || "MessManager Dashboard"}
+        subtitle="A live operating view for meals, expenses, deposits, member balances, and collection risk."
+        metrics={[
+          { label: "Meal Rate", value: formatCurrency(mealRate, currency), caption: "current blended rate" },
+          { label: "Net Due", value: formatCurrency(totalDue, currency), caption: totalDue > 0 ? "pending collection" : "all settled" },
+          { label: "Members", value: members.length, caption: `${members.filter((m) => m.status === "active").length} active` },
+          { label: "Meals", value: totalMeals.toFixed(1), caption: `${combinedMeals.length} tracked entries` },
+        ]}
+        actions={
+          <>
+            <Link to="/meals">
+              <Button variant="secondary">
+                <Plus size={16} />
+                Add Meals
+              </Button>
+            </Link>
+            <Link to="/reports">
+              <Button>
+                <FileText size={16} />
+                View Reports
+              </Button>
+            </Link>
+          </>
+        }
       />
 
 
@@ -546,13 +600,24 @@ export function DashboardPage({
 
         {stats.map((s) => (
 
-          <motion.div
-            key={s.label}
-            variants={itemVariants}
-          >
-
-            <StatCard {...s} />
-
+          <motion.div key={s.label} variants={itemVariants}>
+            <MetricCard
+              label={s.label}
+              value={s.value}
+              caption={s.sub}
+              icon={s.icon}
+              tone={
+                s.iconColor.includes("red")
+                  ? "red"
+                  : s.iconColor.includes("green") || s.iconColor.includes("teal")
+                    ? "green"
+                    : s.iconColor.includes("orange")
+                      ? "orange"
+                      : s.iconColor.includes("blue")
+                        ? "blue"
+                        : "accent"
+              }
+            />
           </motion.div>
         ))}
 
@@ -570,12 +635,11 @@ export function DashboardPage({
            MEAL TREND
         ========================================= */}
 
-        <Card className="xl:col-span-2">
-
-          <CardHeader
-            title="Meal Trend"
-            subtitle="Last 7 days"
-          />
+        <PremiumSection
+          className="xl:col-span-2"
+          title="Monthly Meal Momentum"
+          subtitle="Realtime meal units for the last seven days"
+        >
 
           <ResponsiveContainer
             width="100%"
@@ -676,7 +740,7 @@ export function DashboardPage({
 
           </ResponsiveContainer>
 
-        </Card>
+        </PremiumSection>
 
 
 
@@ -684,12 +748,7 @@ export function DashboardPage({
            PIE CHART
         ========================================= */}
 
-        <Card>
-
-          <CardHeader
-            title="Expense Breakdown"
-            subtitle="By category"
-          />
+        <PremiumSection title="Expense Mix" subtitle="Bazaar spend by category">
 
           {pieData.length >
           0 ? (
@@ -757,7 +816,7 @@ export function DashboardPage({
             />
           )}
 
-        </Card>
+        </PremiumSection>
 
       </div>
 
@@ -769,11 +828,7 @@ export function DashboardPage({
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
 
-        <Card className="xl:col-span-2">
-
-          <CardHeader
-            title="Member Meals Comparison"
-          />
+        <PremiumSection className="xl:col-span-2" title="Member Meal Leaders" subtitle="Highest meal consumers this month">
 
           {memberBills.length >
           0 ? (
@@ -846,7 +901,7 @@ export function DashboardPage({
             />
           )}
 
-        </Card>
+        </PremiumSection>
 
 
 
@@ -1041,12 +1096,26 @@ export function DashboardPage({
       ===================================================== */}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <PremiumSection title="Live Activity Feed" subtitle="Latest deposits and bazaar activity">
+          <ActivityTimeline items={activityItems} empty="No deposits or expenses have been recorded yet." />
+        </PremiumSection>
+
+        <PremiumSection title="Balance Watchlist" subtitle="Members requiring follow-up">
+          <MiniBarList
+            items={[...memberBills]
+              .filter((m) => m.due > 0)
+              .sort((a, b) => b.due - a.due)
+              .slice(0, 6)
+              .map((m) => ({ ...m, label: m.name, value: m.due }))}
+            format={(value) => formatCurrency(value, currency)}
+          />
+        </PremiumSection>
 
         {/* =========================================
            RECENT BAZAAR
         ========================================= */}
 
-        <Card noPad>
+        <Card noPad className="xl:col-span-1">
 
           <div className="p-6 pb-0">
 

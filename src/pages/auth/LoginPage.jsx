@@ -1,120 +1,224 @@
 import { useState } from "react";
-import { useNavigate, useLocation, Link, Navigate } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ShieldCheck,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+
 import { useAuth } from "../../context/AuthContext";
-import { useTheme } from "../../context/ThemeContext";
+import {
+  AuthButton,
+  AuthShell,
+  AuthStatus,
+} from "../../components/auth/AuthShell";
+import {
+  AuthField,
+  IconButton,
+} from "../../components/auth/AuthField";
+
+const REMEMBER_EMAIL_KEY = "mm_auth_email";
 
 export function LoginPage() {
   const { login, isAuthed } = useAuth();
-  const { dark, setDark }   = useTheme();
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const from      = location.state?.from?.pathname || "/";
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from =
+    location.state?.from?.pathname || "/";
 
-  const [email,    setEmail]    = useState("");
-  const [password, setPassword] = useState("");
-  const [error,    setError]    = useState("");
-  const [busy,     setBusy]     = useState(false);
+  const rememberedEmail =
+    typeof window !== "undefined"
+      ? localStorage.getItem(
+          REMEMBER_EMAIL_KEY
+        ) || ""
+      : "";
 
-  // Already logged in — redirect
-  if (isAuthed) return <Navigate to={from} replace />;
+  const [email, setEmail] = useState(
+    rememberedEmail
+  );
+  const [password, setPassword] =
+    useState("");
+  const [remember, setRemember] =
+    useState(Boolean(rememberedEmail));
+  const [showPassword, setShowPassword] =
+    useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const handleLogin = async () => {
+  if (isAuthed) {
+    return <Navigate to={from} replace />;
+  }
+
+  const handleLogin = async (event) => {
+    event?.preventDefault();
+
     if (!email.trim() || !password.trim()) {
       setError("Please fill in all fields.");
       return;
     }
+
     setBusy(true);
     setError("");
-    const result = await login(email, password);
+
+    const result = await login(
+      email.trim(),
+      password
+    );
+
     if (result.success) {
+      if (remember) {
+        localStorage.setItem(
+          REMEMBER_EMAIL_KEY,
+          email.trim()
+        );
+      } else {
+        localStorage.removeItem(
+          REMEMBER_EMAIL_KEY
+        );
+      }
+
       navigate(from, { replace: true });
-    } else {
-      setError(result.message);
-      setBusy(false);
+      return;
     }
+
+    setError(result.message);
+    setBusy(false);
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background:
-          "radial-gradient(ellipse at 0% 0%, #6366f120 0%, transparent 60%)," +
-          "radial-gradient(ellipse at 100% 100%, #8b5cf620 0%, transparent 60%)," +
-          "radial-gradient(ellipse at 50% 50%, #0f172a 0%, #1e1b4b 100%)",
-      }}
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to continue managing meals, deposits, reports, and daily operations."
+      sideTitle="A calmer control room for mess management."
+      sideText="Everything from meal counts to monthly bills stays organized, synced, and ready for your team."
     >
-      <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-violet-500/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+      <AnimatePresence mode="wait">
+        {error && (
+          <AuthStatus type="error">
+            {error}
+          </AuthStatus>
+        )}
+      </AnimatePresence>
 
-      <div className="relative w-full max-w-md z-10">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl p-8">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-4xl shadow-2xl shadow-indigo-500/40 mx-auto mb-4">
-              🍛
-            </div>
-            <h1 className="text-3xl font-black text-white">MessManager</h1>
-            <p className="text-indigo-300 mt-1 text-sm font-medium">v5.0 — Premium Edition</p>
-          </div>
+      <form
+        onSubmit={handleLogin}
+        className="space-y-4"
+      >
+        <AuthField
+          label="Email address"
+          icon={Mail}
+          type="email"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setError("");
+          }}
+          placeholder="you@example.com"
+          autoComplete="email"
+        />
 
-          {error && (
-            <div className="mb-4 p-3.5 bg-rose-500/20 border border-rose-400/30 text-rose-300 rounded-2xl text-sm font-medium">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-1.5">
-                Email
-              </label>
-              <input
-                type="email" value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                placeholder="you@example.com"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-1.5">
-                Password
-              </label>
-              <input
-                type="password" value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
-              />
-            </div>
-            <button
-              onClick={handleLogin} disabled={busy}
-              className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-bold rounded-xl shadow-2xl shadow-indigo-500/40 transition-all active:scale-95 disabled:opacity-50 text-sm"
+        <AuthField
+          label="Password"
+          icon={Lock}
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setError("");
+          }}
+          placeholder="Enter your password"
+          autoComplete="current-password"
+          action={
+            <IconButton
+              label={
+                showPassword
+                  ? "Hide password"
+                  : "Show password"
+              }
+              onClick={() =>
+                setShowPassword(
+                  (value) => !value
+                )
+              }
             >
-              {busy ? "Signing in…" : "Sign In →"}
-            </button>
-          </div>
+              {showPassword ? (
+                <EyeOff size={18} />
+              ) : (
+                <Eye size={18} />
+              )}
+            </IconButton>
+          }
+        />
 
-          <div className="mt-6 flex justify-center gap-5 text-sm">
-            <Link to="/register" className="text-indigo-300 hover:text-white transition-colors font-medium">
-              Create Account
-            </Link>
-            <span className="text-indigo-500">·</span>
-            <Link to="/forgot-password" className="text-indigo-300 hover:text-white transition-colors font-medium">
-              Forgot Password?
-            </Link>
-          </div>
+        <div className="flex items-center justify-between gap-4">
+          <label className="flex items-center gap-2 text-sm font-semibold theme-subtext">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(event) =>
+                setRemember(event.target.checked)
+              }
+              className="h-4 w-4 rounded border theme-field accent-[var(--accent)]"
+            />
+            Remember me
+          </label>
 
-          <button
-            onClick={() => setDark((d) => !d)}
-            className="w-full mt-4 text-center text-xs text-indigo-400 hover:text-indigo-200 transition-colors"
+          <Link
+            to="/forgot-password"
+            className="text-sm font-bold theme-accent-text hover:brightness-110"
           >
-            {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
-          </button>
+            Forgot password?
+          </Link>
         </div>
+
+        <AuthButton
+          type="submit"
+          loading={busy}
+          loadingText="Signing in"
+        >
+          Sign In
+        </AuthButton>
+      </form>
+
+      <div className="my-6 flex items-center gap-3">
+        <span className="h-px flex-1 bg-[var(--border-soft)]" />
+        <span className="text-xs font-bold uppercase tracking-wider theme-muted-text">
+          Secure access
+        </span>
+        <span className="h-px flex-1 bg-[var(--border-soft)]" />
       </div>
-    </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {["Google", "Microsoft"].map((label) => (
+          <motion.button
+            key={label}
+            type="button"
+            disabled
+            className="flex items-center justify-center gap-2 rounded-2xl border theme-muted px-3 py-3 text-xs font-bold theme-muted-text opacity-70"
+          >
+            <ShieldCheck size={15} />
+            {label}
+          </motion.button>
+        ))}
+      </div>
+
+      <p className="mt-7 text-center text-sm theme-subtext">
+        New to MessManager?{" "}
+        <Link
+          to="/register"
+          className="font-black theme-accent-text hover:brightness-110"
+        >
+          Create an account
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

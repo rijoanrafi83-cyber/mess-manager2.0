@@ -1,11 +1,19 @@
 import { useState, useMemo, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { Wallet, Plus, Trash2, Edit2, TrendingUp, CheckCircle } from "lucide-react";
+import { Wallet, Plus, Trash2, Edit2, TrendingUp, CheckCircle, ReceiptText } from "lucide-react";
 import {
-  PageWrapper, PageHeader, Card, Button, Input, Select,
-  Textarea, Modal, Badge, EmptyState, SearchInput, Table, StatCard
+  PageWrapper, Card, Button, Input, Select,
+  Textarea, Modal, Badge, EmptyState, SearchInput, Table
 } from "../components/ui";
+import {
+  ActivityTimeline,
+  FilterSurface,
+  MetricCard,
+  PersonAvatar,
+  PremiumHero,
+  PremiumSection,
+} from "../components/PremiumUI";
 import { addDeposit, updateDeposit, deleteDeposit } from "../services/firestoreService";
 import { formatCurrency } from "../utils/billing";
 
@@ -92,6 +100,7 @@ export function DepositsPage({ deposits = [], members = [], ownerId }) {
 
   const totalDeposits = useMemo(() => deposits.reduce((s, d) => s + Number(d.amount || 0), 0), [deposits]);
   const filteredTotal = useMemo(() => filtered.reduce((s, d) => s + Number(d.amount || 0), 0), [filtered]);
+  const averageDeposit = deposits.length ? totalDeposits / deposits.length : 0;
 
   const memberDepositMap = useMemo(() => {
     const map = {};
@@ -100,6 +109,19 @@ export function DepositsPage({ deposits = [], members = [], ownerId }) {
     });
     return map;
   }, [deposits]);
+
+  const activityItems = useMemo(
+    () =>
+      filtered.slice(0, 8).map((item) => ({
+        id: item.id,
+        title: members.find((member) => member.id === item.memberId)?.name || "Unknown",
+        meta: `${item.date || "No date"} · ${item.paymentMethod || "Cash"}${item.note ? ` · ${item.note}` : ""}`,
+        value: `+${formatCurrency(item.amount)}`,
+        icon: <ReceiptText size={14} />,
+        tone: "bg-emerald-500/10 text-emerald-500",
+      })),
+    [filtered, members]
+  );
 
   const handleDelete = useCallback(async () => {
     setLoading(true);
@@ -153,9 +175,16 @@ export function DepositsPage({ deposits = [], members = [], ownerId }) {
 
   return (
     <PageWrapper>
-      <PageHeader
+      <PremiumHero
+        eyebrow="Collection Desk"
         title="Deposits"
-        subtitle={`${deposits.length} deposits · Total: ${formatCurrency(totalDeposits)}`}
+        subtitle="Record payments, review member contribution patterns, and inspect transaction history with realtime Firebase sync."
+        metrics={[
+          { label: "Collected", value: formatCurrency(totalDeposits), caption: "total deposits" },
+          { label: "Filtered", value: formatCurrency(filteredTotal), caption: "current view" },
+          { label: "Average", value: formatCurrency(averageDeposit), caption: "per transaction" },
+          { label: "Transactions", value: deposits.length, caption: "payment records" },
+        ]}
         actions={
           <Button onClick={() => setShowAdd(true)}>
             <Plus size={16} /> Record Deposit
@@ -164,32 +193,43 @@ export function DepositsPage({ deposits = [], members = [], ownerId }) {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard label="Total Collected" value={formatCurrency(totalDeposits)} icon={TrendingUp} iconBg="bg-green-500/10" iconColor="text-green-500" />
-        <StatCard label="Filtered Total" value={formatCurrency(filteredTotal)} icon={Wallet} iconBg="bg-blue-500/10" iconColor="text-blue-500" />
-        <StatCard label="Transactions" value={deposits.length} icon={CheckCircle} iconBg="bg-violet-500/10" iconColor="text-violet-500" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <MetricCard label="Total Collected" value={formatCurrency(totalDeposits)} icon={TrendingUp} tone="green" caption="all member deposits" />
+        <MetricCard label="Filtered Total" value={formatCurrency(filteredTotal)} icon={Wallet} tone="blue" caption="visible records" />
+        <MetricCard label="Transactions" value={deposits.length} icon={CheckCircle} tone="accent" caption="successful payments" />
       </div>
 
       {/* Member summary cards */}
       {members.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+        <PremiumSection title="Member Balance Overview" subtitle="Collected amount per member" className="mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {members.map(m => (
-            <div key={m.id} className="p-4 bg-white dark:bg-white/4 border border-gray-200 dark:border-white/8 rounded-xl">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate font-medium mb-1">{m.name}</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(memberDepositMap[m.id] || 0)}</p>
+            <div key={m.id} className="p-4 theme-muted border rounded-2xl">
+              <div className="flex items-center gap-3">
+                <PersonAvatar name={m.name} size="sm" status={memberDepositMap[m.id] ? "active" : "inactive"} />
+                <div className="min-w-0">
+                  <p className="text-xs theme-muted-text truncate font-medium">{m.name}</p>
+                  <p className="text-lg font-black theme-text">{formatCurrency(memberDepositMap[m.id] || 0)}</p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
+        </PremiumSection>
       )}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+      <FilterSurface>
         <SearchInput value={search} onChange={setSearch} placeholder="Search deposits..." className="flex-1" />
         <Select value={filterMem} onChange={e => setFilterMem(e.target.value)} wrapperClass="sm:w-44">
           <option value="all">All Members</option>
           {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
         </Select>
-      </div>
+      </FilterSurface>
+
+      <PremiumSection title="Transaction History" subtitle="Latest filtered deposits" className="mb-6">
+        <ActivityTimeline items={activityItems} empty="No deposit activity found for this filter." />
+      </PremiumSection>
 
       <Card noPad>
         <Table

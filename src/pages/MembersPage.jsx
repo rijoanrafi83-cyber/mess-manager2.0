@@ -20,12 +20,14 @@ import {
   Home,
   Calendar,
   Shield,
-  Eye
+  Eye,
+  UserCheck,
+  UserX,
+  Wallet
 } from "lucide-react";
 
 import {
   PageWrapper,
-  PageHeader,
   Card,
   Button,
   Input,
@@ -36,6 +38,13 @@ import {
   SearchInput,
   Table
 } from "../components/ui";
+import {
+  FilterSurface,
+  MetricCard,
+  PersonAvatar,
+  PremiumHero,
+  PremiumSection,
+} from "../components/PremiumUI";
 
 import {
   addMember,
@@ -603,6 +612,20 @@ export function MembersPage({
 
   const PER_PAGE = 10;
 
+  const memberBills = useMemo(
+    () => billData?.memberBills || [],
+    [billData?.memberBills]
+  );
+
+  const activeMembers = members.filter((m) => m.status === "active").length;
+
+  const inactiveMembers = members.filter((m) => m.status === "inactive").length;
+
+  const totalDue = memberBills.reduce(
+    (sum, member) => sum + Math.max(0, Number(member.due || 0)),
+    0
+  );
+
 
 
   const filtered =
@@ -670,6 +693,15 @@ export function MembersPage({
 
     }, [filtered, page]);
 
+  const memberCards = useMemo(
+    () =>
+      filtered.slice(0, 6).map((member) => ({
+        ...member,
+        bill: memberBills.find((bill) => bill.id === member.id) || {},
+      })),
+    [filtered, memberBills]
+  );
+
 
 
   const totalPages =
@@ -701,7 +733,7 @@ export function MembersPage({
             false
           );
 
-        } catch (err) {
+        } catch {
 
           toast.error(
             "Failed to add member"
@@ -737,7 +769,7 @@ export function MembersPage({
 
           setEditMember(null);
 
-        } catch (err) {
+        } catch {
 
           toast.error(
             "Failed to update member"
@@ -773,7 +805,7 @@ export function MembersPage({
 
         setDelId(null);
 
-      } catch (err) {
+      } catch {
 
         toast.error(
           "Failed to delete member"
@@ -933,10 +965,16 @@ export function MembersPage({
 
     <PageWrapper>
 
-      <PageHeader
+      <PremiumHero
+        eyebrow="Member Directory"
         title="Members"
-
-        subtitle={`${members.length} registered members`}
+        subtitle="Manage residents with fast search, profile side views, status signals, and billing visibility."
+        metrics={[
+          { label: "Registered", value: members.length, caption: "total members" },
+          { label: "Active", value: activeMembers, caption: "meal eligible" },
+          { label: "Inactive", value: inactiveMembers, caption: "paused accounts" },
+          { label: "Open Due", value: `৳${totalDue.toFixed(0)}`, caption: "from reports" },
+        ]}
 
         actions={
 
@@ -953,11 +991,68 @@ export function MembersPage({
         }
       />
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <MetricCard label="Active Members" value={activeMembers} caption="ready for meal tracking" icon={UserCheck} tone="green" />
+        <MetricCard label="Inactive Members" value={inactiveMembers} caption="filtered separately" icon={UserX} tone="orange" />
+        <MetricCard label="Pending Collection" value={`৳${totalDue.toFixed(0)}`} caption="open member due" icon={Wallet} tone={totalDue > 0 ? "red" : "green"} />
+      </div>
+
+      {memberCards.length > 0 && (
+        <PremiumSection
+          title="Member Snapshot"
+          subtitle="Quick profile and billing signals for the current filter"
+          className="mb-6"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {memberCards.map((member) => (
+              <motion.button
+                key={member.id}
+                type="button"
+                whileHover={{ y: -3 }}
+                onClick={() => setViewMember(member)}
+                className="text-left rounded-2xl border theme-muted hover:bg-[var(--bg-card)] p-4 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <PersonAvatar name={member.name} status={member.status} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-black theme-text truncate">{member.name}</p>
+                      <Badge variant={member.status === "active" ? "success" : "warning"}>
+                        {member.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs theme-muted-text truncate mt-1">
+                      {member.roomNumber ? `Room ${member.roomNumber}` : member.email}
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 mt-4 text-xs">
+                      <div>
+                        <p className="theme-muted-text">Meals</p>
+                        <p className="font-black theme-text">{(member.bill.meals || 0).toFixed(1)}</p>
+                      </div>
+                      <div>
+                        <p className="theme-muted-text">Deposit</p>
+                        <p className="font-black theme-text">৳{(member.bill.deposit || 0).toFixed(0)}</p>
+                      </div>
+                      <div>
+                        <p className="theme-muted-text">Due</p>
+                        <p className={`font-black ${member.bill.due > 0 ? "text-red-500" : "text-emerald-500"}`}>
+                          ৳{Math.max(0, member.bill.due || 0).toFixed(0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </PremiumSection>
+      )}
+
 
 
       {/* FILTERS */}
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <FilterSurface>
 
         <SearchInput
           value={search}
@@ -994,7 +1089,7 @@ export function MembersPage({
 
         </Select>
 
-      </div>
+      </FilterSurface>
 
 
 

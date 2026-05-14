@@ -17,6 +17,15 @@ import {
   UtensilsCrossed
 
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import html2canvas from "html2canvas";
 
@@ -27,13 +36,17 @@ import toast from "react-hot-toast";
 import {
 
   PageWrapper,
-  PageHeader,
   Card,
   Button,
   Badge,
   EmptyState
 
 } from "../components/ui";
+import {
+  MetricCard,
+  PremiumHero,
+  PremiumSection,
+} from "../components/PremiumUI";
 
 import {
 
@@ -41,6 +54,7 @@ import {
   getMealRateColor
 
 } from "../utils/billing";
+import { useChartTheme } from "../hooks/useChartTheme";
 
 
 
@@ -545,16 +559,6 @@ export default function ReportsPage({
 
   members = [],
 
-  meals = [],
-
-  guestMeals = [],
-
-  mealSettings = [],
-
-  bazaar = [],
-
-  deposits = [],
-
   settings,
 
 }) {
@@ -565,6 +569,8 @@ export default function ReportsPage({
   const currency =
     settings?.currency ||
     "৳";
+
+  const chartTheme = useChartTheme();
 
 
 
@@ -1042,6 +1048,22 @@ export default function ReportsPage({
       }
     );
 
+  const reportChartData =
+    useMemo(
+      () =>
+        memberBills
+          .slice()
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 8)
+          .map((member) => ({
+            name: member.name,
+            bill: Number(member.total || 0),
+            deposit: Number(member.deposit || 0),
+            due: Math.max(0, Number(member.due || 0)),
+          })),
+      [memberBills]
+    );
+
 
 
   const stats = [
@@ -1124,11 +1146,16 @@ export default function ReportsPage({
 
     <PageWrapper>
 
-      <PageHeader
-
+      <PremiumHero
+        eyebrow="Analytics & Export"
         title="Monthly Report"
-
-        subtitle={currentMonth}
+        subtitle={`${currentMonth} settlement intelligence with export-safe PDF, CSV, and print workflows.`}
+        metrics={[
+          { label: "Members", value: members.length, caption: `${settledMembers} settled` },
+          { label: "Meal Rate", value: formatCurrency(mealRate, currency), caption: "per unit" },
+          { label: "Deposits", value: formatCurrency(totalDeposits, currency), caption: "collected" },
+          { label: "Due", value: formatCurrency(totalDue, currency), caption: `${dueMembers} members` },
+        ]}
 
         actions={
 
@@ -1170,6 +1197,37 @@ export default function ReportsPage({
           </div>
         }
       />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <MetricCard label="Settled Members" value={settledMembers} caption="no open dues" icon={CheckCircle2} tone="green" />
+        <MetricCard label="Due Members" value={dueMembers} caption="requires follow-up" icon={AlertCircle} tone={dueMembers ? "red" : "green"} />
+        <MetricCard label="Top Eater" value={topMember?.name || "No data"} caption={topMember ? `${topMember.meals.toFixed(1)} units` : "add meals to rank"} icon={UtensilsCrossed} tone="blue" />
+      </div>
+
+      {reportChartData.length > 0 && (
+        <PremiumSection title="Member Settlement Comparison" subtitle="Bill, deposit, and due by top members" className="mb-6">
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={reportChartData} barSize={14}>
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="name" tick={{ fill: chartTheme.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: chartTheme.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                formatter={(value, name) => [formatCurrency(value, currency), name]}
+                contentStyle={{
+                  background: chartTheme.tooltip.background,
+                  border: `1px solid ${chartTheme.tooltip.border}`,
+                  borderRadius: 12,
+                  color: chartTheme.tooltip.color,
+                }}
+                labelStyle={{ color: chartTheme.tooltip.color }}
+              />
+              <Bar dataKey="bill" name="Bill" fill={chartTheme.colors[0]} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="deposit" name="Deposit" fill={chartTheme.colors[2]} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="due" name="Due" fill={chartTheme.colors[4]} radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </PremiumSection>
+      )}
 
 
 

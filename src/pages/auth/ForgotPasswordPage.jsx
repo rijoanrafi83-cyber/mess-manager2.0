@@ -1,33 +1,38 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Mail,
   ArrowLeft,
-  Loader2,
   CheckCircle2,
-  AlertCircle,
+  Mail,
   ShieldCheck,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { useAuth } from "../../context/AuthContext";
+import {
+  AuthButton,
+  AuthShell,
+  AuthStatus,
+} from "../../components/auth/AuthShell";
+import { AuthField } from "../../components/auth/AuthField";
 
 export function ForgotPasswordPage() {
   const { resetPassword } = useAuth();
 
   const [email, setEmail] = useState("");
-
   const [busy, setBusy] = useState(false);
-
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [success, setSuccess] =
+    useState("");
+  const [sentTo, setSentTo] = useState("");
 
-  const validateEmail = (value) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  };
+  const validateEmail = (value) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      value
+    );
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
     setSuccess("");
 
@@ -44,14 +49,16 @@ export function ForgotPasswordPage() {
     try {
       setBusy(true);
 
-      const result = await resetPassword(email.trim());
+      const trimmedEmail = email.trim();
+      const result =
+        await resetPassword(trimmedEmail);
 
       if (result.success) {
+        setSentTo(trimmedEmail);
         setSuccess(
           result.message ||
             "Password reset email sent successfully"
         );
-
         setEmail("");
       } else {
         setError(
@@ -68,153 +75,118 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-cyan-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Card */}
-        <div className="bg-white/80 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl overflow-hidden">
-          {/* Top Banner */}
-          <div className="bg-gradient-to-r from-indigo-600 to-cyan-500 px-8 py-10 text-center relative overflow-hidden">
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute w-40 h-40 bg-white rounded-full -top-16 -left-10"></div>
-              <div className="absolute w-32 h-32 bg-white rounded-full -bottom-10 -right-10"></div>
+    <AuthShell
+      eyebrow="Account recovery"
+      title="Reset password"
+      subtitle="Enter your email and Firebase will send a secure reset link to your inbox."
+      sideTitle="Recovery that stays simple."
+      sideText="Reset links are sent through Firebase Authentication, so your credentials stay protected while you regain access."
+    >
+      <AnimatePresence mode="wait">
+        {error && (
+          <AuthStatus type="error">
+            {error}
+          </AuthStatus>
+        )}
+        {success && (
+          <AuthStatus type="success">
+            {success}
+          </AuthStatus>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        {success ? (
+          <motion.div
+            key="sent"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="rounded-3xl border theme-muted p-6 text-center"
+          >
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-green-500/10 text-green-500">
+              <CheckCircle2 size={30} />
             </div>
-
-            <div className="relative z-10">
-              <div className="w-20 h-20 mx-auto rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg mb-5">
-                <ShieldCheck
-                  size={38}
-                  className="text-white"
-                />
-              </div>
-
-              <h1 className="text-3xl font-black text-white">
-                Forgot Password?
-              </h1>
-
-              <p className="text-indigo-100 mt-3 text-sm leading-relaxed">
-                No worries. Enter your email address and
-                we’ll send you a secure password reset link.
-              </p>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-8">
-            {/* Error */}
-            {error && (
-              <div className="mb-5 flex items-start gap-3 bg-red-50 border border-red-200 text-red-600 rounded-2xl px-4 py-3">
-                <AlertCircle
-                  size={20}
-                  className="mt-0.5"
-                />
-
-                <span className="text-sm font-medium">
-                  {error}
-                </span>
-              </div>
-            )}
-
-            {/* Success */}
-            {success && (
-              <div className="mb-5 flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 rounded-2xl px-4 py-3">
-                <CheckCircle2
-                  size={20}
-                  className="mt-0.5"
-                />
-
-                <span className="text-sm font-medium">
-                  {success}
-                </span>
-              </div>
-            )}
-
-            {/* Form */}
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-5"
+            <h3 className="mt-4 text-lg font-black theme-text">
+              Check your inbox
+            </h3>
+            <p className="mt-2 text-sm leading-6 theme-subtext">
+              We sent a reset link to{" "}
+              <span className="font-bold theme-text">
+                {sentTo}
+              </span>
+              . Follow the link to choose a new password.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccess("");
+                setSentTo("");
+              }}
+              className="theme-focus mt-5 rounded-2xl border theme-muted px-4 py-3 text-sm font-bold theme-text hover:bg-[var(--bg-card)]"
             >
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email Address
-                </label>
+              Send another link
+            </button>
+          </motion.div>
+        ) : (
+          <motion.form
+            key="form"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            onSubmit={handleSubmit}
+            className="space-y-5"
+          >
+            <AuthField
+              label="Email address"
+              icon={Mail}
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setError("");
+              }}
+              autoComplete="email"
+            />
 
-                <div className="relative">
-                  <Mail
-                    size={20}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
+            <AuthButton
+              type="submit"
+              loading={busy}
+              loadingText="Sending reset link"
+            >
+              Send Reset Link
+            </AuthButton>
+          </motion.form>
+        )}
+      </AnimatePresence>
 
-                  <input
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={email}
-                    onChange={(e) =>
-                      setEmail(e.target.value)
-                    }
-                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition"
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={busy}
-                className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-white transition-all duration-300 shadow-lg ${
-                  busy
-                    ? "bg-indigo-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-indigo-600 to-cyan-500 hover:scale-[1.02] hover:shadow-2xl"
-                }`}
-              >
-                {busy ? (
-                  <>
-                    <Loader2
-                      size={20}
-                      className="animate-spin"
-                    />
-                    Sending Reset Link...
-                  </>
-                ) : (
-                  "Send Reset Link"
-                )}
-              </button>
-            </form>
-
-            {/* Security Info */}
-            <div className="mt-6 bg-gray-50 border border-gray-100 rounded-2xl p-4">
-              <div className="flex gap-3">
-                <ShieldCheck
-                  size={22}
-                  className="text-indigo-600 mt-0.5"
-                />
-
-                <div>
-                  <h3 className="font-semibold text-gray-800 text-sm">
-                    Secure Password Recovery
-                  </h3>
-
-                  <p className="text-gray-500 text-xs mt-1 leading-relaxed">
-                    For your security, password reset links
-                    automatically expire after a limited
-                    time.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Back to Login */}
-            <div className="mt-7 text-center">
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition"
-              >
-                <ArrowLeft size={16} />
-                Back to Login
-              </Link>
-            </div>
+      <div className="mt-6 rounded-2xl border theme-muted p-4">
+        <div className="flex gap-3">
+          <ShieldCheck
+            size={21}
+            className="mt-0.5 shrink-0 theme-accent-text"
+          />
+          <div>
+            <h3 className="text-sm font-black theme-text">
+              Secure password recovery
+            </h3>
+            <p className="mt-1 text-xs leading-5 theme-muted-text">
+              Reset links are time-sensitive and delivered only to the account email.
+            </p>
           </div>
         </div>
       </div>
-    </div>
+
+      <div className="mt-7 text-center">
+        <Link
+          to="/login"
+          className="inline-flex items-center gap-2 text-sm font-black theme-accent-text hover:brightness-110"
+        >
+          <ArrowLeft size={16} />
+          Back to login
+        </Link>
+      </div>
+    </AuthShell>
   );
 }

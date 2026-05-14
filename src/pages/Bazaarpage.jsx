@@ -1,11 +1,18 @@
 import { useState, useMemo, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { ShoppingCart, Plus, Trash2, Edit2, TrendingDown, Tag } from "lucide-react";
+import { ShoppingCart, Plus, Trash2, Edit2, TrendingDown, Tag, ReceiptText, Layers3 } from "lucide-react";
 import {
-  PageWrapper, PageHeader, Card, CardHeader, Button, Input, Select,
-  Textarea, Modal, Badge, EmptyState, SearchInput, Table, StatCard
+  PageWrapper, Card, Button, Input, Select,
+  Textarea, Modal, Badge, EmptyState, SearchInput, Table
 } from "../components/ui";
+import {
+  ActivityTimeline,
+  FilterSurface,
+  MetricCard,
+  PremiumHero,
+  PremiumSection,
+} from "../components/PremiumUI";
 import { addBazaar, updateBazaar, deleteBazaar } from "../services/firestoreService";
 import { formatCurrency } from "../utils/billing";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -93,6 +100,7 @@ export function BazaarPage({ bazaar = [], ownerId }) {
 
   const totalFiltered = useMemo(() => filtered.reduce((s, b) => s + Number(b.amount || 0), 0), [filtered]);
   const totalAll      = useMemo(() => bazaar.reduce((s, b) => s + Number(b.amount || 0), 0), [bazaar]);
+  const averageExpense = bazaar.length ? totalAll / bazaar.length : 0;
 
   // Category chart data
   const catChartData = useMemo(() => {
@@ -103,6 +111,19 @@ export function BazaarPage({ bazaar = [], ownerId }) {
     });
     return Object.entries(map).map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total);
   }, [bazaar]);
+
+  const activityItems = useMemo(
+    () =>
+      filtered.slice(0, 8).map((item) => ({
+        id: item.id,
+        title: item.title || "Expense",
+        meta: `${item.date || "No date"} · ${item.buyerName || "Unknown buyer"} · ${item.category || "Other"}`,
+        value: formatCurrency(item.amount),
+        icon: <ReceiptText size={14} />,
+        tone: "bg-orange-500/10 text-orange-500",
+      })),
+    [filtered]
+  );
 
   const handleDelete = useCallback(async () => {
     if (!delId) return;
@@ -151,9 +172,16 @@ export function BazaarPage({ bazaar = [], ownerId }) {
 
   return (
     <PageWrapper>
-      <PageHeader
+      <PremiumHero
+        eyebrow="Expense Intelligence"
         title="Bazaar"
-        subtitle={`${bazaar.length} expense entries · Total: ${formatCurrency(totalAll)}`}
+        subtitle="Track every market run, category spend, buyer activity, and realtime totals without changing the existing bazaar ledger."
+        metrics={[
+          { label: "Total Spend", value: formatCurrency(totalAll), caption: "all bazaar entries" },
+          { label: "Filtered", value: formatCurrency(totalFiltered), caption: "current view" },
+          { label: "Average", value: formatCurrency(averageExpense), caption: "per transaction" },
+          { label: "Categories", value: catChartData.length, caption: "active buckets" },
+        ]}
         actions={
           <Button onClick={() => setShowAdd(true)}>
             <Plus size={16} /> Add Expense
@@ -162,17 +190,16 @@ export function BazaarPage({ bazaar = [], ownerId }) {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total Expenses" value={formatCurrency(totalAll)} icon={TrendingDown} iconBg="bg-red-500/10" iconColor="text-red-500" />
-        <StatCard label="This Filter" value={formatCurrency(totalFiltered)} icon={ShoppingCart} iconBg="bg-orange-500/10" iconColor="text-orange-500" />
-        <StatCard label="Entries" value={bazaar.length} icon={Tag} iconBg="bg-blue-500/10" iconColor="text-blue-500" />
-        <StatCard label="Categories" value={catChartData.length} icon={Tag} iconBg="bg-teal-500/10" iconColor="text-teal-500" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <MetricCard label="Total Expenses" value={formatCurrency(totalAll)} icon={TrendingDown} tone="red" caption="all-time ledger" />
+        <MetricCard label="This Filter" value={formatCurrency(totalFiltered)} icon={ShoppingCart} tone="orange" caption="visible records" />
+        <MetricCard label="Entries" value={bazaar.length} icon={Tag} tone="blue" caption="transactions" />
+        <MetricCard label="Categories" value={catChartData.length} icon={Layers3} tone="green" caption="spend groups" />
       </div>
 
       {/* Category chart */}
       {catChartData.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader title="Expense by Category" />
+        <PremiumSection className="mb-6" title="Expense by Category" subtitle="Realtime category distribution">
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={catChartData} barSize={24}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
@@ -192,17 +219,21 @@ export function BazaarPage({ bazaar = [], ownerId }) {
               <Bar dataKey="total" fill={chartTheme.accent} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </Card>
+        </PremiumSection>
       )}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+      <FilterSurface>
         <SearchInput value={search} onChange={setSearch} placeholder="Search expenses..." className="flex-1" />
         <Select value={filterCat} onChange={e => setFilterCat(e.target.value)} wrapperClass="sm:w-44">
           <option value="all">All Categories</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </Select>
-      </div>
+      </FilterSurface>
+
+      <PremiumSection title="Recent Expense Timeline" subtitle="Latest filtered bazaar records" className="mb-6">
+        <ActivityTimeline items={activityItems} empty="No bazaar activity found for this filter." />
+      </PremiumSection>
 
       <Card noPad>
         <Table
