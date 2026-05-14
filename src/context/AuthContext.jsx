@@ -28,18 +28,24 @@ export function AuthProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
   const [status, setStatus] = useState("loading");
 
+  // =========================
+  // AUTH STATE LISTENER
+  // =========================
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
         try {
+          // No user
           if (!firebaseUser) {
             setUserProfile(null);
             setStatus("guest");
             return;
           }
 
-          // admin profile check
+          // =========================
+          // ADMIN PROFILE CHECK
+          // =========================
           const adminRef = doc(
             db,
             "adminProfiles",
@@ -56,6 +62,7 @@ export function AuthProvider({ children }) {
               email: firebaseUser.email,
               displayName:
                 data.displayName ||
+                firebaseUser.displayName ||
                 firebaseUser.email,
               role: "admin",
               ownerId: firebaseUser.uid,
@@ -65,7 +72,9 @@ export function AuthProvider({ children }) {
             return;
           }
 
-          // member profile check
+          // =========================
+          // MEMBER PROFILE CHECK
+          // =========================
           const memberRef = doc(
             db,
             "memberAccess",
@@ -82,6 +91,7 @@ export function AuthProvider({ children }) {
               email: firebaseUser.email,
               displayName:
                 data.displayName ||
+                firebaseUser.displayName ||
                 firebaseUser.email,
               role: "member",
               ownerId: data.ownerId,
@@ -92,12 +102,18 @@ export function AuthProvider({ children }) {
             return;
           }
 
-          // no profile
+          // =========================
+          // NO PROFILE FOUND
+          // =========================
           setUserProfile(null);
           setStatus("guest");
 
         } catch (err) {
-          console.error(err);
+          console.error(
+            "Auth state error:",
+            err
+          );
+
           setUserProfile(null);
           setStatus("guest");
         }
@@ -107,7 +123,9 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  // login
+  // =========================
+  // LOGIN
+  // =========================
   const login = async (email, password) => {
     try {
       await signInWithEmailAndPassword(
@@ -121,14 +139,19 @@ export function AuthProvider({ children }) {
       };
 
     } catch (err) {
+      console.error("Login Error:", err);
+
       return {
         success: false,
-        message: err.message,
+        message:
+          err.message || "Login failed",
       };
     }
   };
 
-  // register
+  // =========================
+  // REGISTER
+  // =========================
   const register = async (
     displayName,
     email,
@@ -142,56 +165,99 @@ export function AuthProvider({ children }) {
           password
         );
 
+      // Create admin profile
       await setDoc(
         doc(db, "adminProfiles", cred.user.uid),
         {
           displayName,
           email,
           role: "admin",
+          ownerId: cred.user.uid,
           createdAt: serverTimestamp(),
         }
       );
 
       return {
         success: true,
+        message:
+          "Account created successfully",
       };
 
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Register Error:",
+        err
+      );
 
       return {
         success: false,
-        message: err.message,
+        message:
+          err.message ||
+          "Registration failed",
       };
     }
   };
 
-  // logout
+  // =========================
+  // LOGOUT
+  // =========================
   const logout = async () => {
     try {
       await signOut(auth);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // reset password
-  const sendReset = async (email) => {
-    try {
-      await sendPasswordResetEmail(auth, email);
 
       return {
         success: true,
       };
 
     } catch (err) {
+      console.error(
+        "Logout Error:",
+        err
+      );
+
       return {
         success: false,
-        message: err.message,
+        message:
+          err.message ||
+          "Logout failed",
       };
     }
   };
 
+  // =========================
+  // RESET PASSWORD
+  // =========================
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(
+        auth,
+        email
+      );
+
+      return {
+        success: true,
+        message:
+          "Password reset email sent successfully",
+      };
+
+    } catch (err) {
+      console.error(
+        "Reset Password Error:",
+        err
+      );
+
+      return {
+        success: false,
+        message:
+          err.message ||
+          "Failed to send reset email",
+      };
+    }
+  };
+
+  // =========================
+  // CONTEXT VALUE
+  // =========================
   const value = {
     userProfile,
     status,
@@ -202,7 +268,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
-    sendReset,
+    resetPassword,
   };
 
   return (
@@ -212,6 +278,9 @@ export function AuthProvider({ children }) {
   );
 }
 
+// =========================
+// CUSTOM HOOK
+// =========================
 export function useAuth() {
   const ctx = useContext(AuthContext);
 
