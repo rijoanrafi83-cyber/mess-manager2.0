@@ -377,9 +377,12 @@ export default function SettingsPage({
 }) {
   const authContext = useAuth();
   const {
+    themeMode: activeThemeMode,
     resolvedTheme,
     themeId,
     themePreset,
+    accentColor,
+    reducedMotion,
     setTheme,
     setThemeMode,
     setAccentColor,
@@ -389,6 +392,12 @@ export default function SettingsPage({
   const fileInputRef = useRef(null);
   const autoSaveTimer = useRef(null);
   const didInitialLoad = useRef(false);
+  const appearanceRef = useRef({
+    themeMode: "system",
+    themeId: DEFAULT_THEME_ID,
+    accentColor: DEFAULT_PREFERENCES.accentColor,
+    reduceMotion: false,
+  });
 
   const profile =
     userProfile ||
@@ -417,6 +426,20 @@ export default function SettingsPage({
     themePreset.accent ||
     DEFAULT_PREFERENCES.accentColor;
 
+  useEffect(() => {
+    appearanceRef.current = {
+      themeMode: activeThemeMode,
+      themeId,
+      accentColor,
+      reduceMotion: reducedMotion,
+    };
+  }, [
+    accentColor,
+    activeThemeMode,
+    reducedMotion,
+    themeId,
+  ]);
+
   const settingsSnapshot = useMemo(
     () => ({
       formData,
@@ -437,6 +460,28 @@ export default function SettingsPage({
       [key]: value,
     }));
   };
+
+  const getLocalAppearancePreferences = useCallback(
+    () => {
+      if (typeof window === "undefined") {
+        return null;
+      }
+
+      const hasLocalTheme =
+        localStorage.getItem("mm_theme_name") ||
+        localStorage.getItem("mm_theme_mode") ||
+        localStorage.getItem("mm_accent_color");
+
+      if (!hasLocalTheme) {
+        return null;
+      }
+
+      return {
+        ...appearanceRef.current,
+      };
+    },
+    []
+  );
 
   const applyThemePreference = useCallback(
     (nextMode) => {
@@ -584,6 +629,9 @@ export default function SettingsPage({
           ? snap.data()
           : {};
 
+        const localAppearance =
+          getLocalAppearancePreferences();
+
         const savedPreferences = {
           ...DEFAULT_PREFERENCES,
           themeMode:
@@ -608,6 +656,7 @@ export default function SettingsPage({
             data.autoBackup ??
             DEFAULT_PREFERENCES.autoBackup,
           ...(data.preferences || {}),
+          ...(localAppearance || {}),
         };
 
         setFormData({
@@ -624,10 +673,12 @@ export default function SettingsPage({
         setLastSavedAt(data.updatedAt || null);
         setSyncStatus(snap.exists() ? "Synced" : "Local defaults");
 
-        setTheme(savedPreferences.themeId);
-        applyThemePreference(savedPreferences.themeMode);
-        setAccentColor(savedPreferences.accentColor);
-        setReducedMotion(savedPreferences.reduceMotion);
+        if (!localAppearance) {
+          setTheme(savedPreferences.themeId);
+          applyThemePreference(savedPreferences.themeMode);
+          setAccentColor(savedPreferences.accentColor);
+          setReducedMotion(savedPreferences.reduceMotion);
+        }
       } catch (error) {
         console.error(error);
         toast.error("Failed to load settings");
@@ -641,6 +692,7 @@ export default function SettingsPage({
   }, [
     applyThemePreference,
     currentUser,
+    getLocalAppearancePreferences,
     profile?.displayName,
     setAccentColor,
     setReducedMotion,

@@ -15,7 +15,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import {
   doc,
   getDoc,
-  setDoc,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
@@ -143,9 +142,20 @@ export function ThemeProvider({ children }) {
     useState(getInitialAccentColor);
   const [reducedMotion, setReducedMotionState] =
     useState(getInitialReducedMotion);
-  const activeUserRef = useRef(null);
-  const cloudReadyRef = useRef(false);
-  const saveTimerRef = useRef(null);
+  const hasStoredThemeRef = useRef(
+    typeof window !== "undefined" &&
+      Boolean(
+        localStorage.getItem(
+          THEME_NAME_STORAGE_KEY
+        ) ||
+          localStorage.getItem(
+            THEME_STORAGE_KEY
+          ) ||
+          localStorage.getItem(
+            ACCENT_STORAGE_KEY
+          )
+      )
+  );
 
   const themePreset = getThemePreset(themeId);
   const resolvedTheme =
@@ -207,10 +217,13 @@ export function ThemeProvider({ children }) {
   const setAccentColor = useCallback(
     (nextColor) => {
       setAccentColorState(
-        nextColor || themePreset.accent
+        nextColor ||
+          getThemePreset(
+            DEFAULT_THEME_ID
+          ).accent
       );
     },
-    [themePreset.accent]
+    []
   );
 
   const setReducedMotion = useCallback(
@@ -357,10 +370,6 @@ export function ThemeProvider({ children }) {
       onAuthStateChanged(
         auth,
         async (firebaseUser) => {
-          activeUserRef.current =
-            firebaseUser?.uid || null;
-          cloudReadyRef.current = false;
-
           if (!firebaseUser) {
             return;
           }
@@ -375,7 +384,6 @@ export function ThemeProvider({ children }) {
             );
 
             if (!snap.exists()) {
-              cloudReadyRef.current = true;
               return;
             }
 
@@ -398,24 +406,36 @@ export function ThemeProvider({ children }) {
             const nextAccent =
               preferences.accentColor ||
               data.accentColor;
+            const shouldUseCloudTheme =
+              !hasStoredThemeRef.current;
 
-            if (nextTheme) {
+            if (
+              shouldUseCloudTheme &&
+              nextTheme
+            ) {
               setThemeIdState(
                 normalizeThemeId(nextTheme)
               );
             }
 
-            if (nextMode) {
+            if (
+              shouldUseCloudTheme &&
+              nextMode
+            ) {
               setThemeMode(nextMode);
             }
 
-            if (nextAccent) {
+            if (
+              shouldUseCloudTheme &&
+              nextAccent
+            ) {
               setAccentColorState(
                 nextAccent
               );
             }
 
             if (
+              shouldUseCloudTheme &&
               typeof preferences.reduceMotion ===
               "boolean"
             ) {
@@ -428,73 +448,12 @@ export function ThemeProvider({ children }) {
               "Theme sync failed:",
               error
             );
-          } finally {
-            setTimeout(() => {
-              cloudReadyRef.current = true;
-            }, 0);
           }
         }
       );
 
     return () => unsubscribe();
   }, [setThemeMode]);
-
-  useEffect(() => {
-    if (
-      !activeUserRef.current ||
-      !cloudReadyRef.current
-    ) {
-      return undefined;
-    }
-
-    clearTimeout(saveTimerRef.current);
-
-    saveTimerRef.current = setTimeout(
-      async () => {
-        try {
-          await setDoc(
-            doc(
-              db,
-              "users",
-              activeUserRef.current
-            ),
-            {
-              darkMode: dark,
-              themeMode,
-              themeId,
-              accentColor,
-              preferences: {
-                themeMode,
-                themeId,
-                accentColor,
-                reduceMotion:
-                  reducedMotion,
-              },
-              updatedAt:
-                new Date().toISOString(),
-            },
-            { merge: true }
-          );
-        } catch (error) {
-          console.error(
-            "Theme cloud save failed:",
-            error
-          );
-        }
-      },
-      700
-    );
-
-    return () => {
-      clearTimeout(saveTimerRef.current);
-    };
-  }, [
-    accentColor,
-    dark,
-    reducedMotion,
-    themeId,
-    themeMode,
-  ]);
 
   const value = useMemo(
     () => ({
