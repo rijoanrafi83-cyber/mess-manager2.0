@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react";
+
 import {
   Routes,
   Route,
   Navigate,
   NavLink,
   useNavigate,
-  useLocation
+  useLocation,
 } from "react-router-dom";
 
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+} from "framer-motion";
+
 import { Toaster } from "react-hot-toast";
 
 import {
@@ -26,19 +31,27 @@ import {
   X,
   Moon,
   Sun,
-  Coffee
+  Coffee,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
+
 import { useTheme } from "../context/ThemeContext";
+
 import { useMessData } from "../hooks/useMessData";
 
 import { DashboardPage } from "../pages/DashboardPage";
+
 import { MembersPage } from "../pages/MembersPage";
+
 import { MealsPage } from "../pages/MealsPage";
+
 import { BazaarPage } from "../pages/BazaarPage";
+
 import { DepositsPage } from "../pages/DepositsPage";
+
 import ReportsPage from "../pages/ReportsPage";
+
 import SettingsPage from "../pages/SettingsPage";
 
 import { calculateMonthlyBill } from "../utils/billing";
@@ -50,49 +63,49 @@ const NAV_ITEMS = [
     to: "/dashboard",
     icon: LayoutDashboard,
     label: "Dashboard",
-    roles: ["admin", "member"]
+    roles: ["admin", "member"],
   },
 
   {
     to: "/members",
     icon: Users,
     label: "Members",
-    roles: ["admin"]
+    roles: ["admin"],
   },
 
   {
     to: "/meals",
     icon: UtensilsCrossed,
     label: "Meals",
-    roles: ["admin", "member"]
+    roles: ["admin", "member"],
   },
 
   {
     to: "/bazaar",
     icon: ShoppingCart,
     label: "Bazaar",
-    roles: ["admin"]
+    roles: ["admin"],
   },
 
   {
     to: "/deposits",
     icon: Wallet,
     label: "Deposits",
-    roles: ["admin"]
+    roles: ["admin"],
   },
 
   {
     to: "/reports",
     icon: BarChart3,
     label: "Reports",
-    roles: ["admin", "member"]
+    roles: ["admin", "member"],
   },
 
   {
     to: "/settings",
     icon: Settings,
     label: "Settings",
-    roles: ["admin"]
+    roles: ["admin"],
   },
 ];
 
@@ -100,15 +113,34 @@ const NAV_ITEMS = [
 
 export function AppShell() {
 
-  const { userProfile, logout } = useAuth();
-  const { dark, toggle } = useTheme();
+  const { userProfile, logout } =
+    useAuth();
 
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { dark, toggle } =
+    useTheme();
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [showNotif, setShowNotif] = useState(false);
+  const navigate =
+    useNavigate();
+
+  const location =
+    useLocation();
+
+
+
+  const [
+    collapsed,
+    setCollapsed,
+  ] = useState(false);
+
+  const [
+    mobileOpen,
+    setMobileOpen,
+  ] = useState(false);
+
+  const [
+    showNotif,
+    setShowNotif,
+  ] = useState(false);
 
 
 
@@ -120,12 +152,15 @@ export function AppShell() {
     members,
     meals,
     guestMeals,
+    mealSettings,
     bazaar,
     deposits,
     extraCosts,
     notifications,
-    settings
-  } = useMessData(userProfile?.ownerId);
+    settings,
+  } = useMessData(
+    userProfile?.ownerId
+  );
 
 
 
@@ -135,32 +170,42 @@ export function AppShell() {
 
   const allMeals = [
     ...(meals || []),
-    ...(guestMeals || [])
+    ...(guestMeals || []),
   ];
 
 
 
   /* =========================================================
-     BILL
+     BILL DATA FIXED
   ========================================================= */
 
-  const billData = calculateMonthlyBill(
-    members,
-    allMeals,
-    bazaar,
-    deposits,
-    extraCosts
-  );
+  const billData =
+    calculateMonthlyBill(
+      members,
+      meals,
+      guestMeals,
+      mealSettings,
+      bazaar,
+      deposits,
+      extraCosts
+    );
 
 
 
-  const allowedNav = NAV_ITEMS.filter((item) =>
-    item.roles.includes(userProfile?.role || "member")
-  );
+  const allowedNav =
+    NAV_ITEMS.filter((item) =>
+      item.roles.includes(
+        userProfile?.role ||
+          "member"
+      )
+    );
 
 
 
-  const initials = (userProfile?.displayName || "U")
+  const initials = (
+    userProfile?.displayName ||
+    "U"
+  )
     .split(" ")
     .map((w) => w[0])
     .slice(0, 2)
@@ -175,15 +220,20 @@ export function AppShell() {
 
 
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+  const handleLogout =
+    async () => {
+
+      await logout();
+
+      navigate("/login");
+    };
 
 
 
   const unreadCount =
-    (notifications || []).filter((n) => !n.read).length;
+    (notifications || []).filter(
+      (n) => !n.read
+    ).length;
 
 
 
@@ -191,7 +241,9 @@ export function AppShell() {
      SIDEBAR
   ========================================================= */
 
-  const SidebarContent = ({ isMobile = false }) => (
+  const SidebarContent = ({
+    isMobile = false,
+  }) => (
 
     <div className="flex flex-col h-full">
 
@@ -199,39 +251,63 @@ export function AppShell() {
 
       <div
         className={`flex items-center gap-3 px-4 py-5 ${
-          collapsed && !isMobile
+          collapsed &&
+          !isMobile
             ? "justify-center"
             : ""
         }`}
       >
 
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/20">
-          <Coffee size={18} className="text-white" />
+
+          <Coffee
+            size={18}
+            className="text-white"
+          />
+
         </div>
+
+
 
         <AnimatePresence>
 
-          {(!collapsed || isMobile) && (
+          {(!collapsed ||
+            isMobile) && (
 
             <motion.div
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: "auto" }}
-              exit={{ opacity: 0, width: 0 }}
+              initial={{
+                opacity: 0,
+                width: 0,
+              }}
+              animate={{
+                opacity: 1,
+                width: "auto",
+              }}
+              exit={{
+                opacity: 0,
+                width: 0,
+              }}
               className="overflow-hidden"
             >
 
               <p className="font-bold text-sm text-gray-900 dark:text-white whitespace-nowrap leading-none">
-                {settings?.messName || "MessManager"}
+
+                {settings?.messName ||
+                  "MessManager"}
+
               </p>
 
               <p className="text-[10px] text-violet-500 font-medium whitespace-nowrap mt-0.5">
+
                 Premium Edition
+
               </p>
 
             </motion.div>
           )}
 
         </AnimatePresence>
+
       </div>
 
 
@@ -240,41 +316,61 @@ export function AppShell() {
 
       <div
         className={`mx-3 mb-4 p-3 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/8 ${
-          collapsed && !isMobile
+          collapsed &&
+          !isMobile
             ? "flex justify-center"
             : "flex items-center gap-3"
         }`}
       >
 
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+
           {initials}
+
         </div>
+
+
 
         <AnimatePresence>
 
-          {(!collapsed || isMobile) && (
+          {(!collapsed ||
+            isMobile) && (
 
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{
+                opacity: 0,
+              }}
+              animate={{
+                opacity: 1,
+              }}
+              exit={{
+                opacity: 0,
+              }}
               className="min-w-0 overflow-hidden"
             >
 
               <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
-                {userProfile?.displayName}
+
+                {
+                  userProfile?.displayName
+                }
+
               </p>
 
               <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-                {userProfile?.role === "admin"
+
+                {userProfile?.role ===
+                "admin"
                   ? "Administrator"
                   : "Member"}
+
               </p>
 
             </motion.div>
           )}
 
         </AnimatePresence>
+
       </div>
 
 
@@ -283,67 +379,95 @@ export function AppShell() {
 
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
 
-        {allowedNav.map(({ to, icon: Icon, label }) => (
+        {allowedNav.map(
+          ({
+            to,
+            icon: Icon,
+            label,
+          }) => (
 
-          <NavLink
-            key={to}
-            to={to}
+            <NavLink
+              key={to}
+              to={to}
+              className={({
+                isActive,
+              }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative
+                ${
+                  collapsed &&
+                  !isMobile
+                    ? "justify-center"
+                    : ""
+                }
+                ${
+                  isActive
+                    ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/6 hover:text-gray-900 dark:hover:text-white"
+                }`
+              }
+            >
 
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative
-              ${collapsed && !isMobile ? "justify-center" : ""}
-              ${
-                isActive
-                  ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/6 hover:text-gray-900 dark:hover:text-white"
-              }`
-            }
-          >
+              {({
+                isActive,
+              }) => (
+                <>
 
-            {({ isActive }) => (
-              <>
-                <Icon
-                  size={16}
-                  className={
-                    isActive
-                      ? "text-white"
-                      : "text-gray-500 dark:text-gray-400"
-                  }
-                />
+                  <Icon
+                    size={16}
+                    className={
+                      isActive
+                        ? "text-white"
+                        : "text-gray-500 dark:text-gray-400"
+                    }
+                  />
 
-                <AnimatePresence>
 
-                  {(!collapsed || isMobile) && (
 
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="whitespace-nowrap overflow-hidden"
-                    >
-                      {label}
-                    </motion.span>
-                  )}
+                  <AnimatePresence>
 
-                </AnimatePresence>
-              </>
-            )}
+                    {(!collapsed ||
+                      isMobile) && (
 
-          </NavLink>
-        ))}
+                      <motion.span
+                        initial={{
+                          opacity: 0,
+                        }}
+                        animate={{
+                          opacity: 1,
+                        }}
+                        exit={{
+                          opacity: 0,
+                        }}
+                        className="whitespace-nowrap overflow-hidden"
+                      >
+
+                        {label}
+
+                      </motion.span>
+                    )}
+
+                  </AnimatePresence>
+
+                </>
+              )}
+
+            </NavLink>
+          )
+        )}
 
       </nav>
 
 
 
-      {/* BOTTOM ACTIONS */}
+      {/* BOTTOM */}
 
       <div className="p-3 border-t border-gray-200 dark:border-white/8 space-y-1">
 
         <button
           onClick={toggle}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/6 ${
-            collapsed && !isMobile
+            collapsed &&
+            !isMobile
               ? "justify-center"
               : ""
           }`}
@@ -355,9 +479,12 @@ export function AppShell() {
             <Moon size={16} />
           )}
 
-          {(!collapsed || isMobile) && (
+          {(!collapsed ||
+            isMobile) && (
             <span>
-              {dark ? "Light Mode" : "Dark Mode"}
+              {dark
+                ? "Light Mode"
+                : "Dark Mode"}
             </span>
           )}
 
@@ -368,7 +495,8 @@ export function AppShell() {
         <button
           onClick={handleLogout}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 ${
-            collapsed && !isMobile
+            collapsed &&
+            !isMobile
               ? "justify-center"
               : ""
           }`}
@@ -376,12 +504,17 @@ export function AppShell() {
 
           <LogOut size={16} />
 
-          {(!collapsed || isMobile) && (
-            <span>Sign Out</span>
+          {(!collapsed ||
+            isMobile) && (
+            <span>
+              Sign Out
+            </span>
           )}
 
         </button>
+
       </div>
+
     </div>
   );
 
@@ -406,30 +539,45 @@ export function AppShell() {
 
       <motion.aside
         animate={{
-          width: collapsed ? 64 : 220
+          width: collapsed
+            ? 64
+            : 220,
         }}
-
         transition={{
           duration: 0.2,
-          ease: "easeInOut"
+          ease: "easeInOut",
         }}
-
         className="hidden md:flex flex-col flex-shrink-0 bg-white dark:bg-[#0d1526] border-r border-gray-200 dark:border-white/8 relative"
       >
 
         <SidebarContent />
 
+
+
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() =>
+            setCollapsed(
+              !collapsed
+            )
+          }
           className="absolute -right-3 top-16 w-6 h-6 bg-white dark:bg-gray-800 border rounded-full flex items-center justify-center shadow-sm"
         >
+
           <motion.div
             animate={{
-              rotate: collapsed ? 180 : 0
+              rotate:
+                collapsed
+                  ? 180
+                  : 0,
             }}
           >
-            <ChevronLeft size={12} />
+
+            <ChevronLeft
+              size={12}
+            />
+
           </motion.div>
+
         </button>
 
       </motion.aside>
@@ -444,17 +592,23 @@ export function AppShell() {
 
         <header className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-[#0d1526] border-b border-gray-200 dark:border-white/8 flex-shrink-0">
 
-          {/* MOBILE MENU BUTTON */}
-
           <button
-            onClick={() => setMobileOpen(true)}
+            onClick={() =>
+              setMobileOpen(
+                true
+              )
+            }
             className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/8 transition-colors"
           >
+
             <Menu
               size={18}
               className="text-gray-600 dark:text-gray-400"
             />
+
           </button>
+
+
 
           <div className="flex-1" />
 
@@ -465,7 +619,11 @@ export function AppShell() {
           <div className="relative">
 
             <button
-              onClick={() => setShowNotif(!showNotif)}
+              onClick={() =>
+                setShowNotif(
+                  !showNotif
+                )
+              }
               className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/8 transition-colors"
             >
 
@@ -474,13 +632,23 @@ export function AppShell() {
                 className="text-gray-600 dark:text-gray-400"
               />
 
-              {unreadCount > 0 && (
+
+
+              {unreadCount >
+                0 && (
+
                 <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-violet-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
+
+                  {unreadCount >
+                  9
+                    ? "9+"
+                    : unreadCount}
+
                 </span>
               )}
 
             </button>
+
           </div>
 
 
@@ -490,85 +658,37 @@ export function AppShell() {
           <div className="flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-white/8">
 
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[11px] font-bold">
+
               {initials}
+
             </div>
+
+
 
             <div className="hidden sm:block">
 
               <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none">
-                {userProfile?.displayName}
+
+                {
+                  userProfile?.displayName
+                }
+
               </p>
 
               <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-                {userProfile?.role === "admin"
+
+                {userProfile?.role ===
+                "admin"
                   ? "Admin"
                   : "Member"}
+
               </p>
 
             </div>
+
           </div>
 
         </header>
-
-
-
-        {/* MOBILE SIDEBAR */}
-
-        <AnimatePresence>
-
-          {mobileOpen && (
-            <>
-              {/* BACKDROP */}
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 z-40 md:hidden"
-                onClick={() => setMobileOpen(false)}
-              />
-
-
-
-              {/* MOBILE DRAWER */}
-
-              <motion.aside
-                initial={{ x: -280 }}
-                animate={{ x: 0 }}
-                exit={{ x: -280 }}
-
-                transition={{
-                  type: "spring",
-                  damping: 25,
-                  stiffness: 200
-                }}
-
-                className="fixed left-0 top-0 bottom-0 w-64 bg-white dark:bg-[#0d1526] border-r border-gray-200 dark:border-white/8 z-50 md:hidden flex flex-col"
-              >
-
-                {/* CLOSE BUTTON */}
-
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/8 transition-colors"
-                >
-                  <X
-                    size={16}
-                    className="text-gray-500"
-                  />
-                </button>
-
-
-
-                {/* SIDEBAR CONTENT */}
-
-                <SidebarContent isMobile />
-
-              </motion.aside>
-            </>
-          )}
-
-        </AnimatePresence>
 
 
 
@@ -580,7 +700,12 @@ export function AppShell() {
 
             <Route
               path="/"
-              element={<Navigate to="/dashboard" replace />}
+              element={
+                <Navigate
+                  to="/dashboard"
+                  replace
+                />
+              }
             />
 
 
@@ -590,11 +715,23 @@ export function AppShell() {
               element={
                 <DashboardPage
                   members={members}
-                  meals={allMeals}
+                  meals={meals}
+                  guestMeals={
+                    guestMeals
+                  }
+                  mealSettings={
+                    mealSettings
+                  }
                   bazaar={bazaar}
-                  deposits={deposits}
-                  billData={billData}
-                  settings={settings}
+                  deposits={
+                    deposits
+                  }
+                  billData={
+                    billData
+                  }
+                  settings={
+                    settings
+                  }
                 />
               }
             />
@@ -606,8 +743,12 @@ export function AppShell() {
               element={
                 <MembersPage
                   members={members}
-                  ownerId={userProfile?.ownerId}
-                  userProfile={userProfile}
+                  ownerId={
+                    userProfile?.ownerId
+                  }
+                  userProfile={
+                    userProfile
+                  }
                 />
               }
             />
@@ -620,9 +761,15 @@ export function AppShell() {
                 <MealsPage
                   members={members}
                   meals={meals}
-                  guestMeals={guestMeals}
-                  ownerId={userProfile?.ownerId}
-                  userProfile={userProfile}
+                  guestMeals={
+                    guestMeals
+                  }
+                  ownerId={
+                    userProfile?.ownerId
+                  }
+                  userProfile={
+                    userProfile
+                  }
                 />
               }
             />
@@ -635,7 +782,9 @@ export function AppShell() {
                 <BazaarPage
                   bazaar={bazaar}
                   members={members}
-                  ownerId={userProfile?.ownerId}
+                  ownerId={
+                    userProfile?.ownerId
+                  }
                 />
               }
             />
@@ -646,9 +795,13 @@ export function AppShell() {
               path="/deposits"
               element={
                 <DepositsPage
-                  deposits={deposits}
+                  deposits={
+                    deposits
+                  }
                   members={members}
-                  ownerId={userProfile?.ownerId}
+                  ownerId={
+                    userProfile?.ownerId
+                  }
                 />
               }
             />
@@ -659,12 +812,24 @@ export function AppShell() {
               path="/reports"
               element={
                 <ReportsPage
-                  billData={billData}
+                  billData={
+                    billData
+                  }
                   members={members}
-                  meals={allMeals}
+                  meals={meals}
+                  guestMeals={
+                    guestMeals
+                  }
+                  mealSettings={
+                    mealSettings
+                  }
                   bazaar={bazaar}
-                  deposits={deposits}
-                  settings={settings}
+                  deposits={
+                    deposits
+                  }
+                  settings={
+                    settings
+                  }
                 />
               }
             />
@@ -675,9 +840,15 @@ export function AppShell() {
               path="/settings"
               element={
                 <SettingsPage
-                  ownerId={userProfile?.ownerId}
-                  settings={settings}
-                  userProfile={userProfile}
+                  ownerId={
+                    userProfile?.ownerId
+                  }
+                  settings={
+                    settings
+                  }
+                  userProfile={
+                    userProfile
+                  }
                 />
               }
             />
@@ -686,13 +857,20 @@ export function AppShell() {
 
             <Route
               path="*"
-              element={<Navigate to="/dashboard" replace />}
+              element={
+                <Navigate
+                  to="/dashboard"
+                  replace
+                />
+              }
             />
 
           </Routes>
 
         </main>
+
       </div>
+
     </div>
   );
 }
