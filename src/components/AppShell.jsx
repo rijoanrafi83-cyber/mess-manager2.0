@@ -35,28 +35,18 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
-
 import { useTheme } from "../context/ThemeContext";
-
 import { useMessData } from "../hooks/useMessData";
 
 import { DashboardPage } from "../pages/DashboardPage";
-
 import { MembersPage } from "../pages/MembersPage";
-
 import { MealsPage } from "../pages/MealsPage";
-
 import { BazaarPage } from "../pages/BazaarPage";
-
 import { DepositsPage } from "../pages/DepositsPage";
-
 import ReportsPage from "../pages/ReportsPage";
-
 import SettingsPage from "../pages/SettingsPage";
 
 import { calculateMonthlyBill } from "../utils/billing";
-
-
 
 const NAV_ITEMS = [
   {
@@ -109,10 +99,7 @@ const NAV_ITEMS = [
   },
 ];
 
-
-
 export function AppShell() {
-
   const { userProfile, logout } =
     useAuth();
 
@@ -124,8 +111,6 @@ export function AppShell() {
 
   const location =
     useLocation();
-
-
 
   const [
     collapsed,
@@ -142,8 +127,6 @@ export function AppShell() {
     setShowNotif,
   ] = useState(false);
 
-
-
   /* =========================================================
      DATA
   ========================================================= */
@@ -156,27 +139,16 @@ export function AppShell() {
     bazaar,
     deposits,
     extraCosts,
+    notices,
     notifications,
     settings,
+    loading,
   } = useMessData(
     userProfile?.ownerId
   );
 
-
-
   /* =========================================================
-     COMBINED MEALS
-  ========================================================= */
-
-  const allMeals = [
-    ...(meals || []),
-    ...(guestMeals || []),
-  ];
-
-
-
-  /* =========================================================
-     BILL DATA FIXED
+     BILL CALCULATION
   ========================================================= */
 
   const billData =
@@ -190,7 +162,9 @@ export function AppShell() {
       extraCosts
     );
 
-
+  /* =========================================================
+     NAVIGATION FILTER
+  ========================================================= */
 
   const allowedNav =
     NAV_ITEMS.filter((item) =>
@@ -200,7 +174,9 @@ export function AppShell() {
       )
     );
 
-
+  /* =========================================================
+     INITIALS
+  ========================================================= */
 
   const initials = (
     userProfile?.displayName ||
@@ -212,30 +188,36 @@ export function AppShell() {
     .join("")
     .toUpperCase();
 
-
+  /* =========================================================
+     CLOSE MOBILE DRAWER ON ROUTE CHANGE
+  ========================================================= */
 
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
 
-
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
 
   const handleLogout =
     async () => {
-
-      await logout();
-
-      navigate("/login");
+      try {
+        await logout();
+        navigate("/login");
+      } catch (err) {
+        console.error(err);
+      }
     };
 
-
+  /* =========================================================
+     NOTIFICATIONS
+  ========================================================= */
 
   const unreadCount =
     (notifications || []).filter(
       (n) => !n.read
     ).length;
-
-
 
   /* =========================================================
      SIDEBAR
@@ -244,7 +226,6 @@ export function AppShell() {
   const SidebarContent = ({
     isMobile = false,
   }) => (
-
     <div className="flex flex-col h-full">
 
       {/* LOGO */}
@@ -257,23 +238,16 @@ export function AppShell() {
             : ""
         }`}
       >
-
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/20">
-
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-violet-500/30">
           <Coffee
             size={18}
             className="text-white"
           />
-
         </div>
 
-
-
         <AnimatePresence>
-
           {(!collapsed ||
             isMobile) && (
-
             <motion.div
               initial={{
                 opacity: 0,
@@ -289,53 +263,36 @@ export function AppShell() {
               }}
               className="overflow-hidden"
             >
-
-              <p className="font-bold text-sm text-gray-900 dark:text-white whitespace-nowrap leading-none">
-
+              <p className="font-bold text-sm text-white whitespace-nowrap leading-none">
                 {settings?.messName ||
                   "MessManager"}
-
               </p>
 
-              <p className="text-[10px] text-violet-500 font-medium whitespace-nowrap mt-0.5">
-
+              <p className="text-[10px] text-violet-400 font-medium whitespace-nowrap mt-1">
                 Premium Edition
-
               </p>
-
             </motion.div>
           )}
-
         </AnimatePresence>
-
       </div>
-
-
 
       {/* USER */}
 
       <div
-        className={`mx-3 mb-4 p-3 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/8 ${
+        className={`mx-3 mb-4 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl ${
           collapsed &&
           !isMobile
             ? "flex justify-center"
             : "flex items-center gap-3"
         }`}
       >
-
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-violet-500/20">
           {initials}
-
         </div>
 
-
-
         <AnimatePresence>
-
           {(!collapsed ||
             isMobile) && (
-
             <motion.div
               initial={{
                 opacity: 0,
@@ -348,36 +305,26 @@ export function AppShell() {
               }}
               className="min-w-0 overflow-hidden"
             >
-
-              <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
-
+              <p className="text-sm font-semibold text-white truncate">
                 {
                   userProfile?.displayName
                 }
-
               </p>
 
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-
+              <p className="text-xs text-gray-400 truncate">
                 {userProfile?.role ===
                 "admin"
                   ? "Administrator"
                   : "Member"}
-
               </p>
-
             </motion.div>
           )}
-
         </AnimatePresence>
-
       </div>
-
-
 
       {/* NAVIGATION */}
 
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
 
         {allowedNav.map(
           ({
@@ -392,42 +339,34 @@ export function AppShell() {
               className={({
                 isActive,
               }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative
-                ${
+                `group flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium transition-all duration-200 relative overflow-hidden ${
                   collapsed &&
                   !isMobile
                     ? "justify-center"
                     : ""
-                }
-                ${
+                } ${
                   isActive
-                    ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/6 hover:text-gray-900 dark:hover:text-white"
+                    ? "bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 text-white shadow-xl shadow-violet-500/30"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white"
                 }`
               }
             >
-
               {({
                 isActive,
               }) => (
                 <>
-
                   <Icon
-                    size={16}
+                    size={18}
                     className={
                       isActive
                         ? "text-white"
-                        : "text-gray-500 dark:text-gray-400"
+                        : "text-gray-400 group-hover:text-white"
                     }
                   />
 
-
-
                   <AnimatePresence>
-
                     {(!collapsed ||
                       isMobile) && (
-
                       <motion.span
                         initial={{
                           opacity: 0,
@@ -440,43 +379,34 @@ export function AppShell() {
                         }}
                         className="whitespace-nowrap overflow-hidden"
                       >
-
                         {label}
-
                       </motion.span>
                     )}
-
                   </AnimatePresence>
-
                 </>
               )}
-
             </NavLink>
           )
         )}
-
       </nav>
-
-
 
       {/* BOTTOM */}
 
-      <div className="p-3 border-t border-gray-200 dark:border-white/8 space-y-1">
+      <div className="p-3 border-t border-white/10 space-y-2">
 
         <button
           onClick={toggle}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/6 ${
+          className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all ${
             collapsed &&
             !isMobile
               ? "justify-center"
               : ""
           }`}
         >
-
           {dark ? (
-            <Sun size={16} />
+            <Sun size={18} />
           ) : (
-            <Moon size={16} />
+            <Moon size={18} />
           )}
 
           {(!collapsed ||
@@ -487,22 +417,18 @@ export function AppShell() {
                 : "Dark Mode"}
             </span>
           )}
-
         </button>
-
-
 
         <button
           onClick={handleLogout}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 ${
+          className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all ${
             collapsed &&
             !isMobile
               ? "justify-center"
               : ""
           }`}
         >
-
-          <LogOut size={16} />
+          <LogOut size={18} />
 
           {(!collapsed ||
             isMobile) && (
@@ -510,49 +436,61 @@ export function AppShell() {
               Sign Out
             </span>
           )}
-
         </button>
-
       </div>
-
     </div>
   );
 
+  /* =========================================================
+     LOADING
+  ========================================================= */
 
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#050816] text-white">
+        <div className="flex flex-col items-center gap-4">
+
+          <div className="w-14 h-14 rounded-3xl border-4 border-violet-500/30 border-t-violet-500 animate-spin" />
+
+          <p className="text-sm text-gray-400">
+            Loading MessManager...
+          </p>
+
+        </div>
+      </div>
+    );
+  }
 
   return (
+    <div className="flex h-screen bg-[#050816] overflow-hidden">
 
-    <div className="flex h-screen bg-gray-50 dark:bg-[#0a0f1e] overflow-hidden">
+      {/* TOASTER */}
 
       <Toaster
         position="top-right"
         toastOptions={{
           className:
-            "!bg-white dark:!bg-gray-900 !text-gray-900 dark:!text-white",
+            "!bg-[#111827] !text-white !border !border-white/10",
           duration: 3000,
         }}
       />
-
-
 
       {/* DESKTOP SIDEBAR */}
 
       <motion.aside
         animate={{
           width: collapsed
-            ? 64
-            : 220,
+            ? 74
+            : 250,
         }}
         transition={{
           duration: 0.2,
-          ease: "easeInOut",
         }}
-        className="hidden md:flex flex-col flex-shrink-0 bg-white dark:bg-[#0d1526] border-r border-gray-200 dark:border-white/8 relative"
+        className="hidden md:flex flex-col flex-shrink-0 bg-[#081028]/95 backdrop-blur-2xl border-r border-white/10 relative"
       >
-
         <SidebarContent />
 
-
+        {/* COLLAPSE BUTTON */}
 
         <button
           onClick={() =>
@@ -560,9 +498,8 @@ export function AppShell() {
               !collapsed
             )
           }
-          className="absolute -right-3 top-16 w-6 h-6 bg-white dark:bg-gray-800 border rounded-full flex items-center justify-center shadow-sm"
+          className="absolute -right-3 top-16 w-7 h-7 bg-[#111827] border border-white/10 rounded-full flex items-center justify-center shadow-xl"
         >
-
           <motion.div
             animate={{
               rotate:
@@ -571,18 +508,13 @@ export function AppShell() {
                   : 0,
             }}
           >
-
             <ChevronLeft
-              size={12}
+              size={14}
+              className="text-white"
             />
-
           </motion.div>
-
         </button>
-
       </motion.aside>
-
-
 
       {/* MAIN */}
 
@@ -590,29 +522,37 @@ export function AppShell() {
 
         {/* TOPBAR */}
 
-        <header className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-[#0d1526] border-b border-gray-200 dark:border-white/8 flex-shrink-0">
+        <header className="flex items-center gap-4 px-6 py-4 bg-[#081028]/90 backdrop-blur-2xl border-b border-white/10 flex-shrink-0">
+
+          {/* MOBILE MENU */}
 
           <button
+            type="button"
             onClick={() =>
-              setMobileOpen(
-                true
-              )
+              setMobileOpen(true)
             }
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/8 transition-colors"
+            className="
+              md:hidden
+              relative
+              z-[120]
+              p-2.5
+              rounded-xl
+              border
+              border-white/10
+              bg-white/5
+              hover:bg-white/10
+              active:scale-95
+              transition-all
+              duration-200
+            "
           >
-
             <Menu
-              size={18}
-              className="text-gray-600 dark:text-gray-400"
+              size={20}
+              className="text-gray-300"
             />
-
           </button>
 
-
-
           <div className="flex-1" />
-
-
 
           {/* NOTIFICATION */}
 
@@ -624,73 +564,194 @@ export function AppShell() {
                   !showNotif
                 )
               }
-              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/8 transition-colors"
+              className="relative p-2.5 rounded-xl hover:bg-white/10 transition-all"
             >
-
               <Bell
-                size={18}
-                className="text-gray-600 dark:text-gray-400"
+                size={20}
+                className="text-gray-300"
               />
-
-
 
               {unreadCount >
                 0 && (
-
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-violet-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-violet-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {unreadCount >
                   9
                     ? "9+"
                     : unreadCount}
-
                 </span>
               )}
-
             </button>
 
+            {/* NOTIFICATION DROPDOWN */}
+
+            <AnimatePresence>
+
+              {showNotif && (
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 10,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    y: 10,
+                  }}
+                  className="absolute right-0 mt-3 w-80 rounded-2xl border border-white/10 bg-[#111827]/95 backdrop-blur-2xl shadow-2xl overflow-hidden z-[150]"
+                >
+
+                  <div className="p-4 border-b border-white/10">
+
+                    <h3 className="font-semibold text-white">
+                      Notifications
+                    </h3>
+
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto">
+
+                    {notifications
+                      ?.length >
+                    0 ? (
+                      notifications
+                        .slice(
+                          0,
+                          8
+                        )
+                        .map(
+                          (
+                            item
+                          ) => (
+                            <div
+                              key={
+                                item.id
+                              }
+                              className="p-4 border-b border-white/5 hover:bg-white/5 transition-all"
+                            >
+                              <p className="text-sm text-white font-medium">
+                                {
+                                  item.title
+                                }
+                              </p>
+
+                              <p className="text-xs text-gray-400 mt-1">
+                                {
+                                  item.message
+                                }
+                              </p>
+                            </div>
+                          )
+                        )
+                    ) : (
+                      <div className="p-8 text-center text-sm text-gray-400">
+                        No notifications
+                      </div>
+                    )}
+
+                  </div>
+                </motion.div>
+              )}
+
+            </AnimatePresence>
           </div>
-
-
 
           {/* PROFILE */}
 
-          <div className="flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-white/8">
+          <div className="flex items-center gap-3 pl-4 border-l border-white/10">
 
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[11px] font-bold">
-
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-violet-500/30">
               {initials}
-
             </div>
 
-
-
             <div className="hidden sm:block">
-
-              <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none">
-
+              <p className="text-sm font-semibold text-white leading-none">
                 {
                   userProfile?.displayName
                 }
-
               </p>
 
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-
+              <p className="text-xs text-gray-400 mt-1">
                 {userProfile?.role ===
                 "admin"
                   ? "Admin"
                   : "Member"}
-
               </p>
-
             </div>
-
           </div>
-
         </header>
 
+        {/* MOBILE SIDEBAR */}
 
+        <AnimatePresence>
+
+          {mobileOpen && (
+            <>
+              {/* BACKDROP */}
+
+              <motion.div
+                initial={{
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[130] md:hidden"
+                onClick={() =>
+                  setMobileOpen(
+                    false
+                  )
+                }
+              />
+
+              {/* MOBILE DRAWER */}
+
+              <motion.aside
+                initial={{
+                  x: -280,
+                }}
+                animate={{
+                  x: 0,
+                }}
+                exit={{
+                  x: -280,
+                }}
+                transition={{
+                  type: "spring",
+                  damping: 25,
+                  stiffness: 200,
+                }}
+                className="fixed left-0 top-0 bottom-0 w-64 bg-[#0d1526]/95 backdrop-blur-2xl border-r border-white/10 z-[140] md:hidden flex flex-col shadow-2xl"
+              >
+
+                {/* CLOSE */}
+
+                <button
+                  onClick={() =>
+                    setMobileOpen(
+                      false
+                    )
+                  }
+                  className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/10 transition-all"
+                >
+                  <X
+                    size={18}
+                    className="text-gray-300"
+                  />
+                </button>
+
+                <SidebarContent isMobile />
+
+              </motion.aside>
+            </>
+          )}
+
+        </AnimatePresence>
 
         {/* ROUTES */}
 
@@ -707,8 +768,6 @@ export function AppShell() {
                 />
               }
             />
-
-
 
             <Route
               path="/dashboard"
@@ -736,8 +795,6 @@ export function AppShell() {
               }
             />
 
-
-
             <Route
               path="/members"
               element={
@@ -752,8 +809,6 @@ export function AppShell() {
                 />
               }
             />
-
-
 
             <Route
               path="/meals"
@@ -774,8 +829,6 @@ export function AppShell() {
               }
             />
 
-
-
             <Route
               path="/bazaar"
               element={
@@ -788,8 +841,6 @@ export function AppShell() {
                 />
               }
             />
-
-
 
             <Route
               path="/deposits"
@@ -805,8 +856,6 @@ export function AppShell() {
                 />
               }
             />
-
-
 
             <Route
               path="/reports"
@@ -834,8 +883,6 @@ export function AppShell() {
               }
             />
 
-
-
             <Route
               path="/settings"
               element={
@@ -853,8 +900,6 @@ export function AppShell() {
               }
             />
 
-
-
             <Route
               path="*"
               element={
@@ -866,11 +911,8 @@ export function AppShell() {
             />
 
           </Routes>
-
         </main>
-
       </div>
-
     </div>
   );
 }
