@@ -138,6 +138,333 @@ const PDF_SAFE_REPORT_CSS = `
 
 
 
+const getPdfSafeTextColor = (
+  className
+) => {
+
+  if (
+    className.includes(
+      "text-violet"
+    ) ||
+    className.includes(
+      "text-purple"
+    )
+  ) {
+
+    return "#8b5cf6";
+  }
+
+  if (
+    className.includes(
+      "text-blue"
+    )
+  ) {
+
+    return "#3b82f6";
+  }
+
+  if (
+    className.includes(
+      "text-orange"
+    )
+  ) {
+
+    return "#f97316";
+  }
+
+  if (
+    className.includes(
+      "text-green"
+    )
+  ) {
+
+    return "#16a34a";
+  }
+
+  if (
+    className.includes(
+      "text-red"
+    ) ||
+    className.includes(
+      "text-rose"
+    )
+  ) {
+
+    return "#dc2626";
+  }
+
+  if (
+    className.includes(
+      "text-yellow"
+    )
+  ) {
+
+    return "#a16207";
+  }
+
+  if (
+    className.includes(
+      "text-gray-400"
+    ) ||
+    className.includes(
+      "text-gray-500"
+    ) ||
+    className.includes(
+      "dark:text-gray-400"
+    )
+  ) {
+
+    return "#6b7280";
+  }
+
+  if (
+    className.includes(
+      "text-gray-600"
+    ) ||
+    className.includes(
+      "text-gray-700"
+    ) ||
+    className.includes(
+      "dark:text-gray-300"
+    )
+  ) {
+
+    return "#4b5563";
+  }
+
+  return "#111827";
+};
+
+
+
+const getPdfSafeBackgroundColor = (
+  className,
+  tagName
+) => {
+
+  if (
+    tagName === "TH"
+  ) {
+
+    return "#f9fafb";
+  }
+
+  if (
+    className.includes(
+      "bg-green"
+    )
+  ) {
+
+    return "#dcfce7";
+  }
+
+  if (
+    className.includes(
+      "bg-red"
+    ) ||
+    className.includes(
+      "bg-rose"
+    )
+  ) {
+
+    return "#fee2e2";
+  }
+
+  if (
+    className.includes(
+      "bg-yellow"
+    )
+  ) {
+
+    return "#fef9c3";
+  }
+
+  if (
+    className.includes(
+      "bg-blue"
+    )
+  ) {
+
+    return "#dbeafe";
+  }
+
+  if (
+    className.includes(
+      "bg-violet"
+    ) ||
+    className.includes(
+      "bg-purple"
+    )
+  ) {
+
+    return "#ede9fe";
+  }
+
+  if (
+    className.includes(
+      "bg-orange"
+    )
+  ) {
+
+    return "#ffedd5";
+  }
+
+  if (
+    className.includes(
+      "bg-gray-50"
+    ) ||
+    className.includes(
+      "dark:bg-white/5"
+    ) ||
+    className.includes(
+      "dark:bg-white/8"
+    ) ||
+    className.includes(
+      "bg-white/5"
+    ) ||
+    className.includes(
+      "bg-white/8"
+    )
+  ) {
+
+    return "#f9fafb";
+  }
+
+  if (
+    className.includes(
+      "bg-gray-100"
+    ) ||
+    className.includes(
+      "bg-gray-200"
+    )
+  ) {
+
+    return "#f3f4f6";
+  }
+
+  if (
+    className.includes(
+      "bg-white"
+    ) ||
+    className.includes(
+      "dark:bg-white"
+    )
+  ) {
+
+    return "#ffffff";
+  }
+
+  return "transparent";
+};
+
+
+
+const applyPdfSafeInlineColors = (
+  clonedReport
+) => {
+
+  const elements = [
+    clonedReport,
+    ...clonedReport.querySelectorAll(
+      "*"
+    ),
+  ];
+
+  elements.forEach(
+    (element) => {
+
+      const className =
+        typeof element.className ===
+        "string"
+          ? element.className
+          : "";
+
+      const tagName =
+        element.tagName;
+
+      const color =
+        getPdfSafeTextColor(
+          className
+        );
+
+      const backgroundColor =
+        getPdfSafeBackgroundColor(
+          className,
+          tagName
+        );
+
+      element.style.setProperty(
+        "color",
+        color,
+        "important"
+      );
+
+      element.style.setProperty(
+        "background-color",
+        backgroundColor,
+        "important"
+      );
+
+      [
+        "border-color",
+        "border-top-color",
+        "border-right-color",
+        "border-bottom-color",
+        "border-left-color",
+        "outline-color",
+        "text-decoration-color",
+        "-webkit-text-stroke-color",
+        "caret-color",
+      ].forEach((property) => {
+
+        element.style.setProperty(
+          property,
+          "#e5e7eb",
+          "important"
+        );
+      });
+
+      element.style.setProperty(
+        "box-shadow",
+        "none",
+        "important"
+      );
+
+      if (
+        element.namespaceURI ===
+        "http://www.w3.org/2000/svg"
+      ) {
+
+        element.style.setProperty(
+          "stroke",
+          color,
+          "important"
+        );
+
+        element.setAttribute(
+          "stroke",
+          color
+        );
+
+        if (
+          element.getAttribute(
+            "fill"
+          ) !== "none"
+        ) {
+
+          element.style.setProperty(
+            "fill",
+            color,
+            "important"
+          );
+        }
+      }
+    }
+  );
+};
+
+
+
 /* =========================================================
    MEMBER PDF EXPORT
 ========================================================= */
@@ -464,6 +791,10 @@ export default function ReportsPage({
                 if (
                   clonedReport
                 ) {
+
+                  applyPdfSafeInlineColors(
+                    clonedReport
+                  );
 
                   clonedReport.style.background =
                     "#ffffff";
