@@ -48,6 +48,8 @@ import ReportsPage from "../pages/ReportsPage";
 import SettingsPage from "../pages/SettingsPage";
 
 import { calculateMonthlyBill } from "../utils/billing";
+import { ensureDailyPermanentMeals } from "../services/firestoreService";
+import { getLocalDateKey } from "../utils/permanentMeals";
 
 const NAV_ITEMS = [
   {
@@ -135,6 +137,13 @@ export function AppShell() {
     setShowNotif,
   ] = useState(false);
 
+  const [
+    currentDay,
+    setCurrentDay,
+  ] = useState(
+    getLocalDateKey()
+  );
+
   /* =========================================================
      DATA
   ========================================================= */
@@ -168,6 +177,52 @@ export function AppShell() {
       deposits,
       extraCosts
     );
+
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => {
+        setCurrentDay(
+          getLocalDateKey()
+        );
+      },
+      60000
+    );
+
+    return () =>
+      window.clearInterval(
+        timer
+      );
+  }, []);
+
+  useEffect(() => {
+    if (
+      loading ||
+      !userProfile?.ownerId
+    ) {
+      return;
+    }
+
+    ensureDailyPermanentMeals({
+      ownerId:
+        userProfile.ownerId,
+      members,
+      meals,
+      mealSettings,
+      date: currentDay,
+    }).catch((err) => {
+      console.error(
+        "ensureDailyPermanentMeals:",
+        err
+      );
+    });
+  }, [
+    loading,
+    userProfile?.ownerId,
+    members,
+    meals,
+    mealSettings,
+    currentDay,
+  ]);
 
   /* =========================================================
      NAVIGATION FILTER
@@ -858,6 +913,9 @@ export function AppShell() {
                   meals={meals}
                   guestMeals={
                     guestMeals
+                  }
+                  mealSettings={
+                    mealSettings
                   }
                   ownerId={
                     userProfile?.ownerId

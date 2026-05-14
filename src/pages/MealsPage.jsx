@@ -1,8 +1,7 @@
 import {
   useState,
   useMemo,
-  useCallback,
-  useEffect
+  useCallback
 } from "react";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,7 +18,11 @@ import {
   Trash2,
   Edit2,
   CalendarDays,
-  Activity
+  Activity,
+  Check,
+  X,
+  Power,
+  Sparkles
 } from "lucide-react";
 
 import {
@@ -47,14 +50,21 @@ import {
 import {
   addMeal,
   updateMeal,
-  deleteMeal,
+  deleteMealWithAutoSkip,
   addGuestMeal,
   deleteGuestMeal,
-  saveMealSettings,
-  subscribeMealSettings
+  saveMealSettings
 } from "../services/firestoreService";
 
 import { calculateMealCount } from "../utils/billing";
+import {
+  MEAL_KEYS,
+  getEnabledMealKeys,
+  getAutoMealPreview,
+  getTodayAutoMealStats,
+  isAutoPermanentMeal,
+  getSettingForMember
+} from "../utils/permanentMeals";
 
 
 
@@ -538,6 +548,332 @@ function GuestMealForm({
 }
 
 
+const mealMeta = {
+  breakfast: {
+    label: "Breakfast",
+    icon: Coffee,
+    active: "bg-orange-500 text-white shadow-orange-500/25",
+    soft: "bg-orange-500/10 text-orange-600 dark:text-orange-300",
+  },
+  lunch: {
+    label: "Lunch",
+    icon: Sun,
+    active: "bg-amber-500 text-white shadow-amber-500/25",
+    soft: "bg-amber-500/10 text-amber-600 dark:text-amber-300",
+  },
+  dinner: {
+    label: "Dinner",
+    icon: Moon,
+    active: "bg-sky-500 text-white shadow-sky-500/25",
+    soft: "bg-sky-500/10 text-sky-600 dark:text-sky-300",
+  },
+};
+
+function PermanentMealManager({
+  members,
+  meals,
+  mealSettings,
+  ownerId,
+  isAdmin,
+  stats,
+}) {
+  const [savingKey, setSavingKey] =
+    useState("");
+
+  const toggleMemberMeal =
+    async (member, field) => {
+      if (!isAdmin || !ownerId) return;
+
+      const setting =
+        getSettingForMember(
+          mealSettings,
+          member.id
+        );
+
+      const updated = {
+        breakfast: Boolean(setting.breakfast),
+        lunch: Boolean(setting.lunch),
+        dinner: Boolean(setting.dinner),
+        [field]: !setting[field],
+      };
+
+      setSavingKey(`${member.id}_${field}`);
+
+      try {
+        await saveMealSettings(
+          ownerId,
+          member.id,
+          updated
+        );
+
+        toast.success(
+          `${member.name} ${mealMeta[field].label} ${
+            updated[field] ? "enabled" : "disabled"
+          }`
+        );
+      } catch (err) {
+        console.error(err);
+        toast.error("Permanent meal update failed");
+      } finally {
+        setSavingKey("");
+      }
+    };
+
+  const setAllForMeal =
+    async (field, value) => {
+      if (!isAdmin || !ownerId) return;
+
+      setSavingKey(`bulk_${field}_${value}`);
+
+      try {
+        await Promise.all(
+          members.map((member) => {
+            const setting =
+              getSettingForMember(
+                mealSettings,
+                member.id
+              );
+
+            return saveMealSettings(
+              ownerId,
+              member.id,
+              {
+                breakfast: Boolean(setting.breakfast),
+                lunch: Boolean(setting.lunch),
+                dinner: Boolean(setting.dinner),
+                [field]: value,
+              }
+            );
+          })
+        );
+
+        toast.success(
+          `${mealMeta[field].label} ${value ? "enabled" : "disabled"} for all members`
+        );
+      } catch (err) {
+        console.error(err);
+        toast.error("Bulk permanent meal update failed");
+      } finally {
+        setSavingKey("");
+      }
+    };
+
+  return (
+    <Card className="mb-6 overflow-hidden p-0 border-white/20 dark:border-white/10 bg-white/75 dark:bg-white/[0.04] backdrop-blur-xl">
+      <div className="p-5 md:p-6 border-b border-gray-200/70 dark:border-white/10">
+        <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl theme-accent-bg text-white flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <Sparkles size={20} />
+            </div>
+
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider theme-muted-text">
+                Automatic Meal Control
+              </p>
+              <h2 className="text-xl md:text-2xl font-black theme-text mt-1">
+                Permanent Meal System
+              </h2>
+              <p className="text-sm theme-muted-text mt-1 max-w-2xl">
+                ON meals are written into today's meal history as editable Firestore meal entries, then counted everywhere like normal meals.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 min-w-full sm:min-w-[420px]">
+            <div className="rounded-2xl theme-muted p-3">
+              <p className="text-[11px] font-bold uppercase theme-muted-text">
+                Enabled
+              </p>
+              <p className="text-xl font-black theme-text">
+                {stats.membersEnabled}
+              </p>
+            </div>
+            <div className="rounded-2xl theme-muted p-3">
+              <p className="text-[11px] font-bold uppercase theme-muted-text">
+                Today Rows
+              </p>
+              <p className="text-xl font-black theme-text">
+                {stats.entries}
+              </p>
+            </div>
+            <div className="rounded-2xl theme-muted p-3">
+              <p className="text-[11px] font-bold uppercase theme-muted-text">
+                Today Units
+              </p>
+              <p className="text-xl font-black theme-text">
+                {stats.units.toFixed(1)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {isAdmin && (
+          <div className="flex flex-wrap items-center gap-3 mt-6">
+            {MEAL_KEYS.map((key) => {
+              const meta = mealMeta[key];
+
+              return (
+                <div
+                  key={key}
+                  className="flex items-center gap-2 rounded-2xl theme-muted p-1.5"
+                >
+                  <span className="pl-2 text-xs font-bold theme-muted-text">
+                    {meta.label}
+                  </span>
+                  <Button
+                    size="xs"
+                    variant="success"
+                    disabled={Boolean(savingKey)}
+                    onClick={() => setAllForMeal(key, true)}
+                  >
+                    All ON
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="danger"
+                    disabled={Boolean(savingKey)}
+                    onClick={() => setAllForMeal(key, false)}
+                  >
+                    All OFF
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-sm">
+          <thead>
+            <tr className="theme-muted">
+              <th className="text-left px-5 py-4 text-xs font-black uppercase theme-muted-text">
+                Member
+              </th>
+              {MEAL_KEYS.map((key) => (
+                <th
+                  key={key}
+                  className="text-center px-4 py-4 text-xs font-black uppercase theme-muted-text"
+                >
+                  {mealMeta[key].label}
+                </th>
+              ))}
+              <th className="text-center px-5 py-4 text-xs font-black uppercase theme-muted-text">
+                Status
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-[var(--border-soft)]">
+            {members.map((member, index) => {
+              const setting =
+                getSettingForMember(
+                  mealSettings,
+                  member.id
+                );
+              const preview =
+                getAutoMealPreview({
+                  meals,
+                  mealSettings,
+                  memberId:
+                    member.id,
+                });
+              const enabled =
+                preview.enabled;
+
+              return (
+                <motion.tr
+                  key={member.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.025 }}
+                  className="hover:bg-[var(--bg-card-muted)] transition-colors"
+                >
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <PersonAvatar
+                        name={member.name}
+                        size="sm"
+                        status={enabled.length ? "active" : "inactive"}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-black theme-text truncate">
+                          {member.name}
+                        </p>
+                        <p className="text-xs theme-muted-text truncate">
+                          {preview.overridden
+                            ? "Today manually overridden"
+                            : preview.generatedKeys.length
+                              ? `Generated today: ${preview.generatedKeys.join(", ")}`
+                              : member.room ? `Room ${member.room}` : member.email || "No room assigned"}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+
+                  {MEAL_KEYS.map((key) => {
+                    const active =
+                      Boolean(setting[key]);
+                    const Icon =
+                      active ? Check : X;
+                    const meta =
+                      mealMeta[key];
+
+                    return (
+                      <td
+                        key={key}
+                        className="px-4 py-4 text-center"
+                      >
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.94 }}
+                          disabled={!isAdmin || Boolean(savingKey)}
+                          onClick={() =>
+                            toggleMemberMeal(
+                              member,
+                              key
+                            )
+                          }
+                          className={`relative inline-flex h-12 w-16 items-center justify-center rounded-2xl border transition-all duration-300 ${
+                            active
+                              ? `${meta.active} border-transparent shadow-lg`
+                              : "theme-muted border-gray-200/70 dark:border-white/10 theme-muted-text hover:bg-[var(--bg-card)]"
+                          } ${!isAdmin ? "cursor-default" : "hover:-translate-y-0.5"}`}
+                          aria-label={`${active ? "Disable" : "Enable"} ${meta.label} for ${member.name}`}
+                        >
+                          <Icon size={18} />
+                          {active && (
+                            <motion.span
+                              layoutId={`meal-dot-${member.id}-${key}`}
+                              className="absolute right-2 top-2 h-2 w-2 rounded-full bg-white/80"
+                            />
+                          )}
+                        </motion.button>
+                      </td>
+                    );
+                  })}
+
+                  <td className="px-5 py-4 text-center">
+                    <Badge
+                      variant={enabled.length ? "success" : "default"}
+                      className="rounded-full px-3 py-1"
+                    >
+                      <Power size={12} />
+                      {enabled.length} / 3 ON
+                    </Badge>
+                  </td>
+                </motion.tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+
 
 /* =========================================================
    MAIN PAGE
@@ -547,6 +883,7 @@ export function MealsPage({
   members = [],
   meals = [],
   guestMeals = [],
+  mealSettings = [],
   ownerId,
   userProfile
 }) {
@@ -583,47 +920,19 @@ export function MealsPage({
   const [loading, setLoading] =
     useState(false);
 
-  const [
-    mealSettings,
-    setMealSettings
-  ] = useState([]);
-
   const isAdmin =
     userProfile?.role === "admin";
-
-
-
-  useEffect(() => {
-
-    if (!ownerId) return;
-
-    const unsub =
-      subscribeMealSettings(
-        ownerId,
-        setMealSettings
-      );
-
-    return () => unsub();
-
-  }, [ownerId]);
 
 
 
   const getMealSetting =
     (memberId) => {
 
-      return (
-        mealSettings.find(
-          (m) =>
-            m.memberId === memberId
-        ) || {
-          breakfast: false,
-          lunch: false,
-          dinner: false,
-        }
+      return getSettingForMember(
+        mealSettings,
+        memberId
       );
     };
-
 
 
   const combinedMeals =
@@ -743,17 +1052,21 @@ export function MealsPage({
       [guestMeals]
     );
 
-  const activeMealSettings =
+  const permanentStats =
     useMemo(
       () =>
-        mealSettings.filter(
-          (setting) =>
-            setting.breakfast ||
-            setting.lunch ||
-            setting.dinner
-        ).length,
-      [mealSettings]
+        getTodayAutoMealStats({
+          meals,
+          mealSettings,
+        }),
+      [
+        meals,
+        mealSettings
+      ]
     );
+
+  const activeMealSettings =
+    permanentStats.membersEnabled;
 
   const memberMealSummary =
     useMemo(
@@ -805,7 +1118,10 @@ export function MealsPage({
 
         } else {
 
-          await deleteMeal(delId);
+          await deleteMealWithAutoSkip(
+            ownerId,
+            meal || { id: delId }
+          );
         }
 
         toast.success(
@@ -827,7 +1143,7 @@ export function MealsPage({
         setLoading(false);
       }
 
-    }, [delId, filtered]);
+    }, [delId, filtered, ownerId]);
 
 
 
@@ -847,6 +1163,8 @@ export function MealsPage({
 
         const isGuest =
           row.type === "guest";
+        const isPermanent =
+          isAutoPermanentMeal(row);
 
         return (
 
@@ -856,6 +1174,8 @@ export function MealsPage({
               className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
                 isGuest
                   ? "bg-orange-500/10 text-orange-500"
+                  : isPermanent
+                    ? "bg-emerald-500/10 text-emerald-500"
                   : "bg-violet-500/10 text-violet-500"
               }`}
             >
@@ -881,6 +1201,12 @@ export function MealsPage({
               {isGuest && (
                 <span className="text-xs text-gray-400">
                   Host: {memberName(v)}
+                </span>
+              )}
+
+              {isPermanent && (
+                <span className="text-xs text-emerald-500">
+                  Auto permanent meal
                 </span>
               )}
 
@@ -982,6 +1308,8 @@ export function MealsPage({
           variant={
             row.type === "guest"
               ? "warning"
+              : isAutoPermanentMeal(row)
+                ? "success"
               : "purple"
           }
         >
@@ -1027,18 +1355,18 @@ export function MealsPage({
                   </Button>
                 )}
 
-                <Button
-                  variant="danger"
-                  size="xs"
-                  onClick={(e) => {
+                  <Button
+                    variant="danger"
+                    size="xs"
+                    onClick={(e) => {
 
-                    e.stopPropagation();
+                      e.stopPropagation();
 
-                    setDelId(id);
-                  }}
-                >
-                  <Trash2 size={12} />
-                </Button>
+                      setDelId(id);
+                    }}
+                  >
+                    <Trash2 size={12} />
+                  </Button>
 
               </div>
             )
@@ -1211,279 +1539,14 @@ export function MealsPage({
 
       {/* PERMANENT MEAL SYSTEM */}
 
-<Card className="relative mb-6 border border-white/10 bg-gradient-to-br from-[#111827] via-[#0f172a] to-[#111827] shadow-2xl overflow-hidden">
-
-{/* TOP GLOW */}
-
-  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.15),transparent_35%)] pointer-events-none" />
-
-  <div className="relative p-6">
-
-{/* HEADER */}
-
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-7">
-
-  <div className="flex items-center gap-4">
-
-    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 border border-violet-500/20 flex items-center justify-center shadow-lg shadow-violet-500/10">
-
-      <UtensilsCrossed
-        size={22}
-        className="text-violet-400"
+      <PermanentMealManager
+        members={members}
+        meals={meals}
+        mealSettings={mealSettings}
+        ownerId={ownerId}
+        isAdmin={isAdmin}
+        stats={permanentStats}
       />
-
-    </div>
-
-
-
-    <div>
-
-      <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
-
-        Permanent Meal System
-
-      </h2>
-
-      <p className="text-sm text-gray-400 mt-1">
-
-        Enable automatic daily meals for members
-
-      </p>
-
-    </div>
-
-  </div>
-
-
-
-  <Badge variant="purple">
-
-    {members.length} Members
-
-  </Badge>
-
-</div>
-
-
-
-{/* MEMBERS */}
-
-<div className="space-y-4">
-
-  {members.map((member, idx) => {
-
-    const setting =
-      getMealSetting(
-        member.id
-      );
-
-
-
-    const toggleMeal =
-      async (field) => {
-
-        const updated = {
-
-          breakfast:
-            setting.breakfast,
-
-          lunch:
-            setting.lunch,
-
-          dinner:
-            setting.dinner,
-
-          [field]:
-            !setting[field],
-        };
-
-
-
-        try {
-
-          await saveMealSettings(
-            ownerId,
-            member.id,
-            updated
-          );
-
-
-
-          toast.success(
-            `${member.name} ${field} ${
-              updated[field]
-                ? "enabled"
-                : "disabled"
-            }`
-          );
-
-        } catch (err) {
-
-          console.error(err);
-
-          toast.error(
-            "Update failed"
-          );
-        }
-      };
-
-
-
-    return (
-
-      <motion.div
-        key={member.id}
-
-        initial={{
-          opacity: 0,
-          y: 14,
-        }}
-
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
-
-        transition={{
-          delay: idx * 0.04,
-          duration: 0.25,
-        }}
-
-        whileHover={{
-          y: -2,
-        }}
-
-        className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.06] transition-all duration-300"
-      >
-
-        {/* HOVER GLOW */}
-
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.10),transparent_40%)] transition-opacity duration-300" />
-
-
-
-        <div className="relative p-5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
-
-          {/* MEMBER INFO */}
-
-          <div className="flex items-center gap-4 min-w-0">
-
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/15 to-indigo-500/15 border border-violet-500/10 flex items-center justify-center text-violet-300 font-black text-sm shadow-inner flex-shrink-0">
-
-              {member.name
-                ?.charAt(0)
-                ?.toUpperCase()}
-
-            </div>
-
-
-
-            <div className="min-w-0">
-
-              <p className="font-bold text-white truncate">
-
-                {member.name}
-
-              </p>
-
-              <p className="text-xs text-gray-400 mt-1">
-
-                Configure recurring meal preferences
-
-              </p>
-
-            </div>
-
-          </div>
-
-
-
-          {/* TOGGLES */}
-
-          <div className="flex flex-wrap gap-3">
-
-            {[
-              {
-                key: "breakfast",
-                icon: Coffee,
-                active:
-                  "from-orange-500 to-amber-500",
-              },
-
-              {
-                key: "lunch",
-                icon: Sun,
-                active:
-                  "from-yellow-500 to-orange-500",
-              },
-
-              {
-                key: "dinner",
-                icon: Moon,
-                active:
-                  "from-blue-500 to-indigo-500",
-              },
-            ].map((meal) => {
-
-              const Icon =
-                meal.icon;
-
-              const active =
-                setting[
-                  meal.key
-                ];
-
-
-
-              return (
-
-                <motion.button
-                  key={meal.key}
-
-                  whileTap={{
-                    scale: 0.96,
-                  }}
-
-                  onClick={() =>
-                    toggleMeal(
-                      meal.key
-                    )
-                  }
-
-                  className={`
-                    relative overflow-hidden flex items-center gap-2 px-5 py-2.5 rounded-2xl border text-sm font-semibold capitalize transition-all duration-300
-
-                    ${
-                      active
-                        ? `bg-gradient-to-r ${meal.active} text-white border-transparent shadow-lg`
-                        : "bg-white/[0.03] border-white/10 text-gray-300 hover:bg-white/[0.08] hover:text-white"
-                    }
-                  `}
-                >
-
-                  <Icon size={15} />
-
-                  {meal.key}
-
-                </motion.button>
-              );
-            })}
-
-          </div>
-
-        </div>
-
-      </motion.div>
-    );
-  })}
-
-</div>
-  </div>
-
-</Card>
-
-
-
 
       {/* TABLE */}
 
