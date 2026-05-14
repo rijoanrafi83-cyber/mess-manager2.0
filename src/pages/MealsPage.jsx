@@ -1106,115 +1106,262 @@ export function MealsPage({
 
       {/* PERMANENT MEAL SYSTEM */}
 
-      <Card className="mb-6">
+<Card className="mb-6 border border-white/10 bg-gradient-to-br from-[#111827] via-[#0f172a] to-[#111827] shadow-2xl overflow-hidden">
 
-        <div className="p-5">
+{/* TOP GLOW */}
 
-          <h2 className="text-lg font-bold mb-5">
-            Permanent Meal System
-          </h2>
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.15),transparent_35%)] pointer-events-none" />
 
-          <div className="space-y-4">
+  <div className="relative p-6">
 
-            {members.map((member) => {
+```
+{/* HEADER */}
 
-              const setting =
-                getMealSetting(
-                  member.id
-                );
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-7">
 
-              const toggleMeal =
-                async (field) => {
+  <div className="flex items-center gap-4">
 
-                  const updated = {
+    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 border border-violet-500/20 flex items-center justify-center shadow-lg shadow-violet-500/10">
 
-                    breakfast:
-                      setting.breakfast,
+      <UtensilsCrossed
+        size={22}
+        className="text-violet-400"
+      />
 
-                    lunch:
-                      setting.lunch,
+    </div>
 
-                    dinner:
-                      setting.dinner,
 
-                    [field]:
-                      !setting[field],
-                  };
 
-                  try {
+    <div>
 
-                    await saveMealSettings(
-                      ownerId,
-                      member.id,
-                      updated
-                    );
+      <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
 
-                    toast.success(
-                      `${member.name} ${field} ${
-                        updated[field]
-                          ? "ON"
-                          : "OFF"
-                      }`
-                    );
+        Permanent Meal System
 
-                  } catch (err) {
+      </h2>
 
-                    console.error(
-                      err
-                    );
+      <p className="text-sm text-gray-400 mt-1">
 
-                    toast.error(
-                      "Update failed"
-                    );
-                  }
-                };
+        Enable automatic daily meals for members
+
+      </p>
+
+    </div>
+
+  </div>
+
+
+
+  <Badge variant="purple">
+
+    {members.length} Members
+
+  </Badge>
+
+</div>
+
+
+
+{/* MEMBERS */}
+
+<div className="space-y-4">
+
+  {members.map((member, idx) => {
+
+    const setting =
+      getMealSetting(
+        member.id
+      );
+
+
+
+    const toggleMeal =
+      async (field) => {
+
+        const updated = {
+
+          breakfast:
+            setting.breakfast,
+
+          lunch:
+            setting.lunch,
+
+          dinner:
+            setting.dinner,
+
+          [field]:
+            !setting[field],
+        };
+
+
+
+        try {
+
+          await saveMealSettings(
+            ownerId,
+            member.id,
+            updated
+          );
+
+
+
+          toast.success(
+            `${member.name} ${field} ${
+              updated[field]
+                ? "enabled"
+                : "disabled"
+            }`
+          );
+
+        } catch (err) {
+
+          console.error(err);
+
+          toast.error(
+            "Update failed"
+          );
+        }
+      };
+
+
+
+    return (
+
+      <motion.div
+        key={member.id}
+
+        initial={{
+          opacity: 0,
+          y: 14,
+        }}
+
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+
+        transition={{
+          delay: idx * 0.04,
+          duration: 0.25,
+        }}
+
+        whileHover={{
+          y: -2,
+        }}
+
+        className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.06] transition-all duration-300"
+      >
+
+        {/* HOVER GLOW */}
+
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.10),transparent_40%)] transition-opacity duration-300" />
+
+
+
+        <div className="relative p-5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+
+          {/* MEMBER INFO */}
+
+          <div className="flex items-center gap-4 min-w-0">
+
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/15 to-indigo-500/15 border border-violet-500/10 flex items-center justify-center text-violet-300 font-black text-sm shadow-inner flex-shrink-0">
+
+              {member.name
+                ?.charAt(0)
+                ?.toUpperCase()}
+
+            </div>
+
+
+
+            <div className="min-w-0">
+
+              <p className="font-bold text-white truncate">
+
+                {member.name}
+
+              </p>
+
+              <p className="text-xs text-gray-400 mt-1">
+
+                Configure recurring meal preferences
+
+              </p>
+
+            </div>
+
+          </div>
+
+
+
+          {/* TOGGLES */}
+
+          <div className="flex flex-wrap gap-3">
+
+            {[
+              {
+                key: "breakfast",
+                icon: Coffee,
+                active:
+                  "from-orange-500 to-amber-500",
+              },
+
+              {
+                key: "lunch",
+                icon: Sun,
+                active:
+                  "from-yellow-500 to-orange-500",
+              },
+
+              {
+                key: "dinner",
+                icon: Moon,
+                active:
+                  "from-blue-500 to-indigo-500",
+              },
+            ].map((meal) => {
+
+              const Icon =
+                meal.icon;
+
+              const active =
+                setting[
+                  meal.key
+                ];
 
 
 
               return (
 
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-4 border rounded-xl"
+                <motion.button
+                  key={meal.key}
+
+                  whileTap={{
+                    scale: 0.96,
+                  }}
+
+                  onClick={() =>
+                    toggleMeal(
+                      meal.key
+                    )
+                  }
+
+                  className={`
+                    relative overflow-hidden flex items-center gap-2 px-5 py-2.5 rounded-2xl border text-sm font-semibold capitalize transition-all duration-300
+
+                    ${
+                      active
+                        ? `bg-gradient-to-r ${meal.active} text-white border-transparent shadow-lg`
+                        : "bg-white/[0.03] border-white/10 text-gray-300 hover:bg-white/[0.08] hover:text-white"
+                    }
+                  `}
                 >
 
-                  <p className="font-medium">
-                    {member.name}
-                  </p>
+                  <Icon size={15} />
 
-                  <div className="flex gap-2">
+                  {meal.key}
 
-                    {[
-                      "breakfast",
-                      "lunch",
-                      "dinner",
-                    ].map((meal) => (
-
-                      <Button
-                        key={meal}
-                        size="sm"
-
-                        variant={
-                          setting[
-                            meal
-                          ]
-                            ? "primary"
-                            : "secondary"
-                        }
-
-                        onClick={() =>
-                          toggleMeal(
-                            meal
-                          )
-                        }
-                      >
-                        {meal}
-                      </Button>
-                    ))}
-
-                  </div>
-
-                </div>
+                </motion.button>
               );
             })}
 
@@ -1222,7 +1369,17 @@ export function MealsPage({
 
         </div>
 
-      </Card>
+      </motion.div>
+    );
+  })}
+
+</div>
+```
+
+  </div>
+
+</Card>
+
 
 
 
