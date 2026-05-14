@@ -49,21 +49,16 @@ export default function ReportsPage({
 
   const currency = settings?.currency || "৳";
 
-  const month = new Date().toLocaleString(
-    "default",
-    {
-      month: "long",
-      year: "numeric",
-    }
-  );
+  const month = new Date().toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
 
   const paidMembers =
-    memberBills.filter((m) => m.due <= 0)
-      .length;
+    memberBills.filter((m) => m.due <= 0).length;
 
   const dueMembers =
-    memberBills.filter((m) => m.due > 0)
-      .length;
+    memberBills.filter((m) => m.due > 0).length;
 
   const sortedByDue = useMemo(
     () =>
@@ -80,11 +75,7 @@ export default function ReportsPage({
 
     doc.setFontSize(24);
 
-    doc.text(
-      "Mess Monthly Report",
-      14,
-      20
-    );
+    doc.text("Mess Monthly Report", 14, 20);
 
     doc.setFontSize(12);
 
@@ -105,9 +96,7 @@ export default function ReportsPage({
     );
 
     doc.text(
-      `Total Meals: ${totalMeals.toFixed(
-        1
-      )}`,
+      `Total Meals: ${totalMeals.toFixed(1)}`,
       14,
       63
     );
@@ -184,15 +173,231 @@ export default function ReportsPage({
       ]),
     });
 
-    doc.save(
-      `mess-report-${month}.pdf`
-    );
+    doc.save(`mess-report-${month}.pdf`);
   };
 
-  // PRINT
+  // PRINT FIXED
 
   const handlePrint = () => {
-    window.print();
+    const printContent = `
+      <html>
+        <head>
+          <title>Mess Monthly Report</title>
+
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 30px;
+              color: #111;
+            }
+
+            h1 {
+              margin-bottom: 5px;
+            }
+
+            .sub {
+              color: #666;
+              margin-bottom: 30px;
+            }
+
+            .summary {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 16px;
+              margin-bottom: 30px;
+            }
+
+            .card {
+              border: 1px solid #ddd;
+              border-radius: 10px;
+              padding: 15px;
+            }
+
+            .label {
+              font-size: 13px;
+              color: #777;
+              margin-bottom: 8px;
+            }
+
+            .value {
+              font-size: 22px;
+              font-weight: bold;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+
+            th, td {
+              border: 1px solid #ddd;
+              padding: 10px;
+              text-align: left;
+            }
+
+            th {
+              background: #f5f5f5;
+            }
+
+            .footer {
+              margin-top: 30px;
+              font-size: 12px;
+              color: #666;
+            }
+
+            @media print {
+              body {
+                padding: 10px;
+              }
+
+              .card {
+                break-inside: avoid;
+              }
+
+              table {
+                break-inside: auto;
+              }
+
+              tr {
+                break-inside: avoid;
+              }
+            }
+          </style>
+        </head>
+
+        <body>
+
+          <h1>Monthly Report</h1>
+
+          <p class="sub">${month}</p>
+
+          <div class="summary">
+
+            <div class="card">
+              <div class="label">Members</div>
+              <div class="value">${members.length}</div>
+            </div>
+
+            <div class="card">
+              <div class="label">Total Meals</div>
+              <div class="value">${totalMeals.toFixed(
+                1
+              )}</div>
+            </div>
+
+            <div class="card">
+              <div class="label">Meal Rate</div>
+              <div class="value">
+                ${formatCurrency(
+                  mealRate.toFixed(2),
+                  currency
+                )}
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="label">Total Bazaar</div>
+              <div class="value">
+                ${formatCurrency(
+                  totalBazaar,
+                  currency
+                )}
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="label">Deposits</div>
+              <div class="value">
+                ${formatCurrency(
+                  totalDeposits,
+                  currency
+                )}
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="label">Total Due</div>
+              <div class="value">
+                ${formatCurrency(
+                  totalDue,
+                  currency
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Meals</th>
+                <th>Meal Cost</th>
+                <th>Deposit</th>
+                <th>Total</th>
+                <th>Due</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              ${memberBills
+                .map(
+                  (m) => `
+                  <tr>
+                    <td>${m.name}</td>
+                    <td>${m.meals.toFixed(
+                      1
+                    )}</td>
+                    <td>${formatCurrency(
+                      m.mealCost.toFixed(2),
+                      currency
+                    )}</td>
+                    <td>${formatCurrency(
+                      m.deposit.toFixed(2),
+                      currency
+                    )}</td>
+                    <td>${formatCurrency(
+                      m.total.toFixed(2),
+                      currency
+                    )}</td>
+                    <td>${formatCurrency(
+                      m.due.toFixed(2),
+                      currency
+                    )}</td>
+                  </tr>
+                `
+                )
+                .join("")}
+
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Generated on ${new Date().toLocaleString()}
+          </div>
+
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open(
+      "",
+      "_blank",
+      "width=1000,height=700"
+    );
+
+    printWindow.document.write(printContent);
+
+    printWindow.document.close();
+
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   };
 
   // CSV
@@ -318,13 +523,11 @@ export default function ReportsPage({
 
   return (
     <PageWrapper>
-
       <PageHeader
         title="Monthly Report"
         subtitle={month}
         actions={
           <div className="flex gap-2 flex-wrap">
-
             <Button
               variant="secondary"
               onClick={handleCSVExport}
