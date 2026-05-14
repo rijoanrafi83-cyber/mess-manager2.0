@@ -898,6 +898,9 @@ export function AppShell() {
                   ownerId={
                     userProfile?.ownerId
                   }
+                  billData={
+                    billData
+                  }
                   userProfile={
                     userProfile
                   }
