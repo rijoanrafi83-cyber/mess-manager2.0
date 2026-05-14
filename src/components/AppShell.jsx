@@ -26,7 +26,7 @@ import {
   X,
   Moon,
   Sun,
-  Coffee,
+  Coffee
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -279,7 +279,7 @@ export function AppShell() {
 
 
 
-      {/* NAV */}
+      {/* NAVIGATION */}
 
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
 
@@ -336,13 +336,13 @@ export function AppShell() {
 
 
 
-      {/* BOTTOM */}
+      {/* BOTTOM ACTIONS */}
 
       <div className="p-3 border-t border-gray-200 dark:border-white/8 space-y-1">
 
         <button
           onClick={toggle}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/6 ${
             collapsed && !isMobile
               ? "justify-center"
               : ""
@@ -367,7 +367,7 @@ export function AppShell() {
 
         <button
           onClick={handleLogout}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 ${
             collapsed && !isMobile
               ? "justify-center"
               : ""
@@ -402,7 +402,7 @@ export function AppShell() {
 
 
 
-      {/* SIDEBAR */}
+      {/* DESKTOP SIDEBAR */}
 
       <motion.aside
         animate={{
@@ -444,22 +444,35 @@ export function AppShell() {
 
         <header className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-[#0d1526] border-b border-gray-200 dark:border-white/8 flex-shrink-0">
 
+          {/* MOBILE MENU BUTTON */}
+
           <button
             onClick={() => setMobileOpen(true)}
-            className="md:hidden p-2 rounded-lg"
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/8 transition-colors"
           >
-            <Menu size={18} />
+            <Menu
+              size={18}
+              className="text-gray-600 dark:text-gray-400"
+            />
           </button>
 
           <div className="flex-1" />
+
+
+
+          {/* NOTIFICATION */}
 
           <div className="relative">
 
             <button
               onClick={() => setShowNotif(!showNotif)}
-              className="relative p-2 rounded-lg"
+              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/8 transition-colors"
             >
-              <Bell size={18} />
+
+              <Bell
+                size={18}
+                className="text-gray-600 dark:text-gray-400"
+              />
 
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-violet-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -470,7 +483,92 @@ export function AppShell() {
             </button>
           </div>
 
+
+
+          {/* PROFILE */}
+
+          <div className="flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-white/8">
+
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[11px] font-bold">
+              {initials}
+            </div>
+
+            <div className="hidden sm:block">
+
+              <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none">
+                {userProfile?.displayName}
+              </p>
+
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                {userProfile?.role === "admin"
+                  ? "Admin"
+                  : "Member"}
+              </p>
+
+            </div>
+          </div>
+
         </header>
+
+
+
+        {/* MOBILE SIDEBAR */}
+
+        <AnimatePresence>
+
+          {mobileOpen && (
+            <>
+              {/* BACKDROP */}
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                onClick={() => setMobileOpen(false)}
+              />
+
+
+
+              {/* MOBILE DRAWER */}
+
+              <motion.aside
+                initial={{ x: -280 }}
+                animate={{ x: 0 }}
+                exit={{ x: -280 }}
+
+                transition={{
+                  type: "spring",
+                  damping: 25,
+                  stiffness: 200
+                }}
+
+                className="fixed left-0 top-0 bottom-0 w-64 bg-white dark:bg-[#0d1526] border-r border-gray-200 dark:border-white/8 z-50 md:hidden flex flex-col"
+              >
+
+                {/* CLOSE BUTTON */}
+
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/8 transition-colors"
+                >
+                  <X
+                    size={16}
+                    className="text-gray-500"
+                  />
+                </button>
+
+
+
+                {/* SIDEBAR CONTENT */}
+
+                <SidebarContent isMobile />
+
+              </motion.aside>
+            </>
+          )}
+
+        </AnimatePresence>
 
 
 
