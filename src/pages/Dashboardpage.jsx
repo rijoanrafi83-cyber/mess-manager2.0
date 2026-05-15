@@ -43,9 +43,9 @@ import {
   ActivityTimeline,
   MetricCard,
   MiniBarList,
-  PremiumHero,
-  PremiumSection,
-} from "../components/PremiumUI";
+  SmartHero,
+  SmartSection,
+} from "../components/SmartUI";
 
 import {
   formatCurrency,
@@ -551,8 +551,8 @@ export function DashboardPage({
 
     <PageWrapper>
 
-      <PremiumHero
-        eyebrow="Realtime Mess Command Center"
+      <SmartHero
+        eyebrow="Realtime Operations"
         title={settings?.messName || "MessManager Dashboard"}
         subtitle="A live operating view for meals, expenses, deposits, member balances, and collection risk."
         metrics={[
@@ -635,7 +635,7 @@ export function DashboardPage({
            MEAL TREND
         ========================================= */}
 
-        <PremiumSection
+        <SmartSection
           className="xl:col-span-2"
           title="Monthly Meal Momentum"
           subtitle="Realtime meal units for the last seven days"
@@ -740,7 +740,7 @@ export function DashboardPage({
 
           </ResponsiveContainer>
 
-        </PremiumSection>
+        </SmartSection>
 
 
 
@@ -748,7 +748,7 @@ export function DashboardPage({
            PIE CHART
         ========================================= */}
 
-        <PremiumSection title="Expense Mix" subtitle="Bazaar spend by category">
+        <SmartSection title="Expense Mix" subtitle="Bazaar spend by category">
 
           {pieData.length >
           0 ? (
@@ -816,7 +816,7 @@ export function DashboardPage({
             />
           )}
 
-        </PremiumSection>
+        </SmartSection>
 
       </div>
 
@@ -828,7 +828,7 @@ export function DashboardPage({
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
 
-        <PremiumSection className="xl:col-span-2" title="Member Meal Leaders" subtitle="Highest meal consumers this month">
+        <SmartSection className="xl:col-span-2" title="Member Meal Leaders" subtitle="Highest meal consumers this month">
 
           {memberBills.length >
           0 ? (
@@ -901,7 +901,7 @@ export function DashboardPage({
             />
           )}
 
-        </PremiumSection>
+        </SmartSection>
 
 
 
@@ -1096,11 +1096,11 @@ export function DashboardPage({
       ===================================================== */}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <PremiumSection title="Live Activity Feed" subtitle="Latest deposits and bazaar activity">
+        <SmartSection title="Live Activity Feed" subtitle="Latest deposits and bazaar activity">
           <ActivityTimeline items={activityItems} empty="No deposits or expenses have been recorded yet." />
-        </PremiumSection>
+        </SmartSection>
 
-        <PremiumSection title="Balance Watchlist" subtitle="Members requiring follow-up">
+        <SmartSection title="Balance Watchlist" subtitle="Members requiring follow-up">
           <MiniBarList
             items={[...memberBills]
               .filter((m) => m.due > 0)
@@ -1109,7 +1109,7 @@ export function DashboardPage({
               .map((m) => ({ ...m, label: m.name, value: m.due }))}
             format={(value) => formatCurrency(value, currency)}
           />
-        </PremiumSection>
+        </SmartSection>
 
         {/* =========================================
            RECENT BAZAAR

@@ -1266,7 +1266,7 @@ export default function SettingsPage({
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-violet-200">
                 <Sparkles size={14} />
-                Premium control center
+                Workspace control
               </div>
               <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
                 Settings
@@ -1501,7 +1501,7 @@ export default function SettingsPage({
 
             <SectionCard
               title="Theme Customization"
-              subtitle="Preview premium palettes instantly and sync them across devices"
+              subtitle="Preview modern workspace themes instantly and sync them across devices"
               icon={Palette}
               tone="fuchsia"
             >

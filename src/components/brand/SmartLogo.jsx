@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-export function PremiumLogo({
+export function SmartLogo({
   collapsed = false,
   title = "MessManager",
 }) {
@@ -108,7 +108,7 @@ export function PremiumLogo({
             {title}
           </p>
           <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.18em] theme-accent-text">
-            Premium Edition
+            Smart Manager
           </p>
         </div>
       )}

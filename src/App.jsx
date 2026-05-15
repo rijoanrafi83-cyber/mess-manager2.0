@@ -76,7 +76,7 @@ function PWAManifest() {
         "MessManager",
 
       description:
-        "Premium mess management system",
+        "Smart mess management workspace",
 
       start_url: "/",
 

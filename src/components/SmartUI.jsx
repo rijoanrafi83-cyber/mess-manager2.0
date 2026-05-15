@@ -7,7 +7,7 @@ const fadeUp = {
   transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
 };
 
-export function PremiumHero({
+export function SmartHero({
   eyebrow,
   title,
   subtitle,
@@ -113,7 +113,7 @@ export function MetricCard({
   );
 }
 
-export function PremiumSection({ title, subtitle, actions, children, className = "" }) {
+export function SmartSection({ title, subtitle, actions, children, className = "" }) {
   return (
     <section className={`rounded-3xl border theme-card overflow-hidden ${className}`}>
       {(title || actions) && (

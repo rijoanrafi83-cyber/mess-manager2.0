@@ -44,9 +44,9 @@ import {
 } from "../components/ui";
 import {
   MetricCard,
-  PremiumHero,
-  PremiumSection,
-} from "../components/PremiumUI";
+  SmartHero,
+  SmartSection,
+} from "../components/SmartUI";
 
 import {
 
@@ -1371,8 +1371,8 @@ export default function ReportsPage({
 
     <PageWrapper>
 
-      <PremiumHero
-        eyebrow="Analytics & Export"
+      <SmartHero
+        eyebrow="Clean Reporting & Export"
         title="Monthly Report"
         subtitle={`${currentMonth} settlement intelligence with export-safe PDF, CSV, and print workflows.`}
         metrics={[
@@ -1430,7 +1430,7 @@ export default function ReportsPage({
       </div>
 
       {reportChartData.length > 0 && (
-        <PremiumSection title="Member Settlement Comparison" subtitle="Bill, deposit, and due by top members" className="mb-6">
+        <SmartSection title="Member Settlement Comparison" subtitle="Bill, deposit, and due by top members" className="mb-6">
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={reportChartData} barSize={14}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
@@ -1451,7 +1451,7 @@ export default function ReportsPage({
               <Bar dataKey="due" name="Due" fill={chartTheme.colors[4]} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </PremiumSection>
+        </SmartSection>
       )}
 
 

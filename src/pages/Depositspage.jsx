@@ -11,9 +11,9 @@ import {
   FilterSurface,
   MetricCard,
   PersonAvatar,
-  PremiumHero,
-  PremiumSection,
-} from "../components/PremiumUI";
+  SmartHero,
+  SmartSection,
+} from "../components/SmartUI";
 import { addDeposit, updateDeposit, deleteDeposit } from "../services/firestoreService";
 import { formatCurrency } from "../utils/billing";
 
@@ -176,8 +176,8 @@ export function DepositsPage({ deposits = [], members = [], ownerId, userProfile
 
   return (
     <PageWrapper>
-      <PremiumHero
-        eyebrow="Collection Desk"
+      <SmartHero
+        eyebrow="Deposit Operations"
         title="Deposits"
         subtitle="Record payments, review member contribution patterns, and inspect transaction history with realtime Firebase sync."
         metrics={[
@@ -202,7 +202,7 @@ export function DepositsPage({ deposits = [], members = [], ownerId, userProfile
 
       {/* Member summary cards */}
       {members.length > 0 && (
-        <PremiumSection title="Member Balance Overview" subtitle="Collected amount per member" className="mb-6">
+        <SmartSection title="Member Balance Overview" subtitle="Collected amount per member" className="mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {members.map(m => (
             <div key={m.id} className="p-4 theme-muted border rounded-2xl">
@@ -216,7 +216,7 @@ export function DepositsPage({ deposits = [], members = [], ownerId, userProfile
             </div>
           ))}
         </div>
-        </PremiumSection>
+        </SmartSection>
       )}
 
       {/* Filters */}
@@ -228,9 +228,9 @@ export function DepositsPage({ deposits = [], members = [], ownerId, userProfile
         </Select>
       </FilterSurface>
 
-      <PremiumSection title="Transaction History" subtitle="Latest filtered deposits" className="mb-6">
+      <SmartSection title="Transaction History" subtitle="Latest filtered deposits" className="mb-6">
         <ActivityTimeline items={activityItems} empty="No deposit activity found for this filter." />
-      </PremiumSection>
+      </SmartSection>
 
       <Card noPad>
         <Table

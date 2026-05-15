@@ -51,7 +51,8 @@ import { BazaarPage } from "../pages/BazaarPage";
 import { DepositsPage } from "../pages/DepositsPage";
 import ReportsPage from "../pages/ReportsPage";
 import SettingsPage from "../pages/SettingsPage";
-import { PremiumLogo } from "./brand/PremiumLogo";
+import AboutMessManagerPage from "../pages/AboutMessManagerPage";
+import { SmartLogo } from "./brand/SmartLogo";
 import { ProfilePanel } from "./profile/ProfilePanel";
 import { ProfileAvatar } from "./profile/ProfileAvatar";
 
@@ -451,10 +452,25 @@ export function AppShell() {
       {/* LOGO */}
 
       <div className="px-4 py-5">
-        <PremiumLogo
-          collapsed={collapsed && !isMobile}
-          title="MessManager"
-        />
+        <button
+          type="button"
+          onClick={() =>
+            navigate("/about")
+          }
+          aria-label="Open About MessManager"
+          title="About MessManager"
+          className={`group w-full rounded-3xl p-1 text-left transition-all duration-200 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent)_55%,transparent)] focus:ring-offset-2 focus:ring-offset-transparent active:scale-[0.98] ${
+            collapsed &&
+            !isMobile
+              ? "flex justify-center"
+              : ""
+          }`}
+        >
+          <SmartLogo
+            collapsed={collapsed && !isMobile}
+            title="MessManager"
+          />
+        </button>
       </div>
 
       {/* USER */}
@@ -1103,6 +1119,13 @@ export function AppShell() {
                     replace
                   />
                 )
+              }
+            />
+
+            <Route
+              path="/about"
+              element={
+                <AboutMessManagerPage />
               }
             />
 

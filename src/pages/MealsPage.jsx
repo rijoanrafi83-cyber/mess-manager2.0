@@ -43,9 +43,9 @@ import {
   MetricCard,
   MiniBarList,
   PersonAvatar,
-  PremiumHero,
-  PremiumSection,
-} from "../components/PremiumUI";
+  SmartHero,
+  SmartSection,
+} from "../components/SmartUI";
 
 import {
   addMeal,
@@ -1380,8 +1380,8 @@ export function MealsPage({
 
     <PageWrapper>
 
-      <PremiumHero
-        eyebrow="Meal Operations"
+      <SmartHero
+        eyebrow="Smart Meal Management"
         title="Meals"
         subtitle="Track daily meals, guest meals, recurring preferences, and member-level consumption from one responsive command view."
         metrics={[
@@ -1499,7 +1499,7 @@ export function MealsPage({
       </FilterSurface>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-        <PremiumSection
+        <SmartSection
           className="xl:col-span-2"
           title="Member Meal Heatmap"
           subtitle="Relative consumption intensity for the selected period"
@@ -1508,9 +1508,9 @@ export function MealsPage({
             items={memberMealSummary}
             format={(value) => `${value.toFixed(1)} units`}
           />
-        </PremiumSection>
+        </SmartSection>
 
-        <PremiumSection title="Today Readiness" subtitle="Recurring meal switches">
+        <SmartSection title="Today Readiness" subtitle="Recurring meal switches">
           <div className="space-y-3">
             {members.slice(0, 5).map((member) => {
               const setting = getMealSetting(member.id);
@@ -1531,7 +1531,7 @@ export function MealsPage({
               );
             })}
           </div>
-        </PremiumSection>
+        </SmartSection>
       </div>
 
 

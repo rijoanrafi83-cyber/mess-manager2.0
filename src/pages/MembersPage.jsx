@@ -42,9 +42,9 @@ import {
   FilterSurface,
   MetricCard,
   PersonAvatar,
-  PremiumHero,
-  PremiumSection,
-} from "../components/PremiumUI";
+  SmartHero,
+  SmartSection,
+} from "../components/SmartUI";
 
 import {
   addMember,
@@ -893,8 +893,8 @@ export function MembersPage({
 
     <PageWrapper>
 
-      <PremiumHero
-        eyebrow="Member Directory"
+      <SmartHero
+        eyebrow="Member Workspace"
         title="Members"
         subtitle="Manage residents with fast search, profile side views, status signals, and billing visibility."
         metrics={[
@@ -929,7 +929,7 @@ export function MembersPage({
       </div>
 
       {memberCards.length > 0 && (
-        <PremiumSection
+        <SmartSection
           title="Member Snapshot"
           subtitle="Quick profile and billing signals for the current filter"
           className="mb-6"
@@ -976,7 +976,7 @@ export function MembersPage({
               </motion.button>
             ))}
           </div>
-        </PremiumSection>
+        </SmartSection>
       )}
 
 

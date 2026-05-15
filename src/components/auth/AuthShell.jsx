@@ -12,7 +12,7 @@ import {
 import { useTheme } from "../../context/ThemeContext";
 
 export function AuthShell({
-  eyebrow = "Premium mess operations",
+  eyebrow = "Smart mess operations",
   title,
   subtitle,
   children,
@@ -121,7 +121,7 @@ export function AuthShell({
                     MessManager
                   </p>
                   <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider theme-muted-text">
-                    Premium Edition
+                    Smart Manager
                   </p>
                 </div>
               </div>

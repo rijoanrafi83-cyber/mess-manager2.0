@@ -1,4 +1,4 @@
-// ─── Premium UI Component Library ────────────────────────────────────────────
+// ─── Smart UI Component Library ──────────────────────────────────────────────
 import { motion } from "framer-motion";
 import { Loader2, X, AlertCircle, CheckCircle, Info, AlertTriangle } from "lucide-react";
 

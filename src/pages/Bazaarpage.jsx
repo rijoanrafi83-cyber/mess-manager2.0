@@ -10,9 +10,9 @@ import {
   ActivityTimeline,
   FilterSurface,
   MetricCard,
-  PremiumHero,
-  PremiumSection,
-} from "../components/PremiumUI";
+  SmartHero,
+  SmartSection,
+} from "../components/SmartUI";
 import { addBazaar, updateBazaar, deleteBazaar } from "../services/firestoreService";
 import { formatCurrency } from "../utils/billing";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -173,8 +173,8 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
 
   return (
     <PageWrapper>
-      <PremiumHero
-        eyebrow="Expense Intelligence"
+      <SmartHero
+        eyebrow="Smart Expense Tracking"
         title="Bazaar"
         subtitle="Track every market run, category spend, buyer activity, and realtime totals without changing the existing bazaar ledger."
         metrics={[
@@ -200,7 +200,7 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
 
       {/* Category chart */}
       {catChartData.length > 0 && (
-        <PremiumSection className="mb-6" title="Expense by Category" subtitle="Realtime category distribution">
+        <SmartSection className="mb-6" title="Expense by Category" subtitle="Realtime category distribution">
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={catChartData} barSize={24}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
@@ -220,7 +220,7 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
               <Bar dataKey="total" fill={chartTheme.accent} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </PremiumSection>
+        </SmartSection>
       )}
 
       {/* Filters */}
@@ -232,9 +232,9 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
         </Select>
       </FilterSurface>
 
-      <PremiumSection title="Recent Expense Timeline" subtitle="Latest filtered bazaar records" className="mb-6">
+      <SmartSection title="Recent Expense Timeline" subtitle="Latest filtered bazaar records" className="mb-6">
         <ActivityTimeline items={activityItems} empty="No bazaar activity found for this filter." />
-      </PremiumSection>
+      </SmartSection>
 
       <Card noPad>
         <Table
