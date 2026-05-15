@@ -124,6 +124,23 @@ const DEFAULT_PREFERENCES = {
   density: 2,
 };
 
+const SETTINGS_LOAD_TIMEOUT_MS = 12000;
+
+const withSettingsTimeout = (promise, message) => {
+  let timeoutId;
+
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(
+      () => reject(new Error(message)),
+      SETTINGS_LOAD_TIMEOUT_MS
+    );
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    window.clearTimeout(timeoutId);
+  });
+};
+
 const DEFAULT_SHARED_ROLE_LOGINS = {
   [ROLES.MEMBER]: {
     role: ROLES.MEMBER,
@@ -515,6 +532,7 @@ export default function SettingsPage({
   const autoSaveTimer = useRef(null);
   const didInitialLoad = useRef(false);
   const isHydrating = useRef(false);
+  const loadRequestRef = useRef(0);
   const savedSettingsSignature = useRef("");
   const latestSettingsSignature = useRef("");
   const savedAutoSave = useRef(DEFAULT_PREFERENCES.autoSave);
@@ -798,6 +816,11 @@ export default function SettingsPage({
   );
 
   useEffect(() => {
+    const requestId =
+      loadRequestRef.current + 1;
+    loadRequestRef.current = requestId;
+    let cancelled = false;
+
     const loadUserData = async () => {
       isHydrating.current = true;
       let nextFormData = formData;
@@ -806,7 +829,9 @@ export default function SettingsPage({
 
       try {
         if (!currentUser) {
-          setLoading(false);
+          if (!cancelled) {
+            setLoading(false);
+          }
           return;
         }
 
@@ -816,7 +841,18 @@ export default function SettingsPage({
           currentUser.uid
         );
 
-        const snap = await getDoc(userRef);
+        const snap = await withSettingsTimeout(
+          getDoc(userRef),
+          "Settings took too long to load. Please try again."
+        );
+
+        if (
+          cancelled ||
+          loadRequestRef.current !== requestId
+        ) {
+          return;
+        }
+
         const data = snap.exists()
           ? snap.data()
           : {};
@@ -875,9 +911,19 @@ export default function SettingsPage({
 
         if (isAdmin && workspaceOwnerId) {
           const sharedLogins =
-            await getSharedRoleLoginSettings(
-              workspaceOwnerId
+            await withSettingsTimeout(
+              getSharedRoleLoginSettings(
+                workspaceOwnerId
+              ),
+              "Role login settings took too long to load."
             );
+
+          if (
+            cancelled ||
+            loadRequestRef.current !== requestId
+          ) {
+            return;
+          }
 
           nextSharedRoleLogins = sharedLogins;
           setSharedRoleLogins(sharedLogins);
@@ -890,9 +936,18 @@ export default function SettingsPage({
           setReducedMotion(savedPreferences.reduceMotion);
         }
       } catch (error) {
-        console.error(error);
-        toast.error("Failed to load settings");
+        if (!cancelled) {
+          console.error(error);
+          toast.error("Failed to load settings");
+        }
       } finally {
+        if (
+          cancelled ||
+          loadRequestRef.current !== requestId
+        ) {
+          return;
+        }
+
         savedSettingsSignature.current =
           buildSettingsSignature({
             formData:
@@ -911,6 +966,10 @@ export default function SettingsPage({
     };
 
     loadUserData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     applyThemePreference,
     currentUser,

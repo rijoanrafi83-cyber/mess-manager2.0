@@ -1,4 +1,9 @@
-import { useState, useEffect } from "react";
+import {
+  memo,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   Routes,
@@ -111,6 +116,66 @@ const NAV_ITEMS = [
   },
 ];
 
+const MobileDrawer = memo(function MobileDrawer({
+  open,
+  onClose,
+  children,
+}) {
+  return (
+    <AnimatePresence initial={false}>
+      {open && (
+        <>
+          <motion.div
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            transition={{
+              duration: 0.16,
+            }}
+            className="fixed inset-0 z-[130] bg-black/55 md:hidden"
+            onClick={onClose}
+          />
+
+          <motion.aside
+            initial={{
+              x: -270,
+            }}
+            animate={{
+              x: 0,
+            }}
+            exit={{
+              x: -270,
+            }}
+            transition={{
+              duration: 0.2,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="mobile-perf-surface fixed bottom-0 left-0 top-0 z-[140] flex w-64 flex-col border-r theme-sidebar shadow-xl md:hidden"
+          >
+            <button
+              onClick={onClose}
+              className="absolute right-4 top-4 rounded-xl p-2 transition-colors hover:bg-white/10"
+            >
+              <X
+                size={18}
+                className="theme-subtext"
+              />
+            </button>
+
+            {children}
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+});
+
 export function AppShell() {
   const {
     currentUser,
@@ -186,50 +251,75 @@ export function AppShell() {
     userProfile?.role === ROLES.MEMBER &&
     Boolean(userProfile?.memberId);
 
-  const visibleMembers = isPersonalMember
-    ? members.filter(
+  const visibleData = useMemo(() => {
+    if (!isPersonalMember) {
+      return {
+        members,
+        meals,
+        mealSettings,
+        deposits,
+        guestMeals,
+        bazaar,
+        extraCosts,
+      };
+    }
+
+    return {
+      members: members.filter(
         (member) =>
           member.id ===
             userProfile?.memberId ||
           member.authUid ===
             userProfile?.uid
-      )
-    : members;
-
-  const visibleMeals = isPersonalMember
-    ? meals.filter(
+      ),
+      meals: meals.filter(
         (meal) =>
           meal.memberId ===
           userProfile?.memberId
-      )
-    : meals;
-
-  const visibleMealSettings = isPersonalMember
-    ? mealSettings.filter(
+      ),
+      mealSettings: mealSettings.filter(
         (setting) =>
           setting.memberId ===
           userProfile?.memberId
-      )
-    : mealSettings;
-
-  const visibleDeposits = isPersonalMember
-    ? deposits.filter(
+      ),
+      deposits: deposits.filter(
         (deposit) =>
           deposit.memberId ===
           userProfile?.memberId
-      )
-    : deposits;
+      ),
+      guestMeals: [],
+      bazaar: [],
+      extraCosts: [],
+    };
+  }, [
+    bazaar,
+    deposits,
+    extraCosts,
+    guestMeals,
+    isPersonalMember,
+    mealSettings,
+    meals,
+    members,
+    userProfile?.memberId,
+    userProfile?.uid,
+  ]);
 
-  const visibleGuestMeals = isPersonalMember ? [] : guestMeals;
-  const visibleBazaar = isPersonalMember ? [] : bazaar;
-  const visibleExtraCosts = isPersonalMember ? [] : extraCosts;
+  const {
+    members: visibleMembers,
+    meals: visibleMeals,
+    mealSettings: visibleMealSettings,
+    deposits: visibleDeposits,
+    guestMeals: visibleGuestMeals,
+    bazaar: visibleBazaar,
+    extraCosts: visibleExtraCosts,
+  } = visibleData;
 
   /* =========================================================
      BILL CALCULATION
   ========================================================= */
 
   const billData =
-    calculateMonthlyBill(
+    useMemo(() => calculateMonthlyBill(
       visibleMembers,
       visibleMeals,
       visibleGuestMeals,
@@ -237,7 +327,15 @@ export function AppShell() {
       visibleBazaar,
       visibleDeposits,
       visibleExtraCosts
-    );
+    ), [
+      visibleBazaar,
+      visibleDeposits,
+      visibleExtraCosts,
+      visibleGuestMeals,
+      visibleMealSettings,
+      visibleMeals,
+      visibleMembers,
+    ]);
 
   useEffect(() => {
     const timer = window.setInterval(
@@ -292,12 +390,12 @@ export function AppShell() {
   ========================================================= */
 
   const allowedNav =
-    NAV_ITEMS.filter((item) =>
+    useMemo(() => NAV_ITEMS.filter((item) =>
       item.roles.includes(
         userProfile?.role ||
           "member"
       )
-    );
+    ), [userProfile?.role]);
 
   /* =========================================================
      CLOSE MOBILE DRAWER ON ROUTE CHANGE
@@ -812,73 +910,14 @@ export function AppShell() {
 
         {/* MOBILE SIDEBAR */}
 
-        <AnimatePresence>
-
-          {mobileOpen && (
-            <>
-              {/* BACKDROP */}
-
-              <motion.div
-                initial={{
-                  opacity: 0,
-                }}
-                animate={{
-                  opacity: 1,
-                }}
-                exit={{
-                  opacity: 0,
-                }}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[130] md:hidden"
-                onClick={() =>
-                  setMobileOpen(
-                    false
-                  )
-                }
-              />
-
-              {/* MOBILE DRAWER */}
-
-              <motion.aside
-                initial={{
-                  x: -280,
-                }}
-                animate={{
-                  x: 0,
-                }}
-                exit={{
-                  x: -280,
-                }}
-                transition={{
-                  type: "spring",
-                  damping: 25,
-                  stiffness: 200,
-                }}
-                className="fixed left-0 top-0 bottom-0 w-64 theme-sidebar backdrop-blur-2xl border-r z-[140] md:hidden flex flex-col shadow-2xl"
-              >
-
-                {/* CLOSE */}
-
-                <button
-                  onClick={() =>
-                    setMobileOpen(
-                      false
-                    )
-                  }
-                  className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/10 transition-all"
-                >
-                  <X
-                    size={18}
-                    className="theme-subtext"
-                  />
-                </button>
-
-                <SidebarContent isMobile />
-
-              </motion.aside>
-            </>
-          )}
-
-        </AnimatePresence>
+        <MobileDrawer
+          open={mobileOpen}
+          onClose={() =>
+            setMobileOpen(false)
+          }
+        >
+          <SidebarContent isMobile />
+        </MobileDrawer>
 
         {/* ROUTES */}
 
