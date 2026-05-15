@@ -27,12 +27,12 @@ import {
   Bell,
   LogOut,
   ChevronLeft,
+  ChevronDown,
   Menu,
   X,
   Moon,
   Sun,
   Monitor,
-  Coffee,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -46,6 +46,9 @@ import { BazaarPage } from "../pages/BazaarPage";
 import { DepositsPage } from "../pages/DepositsPage";
 import ReportsPage from "../pages/ReportsPage";
 import SettingsPage from "../pages/SettingsPage";
+import { PremiumLogo } from "./brand/PremiumLogo";
+import { ProfilePanel } from "./profile/ProfilePanel";
+import { ProfileAvatar } from "./profile/ProfileAvatar";
 
 import { calculateMonthlyBill } from "../utils/billing";
 import { ensureDailyPermanentMeals } from "../services/firestoreService";
@@ -109,7 +112,11 @@ const NAV_ITEMS = [
 ];
 
 export function AppShell() {
-  const { userProfile, logout } =
+  const {
+    currentUser,
+    userProfile,
+    logout,
+  } =
     useAuth();
 
   const {
@@ -141,6 +148,11 @@ export function AppShell() {
   const [
     showNotif,
     setShowNotif,
+  ] = useState(false);
+
+  const [
+    profileOpen,
+    setProfileOpen,
   ] = useState(false);
 
   const [
@@ -288,20 +300,6 @@ export function AppShell() {
     );
 
   /* =========================================================
-     INITIALS
-  ========================================================= */
-
-  const initials = (
-    userProfile?.displayName ||
-    "U"
-  )
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
-  /* =========================================================
      CLOSE MOBILE DRAWER ON ROUTE CHANGE
   ========================================================= */
 
@@ -354,50 +352,11 @@ export function AppShell() {
 
       {/* LOGO */}
 
-      <div
-        className={`flex items-center gap-3 px-4 py-5 ${
-          collapsed &&
-          !isMobile
-            ? "justify-center"
-            : ""
-        }`}
-      >
-        <div className="w-10 h-10 rounded-2xl theme-accent-bg flex items-center justify-center shadow-2xl shadow-[color-mix(in_srgb,var(--accent)_24%,transparent)]">
-          <Coffee
-            size={18}
-            className="text-white"
-          />
-        </div>
-
-        <AnimatePresence>
-          {(!collapsed ||
-            isMobile) && (
-            <motion.div
-              initial={{
-                opacity: 0,
-                width: 0,
-              }}
-              animate={{
-                opacity: 1,
-                width: "auto",
-              }}
-              exit={{
-                opacity: 0,
-                width: 0,
-              }}
-              className="overflow-hidden"
-            >
-              <p className="font-bold text-sm theme-text whitespace-nowrap leading-none">
-                {settings?.messName ||
-                  "MessManager"}
-              </p>
-
-              <p className="text-[10px] theme-accent-text font-medium whitespace-nowrap mt-1">
-                Premium Edition
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="px-4 py-5">
+        <PremiumLogo
+          collapsed={collapsed && !isMobile}
+          title="MessManager"
+        />
       </div>
 
       {/* USER */}
@@ -410,9 +369,12 @@ export function AppShell() {
             : "flex items-center gap-3"
         }`}
       >
-        <div className="w-10 h-10 rounded-xl theme-accent-bg flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-[color-mix(in_srgb,var(--accent)_24%,transparent)]">
-          {initials}
-        </div>
+        <ProfileAvatar
+          name={userProfile?.displayName}
+          photoURL={userProfile?.photoURL}
+          size="md"
+          className="rounded-xl"
+        />
 
         <AnimatePresence>
           {(!collapsed ||
@@ -804,26 +766,49 @@ export function AppShell() {
 
           {/* PROFILE */}
 
-          <div className="flex items-center gap-3 pl-4 border-l">
+          <button
+            type="button"
+            onClick={() =>
+              setProfileOpen(true)
+            }
+            className="group flex items-center gap-3 rounded-2xl border-l pl-4 pr-2 py-1.5 transition-all hover:bg-white/10 active:scale-[0.99]"
+          >
+            <ProfileAvatar
+              name={userProfile?.displayName}
+              photoURL={userProfile?.photoURL}
+              size="md"
+              className="transition-transform group-hover:scale-105"
+            />
 
-            <div className="w-10 h-10 rounded-2xl theme-accent-bg flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-[color-mix(in_srgb,var(--accent)_24%,transparent)]">
-              {initials}
-            </div>
-
-            <div className="hidden sm:block">
-              <p className="text-sm font-semibold theme-text leading-none">
+            <div className="hidden text-left sm:block">
+              <p className="max-w-[150px] truncate text-sm font-bold theme-text leading-none">
                 {
                   userProfile?.displayName
                 }
               </p>
 
-              <p className="text-xs theme-muted-text mt-1">
+              <p className="mt-1 max-w-[150px] truncate text-xs theme-muted-text">
                 {ROLE_LABELS[userProfile?.role] ||
                   "Member"}
               </p>
             </div>
-          </div>
+
+            <ChevronDown
+              size={16}
+              className="hidden theme-muted-text transition-transform group-hover:translate-y-0.5 sm:block"
+            />
+          </button>
         </header>
+
+        <ProfilePanel
+          open={profileOpen}
+          onClose={() =>
+            setProfileOpen(false)
+          }
+          userProfile={userProfile}
+          currentUser={currentUser}
+          settings={settings}
+        />
 
         {/* MOBILE SIDEBAR */}
 

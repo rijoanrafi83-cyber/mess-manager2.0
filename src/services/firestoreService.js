@@ -24,15 +24,7 @@ import {
 } from "firebase/firestore";
 
 import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject
-} from "firebase/storage";
-
-import {
-  db,
-  storage
+  db
 } from "../firebase";
 
 import {
@@ -656,30 +648,10 @@ export const addBazaar =
 
     let receiptURL = null;
 
-
-
-    if (
-      receiptFile &&
-      storage
-    ) {
-
-      const storageRef = ref(
-
-        storage,
-
-        `receipts/${ownerId}/${Date.now()}_${receiptFile.name}`
+    if (receiptFile) {
+      console.warn(
+        "Receipt file upload skipped: Firebase Storage is disabled for Spark compatibility."
       );
-
-      const snap =
-        await uploadBytes(
-          storageRef,
-          receiptFile
-        );
-
-      receiptURL =
-        await getDownloadURL(
-          snap.ref
-        );
     }
 
 

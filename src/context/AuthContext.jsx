@@ -60,6 +60,25 @@ export function AuthProvider({ children }) {
       adminData.phone ||
       userData.phone ||
       "",
+    bio:
+      adminData.bio ||
+      userData.bio ||
+      "",
+    photoURL:
+      adminData.photoURL ||
+      userData.photoURL ||
+      firebaseUser.photoURL ||
+      "",
+    createdAt:
+      adminData.createdAt ||
+      userData.createdAt ||
+      null,
+    joinedAt:
+      adminData.joinedAt ||
+      userData.joinedAt ||
+      adminData.createdAt ||
+      userData.createdAt ||
+      null,
     role: ROLES.ADMIN,
     ownerId: firebaseUser.uid,
     status: adminData.status || adminData.accountStatus || "active",
@@ -117,6 +136,8 @@ export function AuthProvider({ children }) {
         fullName: profile.fullName,
         email: profile.email,
         phone: profile.phone,
+        bio: profile.bio,
+        photoURL: profile.photoURL,
         role: ROLES.ADMIN,
         ownerId: firebaseUser.uid,
         accountStatus: "active",
@@ -144,6 +165,11 @@ export function AuthProvider({ children }) {
     status: data.status || "active",
     accountStatus: data.accountStatus || data.status || "active",
     credentialVersion: data.credentialVersion || 1,
+    photoURL: data.photoURL || firebaseUser.photoURL || "",
+    bio: data.bio || "",
+    phone: data.phone || "",
+    createdAt: data.createdAt || null,
+    joinedAt: data.joinedAt || data.createdAt || null,
     sessionId: firebaseUser.uid,
   });
 
@@ -249,7 +275,47 @@ export function AuthProvider({ children }) {
     if (
       status !== "authed" ||
       !userProfile?.uid ||
-      userProfile.role === "admin"
+      userProfile.role !== ROLES.ADMIN ||
+      !currentUser
+    ) {
+      return undefined;
+    }
+
+    const unsubscribe = onSnapshot(
+      doc(db, "adminProfiles", userProfile.uid),
+      (snap) => {
+        if (!snap.exists()) {
+          return;
+        }
+
+        const data = snap.data();
+        const accountStatus =
+          data.accountStatus || data.status || "active";
+
+        if (
+          data.role === ROLES.ADMIN &&
+          accountStatus === "active"
+        ) {
+          setUserProfile(
+            buildAdminProfile(currentUser, data)
+          );
+        }
+      }
+    );
+
+    return () => unsubscribe();
+  }, [
+    currentUser,
+    status,
+    userProfile?.uid,
+    userProfile?.role,
+  ]);
+
+  useEffect(() => {
+    if (
+      status !== "authed" ||
+      !userProfile?.uid ||
+      userProfile.role === ROLES.ADMIN
     ) {
       return undefined;
     }
