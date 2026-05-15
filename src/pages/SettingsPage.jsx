@@ -62,6 +62,7 @@ import {
 import toast from "react-hot-toast";
 
 import { auth, db } from "../firebase";
+import { addActivityLog } from "../services/firestoreService";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import {
@@ -72,6 +73,7 @@ import {
   getSharedRoleLoginSettings,
   saveSharedRoleLoginSettings,
 } from "../services/sharedRoleAuthService";
+import { ActivityLogViewer } from "../components/SaaSFeatures";
 import { ROLES } from "../utils/roles";
 
 const ACCENT_COLORS = [
@@ -511,6 +513,9 @@ const RoleLoginSettings = ({
 export default function SettingsPage({
   settings,
   userProfile,
+  activityLogs = [],
+  sessionActivity = [],
+  onReplayOnboarding,
 }) {
   const authContext = useAuth();
   const {
@@ -783,6 +788,18 @@ export default function SettingsPage({
           toast.success("Settings saved");
         }
 
+        if (workspaceOwnerId) {
+          addActivityLog(workspaceOwnerId, {
+            type: "settings",
+            action: "update",
+            title: "Settings saved",
+            message: "Profile or workspace preferences changed",
+            entityType: "settings",
+            entityId: workspaceOwnerId,
+            actor: profile,
+          }).catch(() => {});
+        }
+
         return true;
       } catch (error) {
         console.error(error);
@@ -812,6 +829,7 @@ export default function SettingsPage({
       setAccentColor,
       setReducedMotion,
       setTheme,
+      workspaceOwnerId,
     ]
   );
 
@@ -1496,6 +1514,75 @@ export default function SettingsPage({
                   }
                   className="mt-5 h-2 w-full accent-[var(--accent)]"
                 />
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Activity Center"
+              subtitle="Audit logs, device context, and recent workspace actions"
+              icon={Activity}
+              tone="blue"
+              actions={
+                <button
+                  type="button"
+                  onClick={onReplayOnboarding}
+                  className="rounded-xl border px-3 py-2 text-xs font-bold theme-muted-text hover:bg-white/10"
+                >
+                  Replay Welcome
+                </button>
+              }
+            >
+              <ActivityLogViewer logs={activityLogs} />
+            </SectionCard>
+
+            <SectionCard
+              title="Session Activity"
+              subtitle="Recent login devices and active workspace sessions"
+              icon={MonitorSmartphone}
+              tone="green"
+            >
+              <div className="grid gap-3 md:grid-cols-2">
+                {sessionActivity.slice(0, 8).map((session) => (
+                  <div
+                    key={session.id}
+                    className="rounded-2xl border theme-muted p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold theme-text">
+                          {session.actorName || "Workspace user"}
+                        </p>
+                        <p className="mt-1 text-xs theme-muted-text">
+                          {session.device || "Device"} · {session.browser || "Browser"}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                          session.status === "active"
+                            ? "bg-emerald-500/15 text-emerald-300"
+                            : "bg-slate-500/15 text-slate-300"
+                        }`}
+                      >
+                        {session.status || "active"}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-[11px] theme-muted-text">
+                      Last seen: {formatDateTime(
+                        session.lastSeenAt?.toDate
+                          ? session.lastSeenAt.toDate().toISOString()
+                          : session.lastSeenAt?.seconds
+                            ? new Date(session.lastSeenAt.seconds * 1000).toISOString()
+                            : session.lastSeenAt
+                      )}
+                    </p>
+                  </div>
+                ))}
+
+                {!sessionActivity.length && (
+                  <div className="rounded-2xl border theme-muted p-6 text-sm theme-muted-text md:col-span-2">
+                    Session data appears here after users sign in.
+                  </div>
+                )}
               </div>
             </SectionCard>
 

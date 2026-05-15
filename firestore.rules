@@ -196,8 +196,20 @@ service cloud.firestore {
 
     match /notifications/{id} {
       allow read: if isWorkspaceUser(resource.data.ownerId);
-      allow create: if canManageOps(request.resource.data.ownerId);
+      allow create: if isWorkspaceUser(request.resource.data.ownerId);
       allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /activityLogs/{id} {
+      allow read: if isWorkspaceUser(resource.data.ownerId);
+      allow create: if isWorkspaceUser(request.resource.data.ownerId);
+      allow update, delete: if false;
+    }
+
+    match /sessionActivity/{id} {
+      allow read: if isWorkspaceUser(resource.data.ownerId);
+      allow create, update: if isWorkspaceUser(request.resource.data.ownerId);
+      allow delete: if false;
     }
 
     match /monthlyReports/{id} {

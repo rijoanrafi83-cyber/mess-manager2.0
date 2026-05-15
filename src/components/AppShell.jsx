@@ -29,7 +29,6 @@ import {
   ShoppingCart,
   Wallet,
   Settings,
-  Bell,
   LogOut,
   ChevronLeft,
   ChevronDown,
@@ -43,6 +42,12 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useMessData } from "../hooks/useMessData";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import { usePWAInstall } from "../hooks/usePWAInstall";
+import {
+  recordSessionLogout,
+  useSessionTracking,
+} from "../hooks/useSessionTracking";
 
 import { DashboardPage } from "../pages/DashboardPage";
 import { MembersPage } from "../pages/MembersPage";
@@ -55,9 +60,20 @@ import AboutMessManagerPage from "../pages/AboutMessManagerPage";
 import { SmartLogo } from "./brand/SmartLogo";
 import { ProfilePanel } from "./profile/ProfilePanel";
 import { ProfileAvatar } from "./profile/ProfileAvatar";
+import {
+  InstallCTA,
+  MobileBottomNav,
+  NotificationsCenter,
+  OfflineBanner,
+  OnboardingModal,
+  SyncIndicator,
+} from "./SaaSFeatures";
 
 import { calculateMonthlyBill } from "../utils/billing";
-import { ensureDailyPermanentMeals } from "../services/firestoreService";
+import {
+  addNotification,
+  ensureDailyPermanentMeals,
+} from "../services/firestoreService";
 import { getLocalDateKey } from "../utils/permanentMeals";
 import {
   PERMISSIONS,
@@ -201,6 +217,14 @@ export function AppShell() {
   const location =
     useLocation();
 
+  const online =
+    useNetworkStatus();
+
+  const pwa =
+    usePWAInstall();
+
+  useSessionTracking(userProfile);
+
   const [
     collapsed,
     setCollapsed,
@@ -219,6 +243,11 @@ export function AppShell() {
   const [
     profileOpen,
     setProfileOpen,
+  ] = useState(false);
+
+  const [
+    onboardingOpen,
+    setOnboardingOpen,
   ] = useState(false);
 
   const [
@@ -241,6 +270,8 @@ export function AppShell() {
     deposits,
     extraCosts,
     notifications,
+    activityLogs,
+    sessionActivity,
     settings,
     loading,
   } = useMessData(
@@ -403,8 +434,77 @@ export function AppShell() {
   ========================================================= */
 
   useEffect(() => {
-    setMobileOpen(false);
+    queueMicrotask(() => {
+      setMobileOpen(false);
+    });
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!userProfile?.ownerId) return;
+
+    const key = `mm_onboarding_done_${userProfile.ownerId}`;
+    if (localStorage.getItem(key) !== "true") {
+      queueMicrotask(() => {
+        setOnboardingOpen(true);
+      });
+    }
+  }, [userProfile?.ownerId]);
+
+  const closeOnboarding = () => {
+    if (userProfile?.ownerId) {
+      localStorage.setItem(
+        `mm_onboarding_done_${userProfile.ownerId}`,
+        "true"
+      );
+    }
+    setOnboardingOpen(false);
+  };
+
+  useEffect(() => {
+    if (
+      loading ||
+      !userProfile?.ownerId ||
+      userProfile?.role === ROLES.MEMBER ||
+      !billData?.totalDue
+    ) {
+      return;
+    }
+
+    const todayKey = `mm_due_alert_${userProfile.ownerId}_${currentDay}`;
+    if (localStorage.getItem(todayKey) === "true") {
+      return;
+    }
+
+    const topDue =
+      [...(billData.memberBills || [])]
+        .filter((member) => Number(member.due || 0) > 0)
+        .sort((a, b) => b.due - a.due)[0];
+
+    if (!topDue || Number(topDue.due || 0) < 1) {
+      return;
+    }
+
+    localStorage.setItem(todayKey, "true");
+
+    addNotification(userProfile.ownerId, {
+      title: "Smart due warning",
+      message: `${topDue.name} has the highest due balance today.`,
+      type: "due",
+      category: "alerts",
+      metadata: {
+        memberId: topDue.memberId || topDue.id || null,
+        due: topDue.due,
+      },
+    }).catch((error) => {
+      console.error("due alert:", error);
+    });
+  }, [
+    billData,
+    currentDay,
+    loading,
+    userProfile?.ownerId,
+    userProfile?.role,
+  ]);
 
   /* =========================================================
      LOGOUT
@@ -413,21 +513,13 @@ export function AppShell() {
   const handleLogout =
     async () => {
       try {
+        await recordSessionLogout(userProfile);
         await logout();
         navigate("/login");
       } catch (err) {
         console.error(err);
       }
     };
-
-  /* =========================================================
-     NOTIFICATIONS
-  ========================================================= */
-
-  const unreadCount =
-    (notifications || []).filter(
-      (n) => !n.read
-    ).length;
 
   const cycleThemeMode = () => {
     const nextMode =
@@ -444,9 +536,9 @@ export function AppShell() {
      SIDEBAR
   ========================================================= */
 
-  const SidebarContent = ({
-    isMobile = false,
-  }) => (
+  const renderSidebarContent = (
+    isMobile = false
+  ) => (
     <div className="flex flex-col h-full">
 
       {/* LOGO */}
@@ -695,6 +787,11 @@ export function AppShell() {
         }}
       />
 
+      <OnboardingModal
+        open={onboardingOpen}
+        onClose={closeOnboarding}
+      />
+
       {/* DESKTOP SIDEBAR */}
 
       <motion.aside
@@ -708,7 +805,7 @@ export function AppShell() {
         }}
         className="hidden md:flex flex-col flex-shrink-0 theme-sidebar backdrop-blur-2xl border-r relative"
       >
-        <SidebarContent />
+        {renderSidebarContent()}
 
         {/* COLLAPSE BUTTON */}
 
@@ -774,109 +871,25 @@ export function AppShell() {
 
           <div className="flex-1" />
 
+          <InstallCTA pwa={pwa} />
+
+          <SyncIndicator
+            online={online}
+            loading={loading}
+          />
+
           {/* NOTIFICATION */}
 
-          <div className="relative">
-
-            <button
-              onClick={() =>
-                setShowNotif(
-                  !showNotif
-                )
-              }
-              className="relative p-2.5 rounded-xl hover:bg-white/10 transition-all"
-            >
-              <Bell
-                size={20}
-                className="theme-subtext"
-              />
-
-              {unreadCount >
-                0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-violet-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {unreadCount >
-                  9
-                    ? "9+"
-                    : unreadCount}
-                </span>
-              )}
-            </button>
-
-            {/* NOTIFICATION DROPDOWN */}
-
-            <AnimatePresence>
-
-              {showNotif && (
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: 10,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    y: 10,
-                  }}
-                  className="absolute right-0 mt-3 w-80 rounded-2xl border theme-card backdrop-blur-2xl shadow-2xl overflow-hidden z-[150]"
-                >
-
-                  <div className="p-4 border-b">
-
-                    <h3 className="font-semibold theme-text">
-                      Notifications
-                    </h3>
-
-                  </div>
-
-                  <div className="max-h-80 overflow-y-auto">
-
-                    {notifications
-                      ?.length >
-                    0 ? (
-                      notifications
-                        .slice(
-                          0,
-                          8
-                        )
-                        .map(
-                          (
-                            item
-                          ) => (
-                            <div
-                              key={
-                                item.id
-                              }
-                              className="p-4 border-b hover:bg-white/10 transition-all"
-                            >
-                              <p className="text-sm theme-text font-medium">
-                                {
-                                  item.title
-                                }
-                              </p>
-
-                              <p className="text-xs theme-muted-text mt-1">
-                                {
-                                  item.message
-                                }
-                              </p>
-                            </div>
-                          )
-                        )
-                    ) : (
-                      <div className="p-8 text-center text-sm theme-muted-text">
-                        No notifications
-                      </div>
-                    )}
-
-                  </div>
-                </motion.div>
-              )}
-
-            </AnimatePresence>
-          </div>
+          <NotificationsCenter
+            ownerId={userProfile?.ownerId}
+            notifications={notifications}
+            open={showNotif}
+            onToggle={() =>
+              setShowNotif(
+                !showNotif
+              )
+            }
+          />
 
           {/* PROFILE */}
 
@@ -914,6 +927,8 @@ export function AppShell() {
           </button>
         </header>
 
+        <OfflineBanner online={online} />
+
         <ProfilePanel
           open={profileOpen}
           onClose={() =>
@@ -932,7 +947,7 @@ export function AppShell() {
             setMobileOpen(false)
           }
         >
-          <SidebarContent isMobile />
+          {renderSidebarContent(true)}
         </MobileDrawer>
 
         {/* ROUTES */}
@@ -972,6 +987,9 @@ export function AppShell() {
                   }
                   settings={
                     settings
+                  }
+                  online={
+                    online
                   }
                 />
               }
@@ -1093,6 +1111,9 @@ export function AppShell() {
                   settings={
                     settings
                   }
+                  userProfile={
+                    userProfile
+                  }
                 />
               }
             />
@@ -1111,6 +1132,15 @@ export function AppShell() {
                     }
                     userProfile={
                       userProfile
+                    }
+                    activityLogs={
+                      activityLogs
+                    }
+                    sessionActivity={
+                      sessionActivity
+                    }
+                    onReplayOnboarding={() =>
+                      setOnboardingOpen(true)
                     }
                   />
                 ) : (
@@ -1141,6 +1171,10 @@ export function AppShell() {
 
           </Routes>
         </main>
+
+        <MobileBottomNav
+          items={allowedNav}
+        />
       </div>
     </div>
   );

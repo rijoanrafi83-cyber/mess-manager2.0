@@ -55,6 +55,10 @@ import {
 
 } from "../utils/billing";
 import { useChartTheme } from "../hooks/useChartTheme";
+import {
+  addActivityLog,
+  addNotification,
+} from "../services/firestoreService";
 
 
 
@@ -765,6 +769,8 @@ export default function ReportsPage({
 
   settings,
 
+  userProfile,
+
 }) {
 
   const reportRef =
@@ -775,6 +781,27 @@ export default function ReportsPage({
     "৳";
 
   const chartTheme = useChartTheme();
+
+  const trackExport = async (format) => {
+    if (!userProfile?.ownerId) return;
+
+    await Promise.allSettled([
+      addNotification(userProfile.ownerId, {
+        title: "Report export",
+        message: `${format} report exported successfully.`,
+        type: "report",
+        category: "exports",
+      }),
+      addActivityLog(userProfile.ownerId, {
+        type: "report",
+        action: "export",
+        title: "Report exported",
+        message: `${format} export completed`,
+        entityType: "report",
+        actor: userProfile,
+      }),
+    ]);
+  };
 
 
 
@@ -886,6 +913,8 @@ export default function ReportsPage({
       toast.success(
         "CSV exported!"
       );
+
+      trackExport("CSV");
 
     } catch (err) {
 
@@ -1145,6 +1174,8 @@ export default function ReportsPage({
             id: "pdf"
           }
         );
+
+        trackExport("PDF");
 
       } catch (err) {
 

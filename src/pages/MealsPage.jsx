@@ -74,6 +74,7 @@ import {
 function MealEntryForm({
   members,
   ownerId,
+  userProfile,
   initial,
   onClose
 }) {
@@ -131,7 +132,12 @@ function MealEntryForm({
 
           await updateMeal(
             initial.id,
-            form
+            {
+              ...form,
+              ownerId,
+            },
+            userProfile,
+            ownerId
           );
 
         } else {
@@ -141,7 +147,8 @@ function MealEntryForm({
             {
               ...form,
               type: "regular"
-            }
+            },
+            userProfile
           );
         }
 
@@ -309,6 +316,7 @@ function MealEntryForm({
 function GuestMealForm({
   members,
   ownerId,
+  userProfile,
   onClose
 }) {
 
@@ -366,7 +374,8 @@ function GuestMealForm({
           {
             ...form,
             type: "guest"
-          }
+          },
+          userProfile
         );
 
         toast.success(
@@ -573,6 +582,7 @@ function PermanentMealManager({
   meals,
   mealSettings,
   ownerId,
+  userProfile,
   isAdmin,
   stats,
 }) {
@@ -602,7 +612,8 @@ function PermanentMealManager({
         await saveMealSettings(
           ownerId,
           member.id,
-          updated
+          updated,
+          userProfile
         );
 
         toast.success(
@@ -641,7 +652,8 @@ function PermanentMealManager({
                 lunch: Boolean(setting.lunch),
                 dinner: Boolean(setting.dinner),
                 [field]: value,
-              }
+              },
+              userProfile
             );
           })
         );
@@ -1112,14 +1124,17 @@ export function MealsPage({
         ) {
 
           await deleteGuestMeal(
-            delId
+            delId,
+            userProfile,
+            ownerId
           );
 
         } else {
 
           await deleteMealWithAutoSkip(
             ownerId,
-            meal || { id: delId }
+            meal || { id: delId },
+            userProfile
           );
         }
 
@@ -1142,7 +1157,7 @@ export function MealsPage({
         setLoading(false);
       }
 
-    }, [delId, filtered, ownerId]);
+    }, [delId, filtered, ownerId, userProfile]);
 
 
 
@@ -1543,6 +1558,7 @@ export function MealsPage({
         meals={meals}
         mealSettings={mealSettings}
         ownerId={ownerId}
+        userProfile={userProfile}
         isAdmin={isAdmin}
         stats={permanentStats}
       />
@@ -1616,6 +1632,7 @@ export function MealsPage({
             <MealEntryForm
               members={members}
               ownerId={ownerId}
+              userProfile={userProfile}
               onClose={() =>
                 setShowAddMeal(
                   false
@@ -1641,6 +1658,7 @@ export function MealsPage({
             <MealEntryForm
               members={members}
               ownerId={ownerId}
+              userProfile={userProfile}
               initial={editMeal}
               onClose={() =>
                 setEditMeal(null)
@@ -1669,6 +1687,7 @@ export function MealsPage({
             <GuestMealForm
               members={members}
               ownerId={ownerId}
+              userProfile={userProfile}
               onClose={() =>
                 setShowGuestMeal(
                   false

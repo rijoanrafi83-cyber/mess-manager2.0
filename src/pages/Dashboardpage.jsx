@@ -30,6 +30,9 @@ import {
   Activity,
   Plus,
   FileText,
+  Cloud,
+  Trophy,
+  Zap,
 } from "lucide-react";
 
 import {
@@ -54,6 +57,7 @@ import {
 } from "../utils/billing";
 
 import { useChartTheme } from "../hooks/useChartTheme";
+import { buildSmartInsights } from "../utils/smartInsights";
 
 
 /* =========================================================
@@ -140,6 +144,8 @@ export function DashboardPage({
   billData = {},
 
   settings,
+
+  online = true,
 }) {
 
   const {
@@ -362,6 +368,29 @@ export function DashboardPage({
     settings?.currency ||
     "৳";
 
+  const smartInsights =
+    useMemo(
+      () =>
+        buildSmartInsights({
+          members,
+          meals,
+          guestMeals,
+          bazaar,
+          deposits,
+          billData,
+          currency,
+        }),
+      [
+        bazaar,
+        billData,
+        currency,
+        deposits,
+        guestMeals,
+        meals,
+        members,
+      ]
+    );
+
 
 
   /* =====================================================
@@ -578,6 +607,136 @@ export function DashboardPage({
           </>
         }
       />
+
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        {[
+          {
+            label: "Today Meals",
+            value: smartInsights.summary.todayMeals.toFixed(1),
+            icon: UtensilsCrossed,
+            tone: "accent",
+          },
+          {
+            label: "Today Bazaar",
+            value: formatCurrency(smartInsights.summary.todayBazaar, currency),
+            icon: ShoppingCart,
+            tone: "orange",
+          },
+          {
+            label: "Today Deposits",
+            value: formatCurrency(smartInsights.summary.todayDeposits, currency),
+            icon: Wallet,
+            tone: "green",
+          },
+          {
+            label: "Active Members",
+            value: smartInsights.summary.activeMembers,
+            icon: Users,
+            tone: "blue",
+          },
+          {
+            label: "Pending Due",
+            value: formatCurrency(smartInsights.summary.pendingDue, currency),
+            icon: AlertCircle,
+            tone: smartInsights.summary.pendingDue > 0 ? "red" : "green",
+          },
+          {
+            label: "Sync Status",
+            value: online ? "Live" : "Offline",
+            icon: Cloud,
+            tone: online ? "green" : "orange",
+          },
+        ].map((widget) => (
+          <MetricCard
+            key={widget.label}
+            label={widget.label}
+            value={widget.value}
+            caption="daily summary"
+            icon={widget.icon}
+            tone={widget.tone}
+          />
+        ))}
+      </div>
+
+      <div className="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <SmartSection
+          className="xl:col-span-2"
+          title="Smart Analytics"
+          subtitle="Operational insights from meals, deposits, due, and weekly spend"
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {smartInsights.insights.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl border theme-muted p-4"
+              >
+                <p className="text-[11px] font-bold uppercase tracking-wider theme-muted-text">
+                  {item.label}
+                </p>
+                <p className="mt-2 truncate text-xl font-black theme-text">
+                  {item.value}
+                </p>
+                <p className="mt-1 text-xs theme-muted-text">
+                  {item.caption}
+                </p>
+              </div>
+            ))}
+          </div>
+        </SmartSection>
+
+        <SmartSection title="Due Risk" subtitle="Smart collection alerts">
+          <div
+            className={`rounded-2xl border p-4 ${
+              smartInsights.due.riskLevel === "high"
+                ? "bg-red-500/10 text-red-300"
+                : smartInsights.due.riskLevel === "medium"
+                  ? "bg-amber-500/10 text-amber-300"
+                  : "bg-emerald-500/10 text-emerald-300"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Zap size={18} />
+              <p className="text-sm font-bold">
+                {smartInsights.due.riskLevel === "clear"
+                  ? "No due risk"
+                  : `${smartInsights.due.risk?.name || "Member"} needs attention`}
+              </p>
+            </div>
+            <p className="mt-2 text-xs leading-5 opacity-85">
+              {smartInsights.due.risk
+                ? `${formatCurrency(smartInsights.due.risk.due, currency)} pending. Keep alerts visible but non-intrusive.`
+                : "All tracked member balances are settled."}
+            </p>
+          </div>
+        </SmartSection>
+      </div>
+
+      <SmartSection
+        className="mb-6"
+        title="Monthly Achievements"
+        subtitle="Recognition cards for the current month"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {smartInsights.achievements.map((card) => (
+            <motion.div
+              key={card.title}
+              whileHover={{ y: -2 }}
+              className="rounded-2xl border theme-muted p-4"
+            >
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+                <Trophy size={18} />
+              </div>
+              <p className="text-xs font-bold uppercase tracking-wider theme-muted-text">
+                {card.title}
+              </p>
+              <p className="mt-2 truncate text-lg font-black theme-text">
+                {card.name}
+              </p>
+              <p className="mt-1 text-xs theme-muted-text">{card.value}</p>
+            </motion.div>
+          ))}
+        </div>
+      </SmartSection>
 
 
 

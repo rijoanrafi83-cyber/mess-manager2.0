@@ -1,0 +1,34 @@
+{
+  "name": "MessManager",
+  "short_name": "MessManager",
+  "description": "Smart mess management workspace for meals, bazaar, deposits, reports, and due alerts.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0f1e",
+  "theme_color": "#7c3aed",
+  "categories": ["productivity", "finance", "business"],
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Meals",
+      "url": "/meals"
+    },
+    {
+      "name": "Reports",
+      "url": "/reports"
+    }
+  ]
+}

@@ -61,6 +61,16 @@ export function useMessData(
     setNotifications
   ] = useState([]);
 
+  const [
+    activityLogs,
+    setActivityLogs
+  ] = useState([]);
+
+  const [
+    sessionActivity,
+    setSessionActivity
+  ] = useState([]);
+
   const [settings, setSettings] =
     useState(null);
 
@@ -89,7 +99,7 @@ export function useMessData(
 
     let loadCount = 0;
 
-    const total = 10;
+    const total = 12;
 
 
 
@@ -264,7 +274,58 @@ export function useMessData(
         : subscribeCollection(
             "notifications",
             ownerId,
-            wrap(setNotifications)
+            (data) =>
+              wrap(setNotifications)(
+                data
+                  .sort(
+                    (a, b) =>
+                      (b.createdAt?.seconds || 0) -
+                      (a.createdAt?.seconds || 0)
+                  )
+                  .slice(0, 30)
+              )
+          ),
+
+      /* =========================================
+         ACTIVITY LOGS
+      ========================================= */
+
+      isPersonalMember
+        ? empty(setActivityLogs)
+        : subscribeCollection(
+            "activityLogs",
+            ownerId,
+            (data) =>
+              wrap(setActivityLogs)(
+                data
+                  .sort(
+                    (a, b) =>
+                      (b.createdAt?.seconds || 0) -
+                      (a.createdAt?.seconds || 0)
+                  )
+                  .slice(0, 80)
+              )
+          ),
+
+      /* =========================================
+         SESSION ACTIVITY
+      ========================================= */
+
+      isPersonalMember
+        ? empty(setSessionActivity)
+        : subscribeCollection(
+            "sessionActivity",
+            ownerId,
+            (data) =>
+              wrap(setSessionActivity)(
+                data
+                  .sort(
+                    (a, b) =>
+                      (b.lastSeenAt?.seconds || 0) -
+                      (a.lastSeenAt?.seconds || 0)
+                  )
+                  .slice(0, 20)
+              )
           ),
 
 
@@ -316,6 +377,10 @@ export function useMessData(
     notices,
 
     notifications,
+
+    activityLogs,
+
+    sessionActivity,
 
     settings,
 

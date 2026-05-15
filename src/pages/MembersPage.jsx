@@ -654,7 +654,7 @@ export function MembersPage({
 
         try {
 
-          await addMember(ownerId, form);
+          await addMember(ownerId, form, userProfile);
 
           toast.success(
             "Member added!"
@@ -676,7 +676,7 @@ export function MembersPage({
         }
 
       },
-      [ownerId]
+      [ownerId, userProfile]
     );
 
 
@@ -689,7 +689,15 @@ export function MembersPage({
 
         try {
 
-          await updateMember(editMember.id, form);
+          await updateMember(
+            editMember.id,
+            {
+              ...form,
+              ownerId,
+            },
+            userProfile,
+            ownerId
+          );
 
           toast.success(
             "Member updated!"
@@ -709,7 +717,7 @@ export function MembersPage({
         }
 
       },
-      [editMember]
+      [editMember, ownerId, userProfile]
     );
 
 
@@ -723,7 +731,7 @@ export function MembersPage({
 
       try {
 
-        await deleteMember(delId);
+        await deleteMember(delId, userProfile, ownerId);
 
         toast.success(
           "Member deleted"
@@ -742,7 +750,7 @@ export function MembersPage({
         setLoading(false);
       }
 
-    }, [delId]);
+    }, [delId, ownerId, userProfile]);
 
 
 

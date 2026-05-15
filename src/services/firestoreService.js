@@ -13,7 +13,6 @@ import {
   serverTimestamp,
 
   getDocs,
-  orderBy,
   limit,
 
   writeBatch,
@@ -68,6 +67,99 @@ const ownerQuery = (
     ),
     ...constraints
   );
+
+const getDeviceInfo = () => {
+  if (typeof navigator === "undefined") {
+    return {
+      device: "Unknown",
+      browser: "Browser",
+      platform: "Unknown",
+    };
+  }
+
+  const ua = navigator.userAgent || "";
+  const device =
+    /iPad|Tablet/i.test(ua)
+      ? "Tablet"
+      : /Mobi|Android|iPhone/i.test(ua)
+        ? "Mobile"
+        : "Desktop";
+  const browser =
+    ua.includes("Edg/")
+      ? "Microsoft Edge"
+      : ua.includes("Chrome/")
+        ? "Chrome"
+        : ua.includes("Firefox/")
+          ? "Firefox"
+          : ua.includes("Safari/")
+            ? "Safari"
+            : "Browser";
+
+  return {
+    device,
+    browser,
+    platform: navigator.platform || "Unknown",
+  };
+};
+
+const actorFromProfile = (actor = {}) => ({
+  actorUid: actor.uid || actor.authUid || null,
+  actorName:
+    actor.displayName ||
+    actor.fullName ||
+    actor.email ||
+    "Workspace user",
+  actorRole: actor.role || "unknown",
+});
+
+export const addActivityLog = async (
+  ownerId,
+  {
+    type = "activity",
+    action = "updated",
+    title,
+    message,
+    entityType = "workspace",
+    entityId = null,
+    actor = null,
+    metadata = {},
+  } = {}
+) => {
+  if (!ownerId) return null;
+
+  return addDoc(col("activityLogs"), {
+    ownerId,
+    type,
+    action,
+    title: title || action,
+    message: message || "",
+    entityType,
+    entityId,
+    ...actorFromProfile(actor || {}),
+    ...getDeviceInfo(),
+    metadata,
+    createdAt: serverTimestamp(),
+  });
+};
+
+const notifyAndLog = async (
+  ownerId,
+  {
+    notification,
+    log,
+  } = {}
+) => {
+  if (!ownerId) return;
+
+  await Promise.allSettled([
+    notification
+      ? addNotification(ownerId, notification)
+      : Promise.resolve(),
+    log
+      ? addActivityLog(ownerId, log)
+      : Promise.resolve(),
+  ]);
+};
 
 
 
@@ -125,9 +217,9 @@ export const subscribeCollection = (
 
 export const addMember = (
   ownerId,
-  data
+  data,
+  actor = null
 ) =>
-
   addDoc(
     col("members"),
     {
@@ -136,15 +228,36 @@ export const addMember = (
       createdAt:
         serverTimestamp(),
     }
-  );
+  ).then(async (ref) => {
+    await notifyAndLog(ownerId, {
+      notification: {
+        title: "New member added",
+        message: `${data.name || "A member"} joined the workspace.`,
+        type: "member",
+        category: "members",
+      },
+      log: {
+        type: "member",
+        action: "create",
+        title: "Member created",
+        message: data.name || "Member record created",
+        entityType: "member",
+        entityId: ref.id,
+        actor,
+      },
+    });
+
+    return ref;
+  });
 
 
 
 export const updateMember = (
   id,
-  data
+  data,
+  actor = null,
+  ownerId = data?.ownerId
 ) =>
-
   updateDoc(
     docRef("members", id),
     {
@@ -152,12 +265,24 @@ export const updateMember = (
       updatedAt:
         serverTimestamp(),
     }
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "member",
+        action: "update",
+        title: "Member updated",
+        message: data.name || "Member details changed",
+        entityType: "member",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 
 
 export const deleteMember =
-  async (id) => {
+  async (id, actor = null, ownerId = null) => {
 
     const batch =
       writeBatch(db);
@@ -167,6 +292,24 @@ export const deleteMember =
     );
 
     await batch.commit();
+
+    await notifyAndLog(ownerId, {
+      notification: {
+        title: "Member removed",
+        message: "A member was deleted from the workspace.",
+        type: "member",
+        category: "members",
+      },
+      log: {
+        type: "member",
+        action: "delete",
+        title: "Member deleted",
+        message: "Member record removed",
+        entityType: "member",
+        entityId: id,
+        actor,
+      },
+    });
   };
 
 
@@ -177,9 +320,9 @@ export const deleteMember =
 
 export const addMeal = (
   ownerId,
-  data
+  data,
+  actor = null
 ) =>
-
   addDoc(
     col("meals"),
     {
@@ -205,13 +348,35 @@ export const addMeal = (
           data.dinner || 0
         ),
     }
-  );
+  ).then(async (ref) => {
+    await notifyAndLog(ownerId, {
+      notification: {
+        title: "Meal updated",
+        message: `Meal entry saved for ${data.date || "today"}.`,
+        type: "meal",
+        category: "meals",
+      },
+      log: {
+        type: "meal",
+        action: "create",
+        title: "Meal added",
+        message: `Meal entry for ${data.date || "selected date"}`,
+        entityType: "meal",
+        entityId: ref.id,
+        actor,
+      },
+    });
+
+    return ref;
+  });
 
 
 
 export const updateMeal = (
   id,
-  data
+  data,
+  actor = null,
+  ownerId = data?.ownerId
 ) =>
 
   updateDoc(
@@ -242,23 +407,56 @@ export const updateMeal = (
       updatedAt:
         serverTimestamp(),
     }
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      notification: {
+        title: "Meal changed",
+        message: `Meal entry updated for ${data.date || "a date"}.`,
+        type: "meal",
+        category: "meals",
+      },
+      log: {
+        type: "meal",
+        action: "update",
+        title: "Meal updated",
+        message: `Meal entry updated for ${data.date || "selected date"}`,
+        entityType: "meal",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 
 
 export const deleteMeal = (
-  id
+  id,
+  actor = null,
+  ownerId = null
 ) =>
 
   deleteDoc(
     docRef("meals", id)
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "meal",
+        action: "delete",
+        title: "Meal deleted",
+        message: "Meal entry removed",
+        entityType: "meal",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 
 export const deleteMealWithAutoSkip =
   async (
     ownerId,
-    meal
+    meal,
+    actor = null
   ) => {
 
     if (
@@ -307,7 +505,9 @@ export const deleteMealWithAutoSkip =
     }
 
     return deleteMeal(
-      meal.id || meal
+      meal.id || meal,
+      actor,
+      ownerId
     );
   };
 
@@ -494,7 +694,8 @@ export const ensureDailyPermanentMeals =
 
 export const addGuestMeal = (
   ownerId,
-  data
+  data,
+  actor = null
 ) =>
 
   addDoc(
@@ -522,13 +723,35 @@ export const addGuestMeal = (
           data.dinner || 0
         ),
     }
-  );
+  ).then(async (ref) => {
+    await notifyAndLog(ownerId, {
+      notification: {
+        title: "Guest meal added",
+        message: `Guest meal saved for ${data.date || "today"}.`,
+        type: "meal",
+        category: "meals",
+      },
+      log: {
+        type: "meal",
+        action: "create",
+        title: "Guest meal added",
+        message: `Guest meal for ${data.date || "selected date"}`,
+        entityType: "guestMeal",
+        entityId: ref.id,
+        actor,
+      },
+    });
+
+    return ref;
+  });
 
 
 
 export const updateGuestMeal = (
   id,
-  data
+  data,
+  actor = null,
+  ownerId = data?.ownerId
 ) =>
 
   updateDoc(
@@ -541,12 +764,26 @@ export const updateGuestMeal = (
       updatedAt:
         serverTimestamp(),
     }
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "meal",
+        action: "update",
+        title: "Guest meal updated",
+        message: `Guest meal updated for ${data.date || "selected date"}`,
+        entityType: "guestMeal",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 
 
 export const deleteGuestMeal = (
-  id
+  id,
+  actor = null,
+  ownerId = null
 ) =>
 
   deleteDoc(
@@ -554,7 +791,19 @@ export const deleteGuestMeal = (
       "guestMeals",
       id
     )
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "meal",
+        action: "delete",
+        title: "Guest meal deleted",
+        message: "Guest meal entry removed",
+        entityType: "guestMeal",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 
 
@@ -568,7 +817,8 @@ export const saveMealSettings = (
 
   memberId,
 
-  data
+  data,
+  actor = null
 
 ) =>
 
@@ -592,7 +842,19 @@ export const saveMealSettings = (
     },
 
     { merge: true }
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "meal",
+        action: "settings",
+        title: "Permanent meals changed",
+        message: "Meal automation settings updated",
+        entityType: "mealSettings",
+        entityId: `${ownerId}_${memberId}`,
+        actor,
+      },
+    });
+  });
 
 
 
@@ -642,7 +904,9 @@ export const addBazaar =
 
     data,
 
-    receiptFile = null
+    receiptFile = null,
+
+    actor = null
 
   ) => {
 
@@ -656,7 +920,7 @@ export const addBazaar =
 
 
 
-    return addDoc(
+    const ref = await addDoc(
       col("bazaar"),
       {
 
@@ -670,13 +934,35 @@ export const addBazaar =
           serverTimestamp(),
       }
     );
+
+    await notifyAndLog(ownerId, {
+      notification: {
+        title: "Bazaar added",
+        message: `${data.title || "Bazaar expense"} saved.`,
+        type: "bazaar",
+        category: "expenses",
+      },
+      log: {
+        type: "bazaar",
+        action: "create",
+        title: "Bazaar added",
+        message: data.title || "Bazaar expense created",
+        entityType: "bazaar",
+        entityId: ref.id,
+        actor,
+      },
+    });
+
+    return ref;
   };
 
 
 
 export const updateBazaar = (
   id,
-  data
+  data,
+  actor = null,
+  ownerId = data?.ownerId
 ) =>
 
   updateDoc(
@@ -686,17 +972,43 @@ export const updateBazaar = (
       updatedAt:
         serverTimestamp(),
     }
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "bazaar",
+        action: "update",
+        title: "Bazaar changed",
+        message: data.title || "Bazaar expense updated",
+        entityType: "bazaar",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 
 
 export const deleteBazaar = (
-  id
+  id,
+  actor = null,
+  ownerId = null
 ) =>
 
   deleteDoc(
     docRef("bazaar", id)
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "bazaar",
+        action: "delete",
+        title: "Bazaar deleted",
+        message: "Bazaar expense removed",
+        entityType: "bazaar",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 
 
@@ -706,7 +1018,8 @@ export const deleteBazaar = (
 
 export const addDeposit = (
   ownerId,
-  data
+  data,
+  actor = null
 ) =>
 
   addDoc(
@@ -717,13 +1030,35 @@ export const addDeposit = (
       createdAt:
         serverTimestamp(),
     }
-  );
+  ).then(async (ref) => {
+    await notifyAndLog(ownerId, {
+      notification: {
+        title: "Deposit added",
+        message: `Deposit of ${data.amount || 0} saved.`,
+        type: "deposit",
+        category: "deposits",
+      },
+      log: {
+        type: "deposit",
+        action: "create",
+        title: "Deposit added",
+        message: `Deposit of ${data.amount || 0}`,
+        entityType: "deposit",
+        entityId: ref.id,
+        actor,
+      },
+    });
+
+    return ref;
+  });
 
 
 
 export const updateDeposit = (
   id,
-  data
+  data,
+  actor = null,
+  ownerId = data?.ownerId
 ) =>
 
   updateDoc(
@@ -733,17 +1068,43 @@ export const updateDeposit = (
       updatedAt:
         serverTimestamp(),
     }
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "deposit",
+        action: "update",
+        title: "Deposit changed",
+        message: `Deposit updated (${data.amount || 0})`,
+        entityType: "deposit",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 
 
 export const deleteDeposit = (
-  id
+  id,
+  actor = null,
+  ownerId = null
 ) =>
 
   deleteDoc(
     docRef("deposits", id)
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "deposit",
+        action: "delete",
+        title: "Deposit deleted",
+        message: "Deposit record removed",
+        entityType: "deposit",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 
 
@@ -823,7 +1184,9 @@ export const addNotification = (
   {
     title,
     message,
-    type = "info"
+    type = "info",
+    category = "general",
+    metadata = {}
   }
 
 ) =>
@@ -839,6 +1202,10 @@ export const addNotification = (
       message,
 
       type,
+
+      category,
+
+      metadata,
 
       read: false,
 
@@ -862,6 +1229,34 @@ export const markNotificationRead = (
       read: true,
     }
   );
+
+export const clearNotifications =
+  async (ownerId) => {
+    if (!ownerId) return;
+
+    let deleted = 0;
+
+    do {
+      const q = ownerQuery(
+        "notifications",
+        ownerId,
+        limit(40)
+      );
+
+      const snap = await getDocs(q);
+      deleted = snap.size;
+
+      if (!deleted) return;
+
+      const batch = writeBatch(db);
+
+      snap.docs.forEach((d) =>
+        batch.delete(d.ref)
+      );
+
+      await batch.commit();
+    } while (deleted === 40);
+  };
 
 
 
@@ -929,7 +1324,8 @@ export const getSettings =
 
 export const updateSettings = (
   ownerId,
-  data
+  data,
+  actor = null
 ) =>
 
   setDoc(
@@ -947,7 +1343,19 @@ export const updateSettings = (
     },
 
     { merge: true }
-  );
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "settings",
+        action: "update",
+        title: "Settings updated",
+        message: "Workspace settings changed",
+        entityType: "settings",
+        entityId: ownerId,
+        actor,
+      },
+    });
+  });
 
 
 
@@ -975,6 +1383,88 @@ export const subscribeSettings = (
       );
     }
   );
+
+/* =========================================================
+   SESSION ACTIVITY
+========================================================= */
+
+export const upsertSessionActivity =
+  async (ownerId, userId, data = {}) => {
+    if (!ownerId || !userId) return null;
+
+    const sessionId =
+      data.sessionId ||
+      `${userId}_${new Date().toISOString().slice(0, 10)}`;
+
+    await setDoc(
+      docRef("sessionActivity", sessionId),
+      {
+        ownerId,
+        userId,
+        ...actorFromProfile(data.actor || {}),
+        ...getDeviceInfo(),
+        status: data.status || "active",
+        lastSeenAt: serverTimestamp(),
+        loginAt: data.loginAt || serverTimestamp(),
+        logoutAt: data.logoutAt || null,
+      },
+      { merge: true }
+    );
+
+    if (data.logLogin) {
+      await notifyAndLog(ownerId, {
+        notification: {
+          title: "Login activity",
+          message: `${data.actor?.displayName || data.actor?.email || "A user"} signed in.`,
+          type: "login",
+          category: "security",
+        },
+        log: {
+          type: "security",
+          action: "login",
+          title: "User login",
+          message: "Session started",
+          entityType: "session",
+          entityId: sessionId,
+          actor: data.actor,
+        },
+      });
+    }
+
+    return sessionId;
+  };
+
+export const endSessionActivity =
+  async (ownerId, userId, actor = null) => {
+    if (!ownerId || !userId) return;
+
+    const sessionId =
+      `${userId}_${new Date().toISOString().slice(0, 10)}`;
+
+    await setDoc(
+      docRef("sessionActivity", sessionId),
+      {
+        ownerId,
+        userId,
+        ...actorFromProfile(actor || {}),
+        ...getDeviceInfo(),
+        status: "signed-out",
+        logoutAt: serverTimestamp(),
+        lastSeenAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    await addActivityLog(ownerId, {
+      type: "security",
+      action: "logout",
+      title: "User logout",
+      message: "Session ended",
+      entityType: "session",
+      entityId: sessionId,
+      actor,
+    });
+  };
 
 
 

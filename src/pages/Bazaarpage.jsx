@@ -25,7 +25,7 @@ const defaultForm = {
   buyerName: "", date: new Date().toISOString().split("T")[0], note: "",
 };
 
-function BazaarForm({ initial, ownerId, onClose }) {
+function BazaarForm({ initial, ownerId, userProfile, onClose }) {
   const [form, setForm] = useState(initial || defaultForm);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -45,9 +45,9 @@ function BazaarForm({ initial, ownerId, onClose }) {
     if (!validate()) return;
     setLoading(true);
     try {
-      const data = { ...form, amount: Number(form.amount) };
-      if (initial?.id) await updateBazaar(initial.id, data);
-      else await addBazaar(ownerId, data);
+      const data = { ...form, ownerId, amount: Number(form.amount) };
+      if (initial?.id) await updateBazaar(initial.id, data, userProfile, ownerId);
+      else await addBazaar(ownerId, data, null, userProfile);
       toast.success(initial ? "Expense updated!" : "Expense added!");
       onClose();
     } catch {
@@ -130,7 +130,7 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
     if (!delId) return;
     setLoading(true);
     try {
-      await deleteBazaar(delId);
+      await deleteBazaar(delId, userProfile, ownerId);
       toast.success("Expense deleted");
       setDelId(null);
     } catch {
@@ -138,7 +138,7 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
     } finally {
       setLoading(false);
     }
-  }, [delId]);
+  }, [delId, ownerId, userProfile]);
 
   const columns = [
     {
@@ -251,12 +251,12 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
       <AnimatePresence>
         {canManage && showAdd && (
           <Modal open onClose={() => setShowAdd(false)} title="Add Expense" subtitle="Record a new bazaar or mess expense">
-            <BazaarForm ownerId={ownerId} onClose={() => setShowAdd(false)} />
+            <BazaarForm ownerId={ownerId} userProfile={userProfile} onClose={() => setShowAdd(false)} />
           </Modal>
         )}
         {canManage && editItem && (
           <Modal open onClose={() => setEditItem(null)} title="Edit Expense">
-            <BazaarForm initial={editItem} ownerId={ownerId} onClose={() => setEditItem(null)} />
+            <BazaarForm initial={editItem} ownerId={ownerId} userProfile={userProfile} onClose={() => setEditItem(null)} />
           </Modal>
         )}
         {canManage && delId && (

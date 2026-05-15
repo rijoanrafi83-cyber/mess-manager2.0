@@ -24,7 +24,7 @@ const defaultForm = {
   date: new Date().toISOString().split("T")[0], note: "",
 };
 
-function DepositForm({ members, ownerId, initial, onClose }) {
+function DepositForm({ members, ownerId, userProfile, initial, onClose }) {
   const [form, setForm] = useState(initial || { ...defaultForm, memberId: members[0]?.id || "" });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -43,9 +43,9 @@ function DepositForm({ members, ownerId, initial, onClose }) {
     if (!validate()) return;
     setLoading(true);
     try {
-      const data = { ...form, amount: Number(form.amount) };
-      if (initial?.id) await updateDeposit(initial.id, data);
-      else await addDeposit(ownerId, data);
+      const data = { ...form, ownerId, amount: Number(form.amount) };
+      if (initial?.id) await updateDeposit(initial.id, data, userProfile, ownerId);
+      else await addDeposit(ownerId, data, userProfile);
       toast.success(initial ? "Deposit updated!" : "Deposit recorded!");
       onClose();
     } catch {
@@ -127,7 +127,7 @@ export function DepositsPage({ deposits = [], members = [], ownerId, userProfile
   const handleDelete = useCallback(async () => {
     setLoading(true);
     try {
-      await deleteDeposit(delId);
+      await deleteDeposit(delId, userProfile, ownerId);
       toast.success("Deposit deleted");
       setDelId(null);
     } catch {
@@ -135,7 +135,7 @@ export function DepositsPage({ deposits = [], members = [], ownerId, userProfile
     } finally {
       setLoading(false);
     }
-  }, [delId]);
+  }, [delId, ownerId, userProfile]);
 
   const memberName = (id) => members.find(m => m.id === id)?.name || "Unknown";
 
@@ -247,12 +247,12 @@ export function DepositsPage({ deposits = [], members = [], ownerId, userProfile
       <AnimatePresence>
         {canManage && showAdd && (
           <Modal open onClose={() => setShowAdd(false)} title="Record Deposit" subtitle="Log a member's payment">
-            <DepositForm members={members} ownerId={ownerId} onClose={() => setShowAdd(false)} />
+            <DepositForm members={members} ownerId={ownerId} userProfile={userProfile} onClose={() => setShowAdd(false)} />
           </Modal>
         )}
         {canManage && editItem && (
           <Modal open onClose={() => setEditItem(null)} title="Edit Deposit">
-            <DepositForm members={members} ownerId={ownerId} initial={editItem} onClose={() => setEditItem(null)} />
+            <DepositForm members={members} ownerId={ownerId} userProfile={userProfile} initial={editItem} onClose={() => setEditItem(null)} />
           </Modal>
         )}
         {canManage && delId && (
