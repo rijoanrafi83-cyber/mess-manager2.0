@@ -477,6 +477,210 @@ const applyPdfSafeInlineColors = (
   );
 };
 
+const waitForPaint = () =>
+  new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    });
+  });
+
+const safeCssColor = (
+  value,
+  fallback = "#111827"
+) => {
+  if (
+    !value ||
+    value === "transparent" ||
+    value.includes("oklch") ||
+    value.includes("color-mix") ||
+    value.includes("var(")
+  ) {
+    return fallback;
+  }
+
+  return value;
+};
+
+const copyPdfSafeStyles = (
+  source,
+  target
+) => {
+  const computed =
+    window.getComputedStyle(source);
+  const className =
+    typeof source.className === "string"
+      ? source.className
+      : "";
+  const tagName = source.tagName;
+  const textColor =
+    getPdfSafeTextColor(className);
+  const backgroundColor =
+    getPdfSafeBackgroundColor(
+      className,
+      tagName
+    );
+
+  [
+    "display",
+    "boxSizing",
+    "width",
+    "minWidth",
+    "maxWidth",
+    "height",
+    "minHeight",
+    "padding",
+    "paddingTop",
+    "paddingRight",
+    "paddingBottom",
+    "paddingLeft",
+    "margin",
+    "marginTop",
+    "marginRight",
+    "marginBottom",
+    "marginLeft",
+    "gap",
+    "columnGap",
+    "rowGap",
+    "gridTemplateColumns",
+    "gridTemplateRows",
+    "alignItems",
+    "justifyContent",
+    "flexDirection",
+    "flexWrap",
+    "font",
+    "fontSize",
+    "fontWeight",
+    "lineHeight",
+    "letterSpacing",
+    "textAlign",
+    "textTransform",
+    "borderRadius",
+    "borderWidth",
+    "borderStyle",
+    "overflow",
+    "whiteSpace",
+    "tableLayout",
+    "verticalAlign",
+  ].forEach((property) => {
+    target.style[property] =
+      computed[property];
+  });
+
+  target.style.color =
+    safeCssColor(
+      textColor || computed.color
+    );
+  target.style.backgroundColor =
+    backgroundColor === "transparent"
+      ? safeCssColor(
+          computed.backgroundColor,
+          "transparent"
+        )
+      : backgroundColor;
+  target.style.backgroundImage = "none";
+  target.style.boxShadow = "none";
+  target.style.textShadow = "none";
+  target.style.filter = "none";
+  target.style.backdropFilter = "none";
+  target.style.webkitBackdropFilter = "none";
+  target.style.transform = "none";
+  target.style.animation = "none";
+  target.style.transition = "none";
+  target.style.borderColor = "#e5e7eb";
+
+  if (
+    target instanceof HTMLElement
+  ) {
+    target.className = "";
+  }
+
+  if (
+    target.namespaceURI ===
+    "http://www.w3.org/2000/svg"
+  ) {
+    target.style.background = "transparent";
+  }
+};
+
+const createPdfExportClone = (
+  reportElement
+) => {
+  const wrapper =
+    document.createElement("div");
+  const clone =
+    reportElement.cloneNode(true);
+  const sourceElements = [
+    reportElement,
+    ...reportElement.querySelectorAll("*"),
+  ];
+  const cloneElements = [
+    clone,
+    ...clone.querySelectorAll("*"),
+  ];
+  const width = Math.max(
+    900,
+    reportElement.scrollWidth,
+    reportElement.getBoundingClientRect().width
+  );
+
+  wrapper.setAttribute(
+    "data-pdf-export-root",
+    "true"
+  );
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-100000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = `${width}px`;
+  wrapper.style.background = "#ffffff";
+  wrapper.style.color = "#111827";
+  wrapper.style.zIndex = "-1";
+  wrapper.style.pointerEvents = "none";
+  wrapper.style.overflow = "visible";
+
+  clone.id = "report-summary-export";
+  clone.style.width = `${width}px`;
+  clone.style.maxWidth = `${width}px`;
+  clone.style.background = "#ffffff";
+  clone.style.color = "#111827";
+  clone.style.padding = "0";
+
+  sourceElements.forEach(
+    (source, index) => {
+      const target =
+        cloneElements[index];
+
+      if (!target) return;
+
+      copyPdfSafeStyles(
+        source,
+        target
+      );
+    }
+  );
+
+  clone
+    .querySelectorAll("button")
+    .forEach((button) => {
+      button.remove();
+    });
+
+  clone
+    .querySelectorAll("svg")
+    .forEach((svg) => {
+      svg.style.background =
+        "transparent";
+      svg.removeAttribute("filter");
+    });
+
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  return {
+    wrapper,
+    clone,
+  };
+};
+
 
 
 /* =========================================================
@@ -701,10 +905,12 @@ export default function ReportsPage({
 
   const exportPDF =
     async () => {
+      let exportWrapper = null;
 
       try {
 
         const reportElement =
+          reportRef.current ||
           document.getElementById(
             "report-summary"
           );
@@ -733,15 +939,28 @@ export default function ReportsPage({
           await document.fonts.ready;
         }
 
+        await waitForPaint();
+
+        const {
+          wrapper,
+          clone,
+        } = createPdfExportClone(
+          reportElement
+        );
+        exportWrapper = wrapper;
+
         const canvas =
           await html2canvas(
-            reportElement,
+            clone,
             {
-              scale: Math.min(
-                2,
-                window.devicePixelRatio ||
-                  1
-              ),
+              scale:
+                window.innerWidth < 768
+                  ? 1.25
+                  : Math.min(
+                      1.6,
+                      window.devicePixelRatio ||
+                        1
+                    ),
 
               backgroundColor:
                 "#ffffff",
@@ -754,14 +973,19 @@ export default function ReportsPage({
 
               scrollX: 0,
 
-              scrollY:
-                -window.scrollY,
+              scrollY: 0,
 
               windowWidth:
-                reportElement.scrollWidth,
+                clone.scrollWidth,
 
               windowHeight:
-                reportElement.scrollHeight,
+                clone.scrollHeight,
+
+              foreignObjectRendering:
+                false,
+
+              imageTimeout:
+                15000,
 
               onclone: (
                 clonedDocument
@@ -791,16 +1015,12 @@ export default function ReportsPage({
 
                 const clonedReport =
                   clonedDocument.getElementById(
-                    "report-summary"
+                    "report-summary-export"
                   );
 
                 if (
                   clonedReport
                 ) {
-
-                  applyPdfSafeInlineColors(
-                    clonedReport
-                  );
 
                   clonedReport.style.background =
                     "#ffffff";
@@ -809,14 +1029,17 @@ export default function ReportsPage({
                     "#111827";
 
                   clonedReport.style.width =
-                    `${reportElement.scrollWidth}px`;
+                    `${clone.scrollWidth}px`;
 
                   clonedReport.style.minHeight =
-                    `${reportElement.scrollHeight}px`;
+                    `${clone.scrollHeight}px`;
                 }
               },
             }
           );
+
+        exportWrapper?.remove();
+        exportWrapper = null;
 
         if (
           !canvas.width ||
@@ -933,6 +1156,8 @@ export default function ReportsPage({
             id: "pdf"
           }
         );
+      } finally {
+        exportWrapper?.remove();
       }
     };
 
