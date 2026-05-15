@@ -36,6 +36,7 @@ import {
   Trash2,
   UploadCloud,
   User,
+  UserRound,
   Wifi,
 } from "lucide-react";
 
@@ -67,6 +68,11 @@ import {
   DEFAULT_THEME_ID,
   THEME_OPTIONS,
 } from "../theme/themeConfig";
+import {
+  getSharedRoleLoginSettings,
+  saveSharedRoleLoginSettings,
+} from "../services/sharedRoleAuthService";
+import { ROLES } from "../utils/roles";
 
 const ACCENT_COLORS = [
   {
@@ -117,6 +123,43 @@ const DEFAULT_PREFERENCES = {
   accentColor: "#8b5cf6",
   density: 2,
 };
+
+const DEFAULT_SHARED_ROLE_LOGINS = {
+  [ROLES.MEMBER]: {
+    role: ROLES.MEMBER,
+    email: "",
+    password: "",
+    enabled: false,
+  },
+  [ROLES.MANAGER]: {
+    role: ROLES.MANAGER,
+    email: "",
+    password: "",
+    enabled: false,
+  },
+};
+
+const sanitizeSharedRoleLogins = (logins = DEFAULT_SHARED_ROLE_LOGINS) => ({
+  [ROLES.MEMBER]: {
+    ...(logins[ROLES.MEMBER] || DEFAULT_SHARED_ROLE_LOGINS[ROLES.MEMBER]),
+    password: "",
+  },
+  [ROLES.MANAGER]: {
+    ...(logins[ROLES.MANAGER] || DEFAULT_SHARED_ROLE_LOGINS[ROLES.MANAGER]),
+    password: "",
+  },
+});
+
+const buildSettingsSignature = ({
+  formData,
+  preferences,
+  sharedRoleLogins,
+}) =>
+  JSON.stringify({
+    formData,
+    preferences,
+    sharedRoleLogins: sanitizeSharedRoleLogins(sharedRoleLogins),
+  });
 
 const TONE_STYLES = {
   violet: {
@@ -371,6 +414,83 @@ const MiniStat = ({
   </div>
 );
 
+const RoleLoginSettings = ({
+  title,
+  subtitle,
+  icon: Icon,
+  login,
+  accent,
+  onChange,
+}) => (
+  <div className="rounded-2xl border theme-muted p-4">
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <span
+          className="flex h-10 w-10 items-center justify-center rounded-xl"
+          style={{
+            backgroundColor: `${accent}22`,
+            color: accent,
+          }}
+        >
+          <Icon size={18} />
+        </span>
+        <div>
+          <p className="text-sm font-bold theme-text">
+            {title}
+          </p>
+          <p className="mt-1 text-xs leading-5 theme-muted-text">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() =>
+          onChange({
+            enabled: !login.enabled,
+          })
+        }
+        className={`rounded-full px-3 py-1 text-xs font-black ${
+          login.enabled
+            ? "bg-emerald-500/15 text-emerald-400"
+            : "bg-red-500/15 text-red-400"
+        }`}
+      >
+        {login.enabled ? "Enabled" : "Disabled"}
+      </button>
+    </div>
+
+    <div className="grid gap-4 md:grid-cols-2">
+      <Field
+        label={`${title} Email`}
+        icon={Mail}
+        type="email"
+        value={login.email || ""}
+        onChange={(event) =>
+          onChange({
+            email: event.target.value,
+          })
+        }
+        placeholder={`${login.role}@your-mess.com`}
+      />
+      <Field
+        label={`${title} Password`}
+        icon={KeyRound}
+        type="password"
+        value={login.password || ""}
+        onChange={(event) =>
+          onChange({
+            password: event.target.value,
+          })
+        }
+        placeholder="Leave blank to keep current"
+        helper="Enter a new password to rotate credentials immediately."
+      />
+    </div>
+  </div>
+);
+
 export default function SettingsPage({
   settings,
   userProfile,
@@ -388,10 +508,16 @@ export default function SettingsPage({
     setAccentColor,
     setReducedMotion,
   } = useTheme();
-  const currentUser = auth.currentUser;
+  const currentUser =
+    authContext.currentUser ||
+    auth.currentUser;
   const fileInputRef = useRef(null);
   const autoSaveTimer = useRef(null);
   const didInitialLoad = useRef(false);
+  const isHydrating = useRef(false);
+  const savedSettingsSignature = useRef("");
+  const latestSettingsSignature = useRef("");
+  const savedAutoSave = useRef(DEFAULT_PREFERENCES.autoSave);
   const appearanceRef = useRef({
     themeMode: "system",
     themeId: DEFAULT_THEME_ID,
@@ -402,6 +528,12 @@ export default function SettingsPage({
   const profile =
     userProfile ||
     authContext.userProfile;
+  const isAdmin =
+    profile?.role === ROLES.ADMIN;
+  const workspaceOwnerId =
+    isAdmin
+      ? currentUser?.uid
+      : profile?.ownerId;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -412,6 +544,8 @@ export default function SettingsPage({
   const [syncStatus, setSyncStatus] = useState("Ready");
 
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [sharedRoleLogins, setSharedRoleLogins] =
+    useState(DEFAULT_SHARED_ROLE_LOGINS);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
@@ -454,10 +588,33 @@ export default function SettingsPage({
     ]
   );
 
+  useEffect(() => {
+    latestSettingsSignature.current =
+      buildSettingsSignature({
+        formData,
+        preferences,
+        sharedRoleLogins,
+      });
+  }, [
+    formData,
+    preferences,
+    sharedRoleLogins,
+  ]);
+
   const updatePreference = (key, value) => {
     setPreferences((prev) => ({
       ...prev,
       [key]: value,
+    }));
+  };
+
+  const updateSharedRoleLogin = (role, patch) => {
+    setSharedRoleLogins((prev) => ({
+      ...prev,
+      [role]: {
+        ...prev[role],
+        ...patch,
+      },
     }));
   };
 
@@ -510,6 +667,8 @@ export default function SettingsPage({
 
       try {
         setSaving(true);
+        let persistedSharedRoleLogins =
+          sharedRoleLogins;
 
         await updateProfile(currentUser, {
           displayName: formData.fullName,
@@ -532,6 +691,8 @@ export default function SettingsPage({
             notifications: preferences.notifications,
             autoBackup: preferences.autoBackup,
             preferences,
+            sharedRoleLogins:
+              sanitizeSharedRoleLogins(sharedRoleLogins),
             updatedAt: new Date().toISOString(),
           },
           {
@@ -539,12 +700,27 @@ export default function SettingsPage({
           }
         );
 
-        if (profile?.role === "admin") {
+        if (isAdmin) {
+          const savedLogins =
+            await saveSharedRoleLoginSettings(
+              workspaceOwnerId,
+              sharedRoleLogins
+            );
+
+          persistedSharedRoleLogins = savedLogins;
+          setSharedRoleLogins(savedLogins);
+
           await setDoc(
             doc(db, "adminProfiles", currentUser.uid),
             {
               displayName: formData.fullName,
+              fullName: formData.fullName,
               email: currentUser.email,
+              phone: formData.phone,
+              role: ROLES.ADMIN,
+              ownerId: currentUser.uid,
+              accountStatus: "active",
+              status: "active",
               updatedAt: serverTimestamp(),
             },
             {
@@ -553,7 +729,7 @@ export default function SettingsPage({
           );
         }
 
-        if (profile?.role === "member") {
+        if (profile?.role !== ROLES.ADMIN) {
           await setDoc(
             doc(db, "memberAccess", currentUser.uid),
             {
@@ -573,6 +749,15 @@ export default function SettingsPage({
         setReducedMotion(preferences.reduceMotion);
 
         const now = new Date().toISOString();
+        savedSettingsSignature.current =
+          buildSettingsSignature({
+            formData,
+            preferences,
+            sharedRoleLogins:
+              persistedSharedRoleLogins,
+          });
+        savedAutoSave.current =
+          Boolean(preferences.autoSave);
         setLastSavedAt(now);
         setSyncStatus("Synced");
 
@@ -601,9 +786,11 @@ export default function SettingsPage({
       applyThemePreference,
       currentUser,
       formData,
+      isAdmin,
       preferences,
       profile,
       resolvedTheme,
+      sharedRoleLogins,
       setAccentColor,
       setReducedMotion,
       setTheme,
@@ -612,6 +799,11 @@ export default function SettingsPage({
 
   useEffect(() => {
     const loadUserData = async () => {
+      isHydrating.current = true;
+      let nextFormData = formData;
+      let savedPreferences = preferences;
+      let nextSharedRoleLogins = sharedRoleLogins;
+
       try {
         if (!currentUser) {
           setLoading(false);
@@ -632,7 +824,7 @@ export default function SettingsPage({
         const localAppearance =
           getLocalAppearancePreferences();
 
-        const savedPreferences = {
+        savedPreferences = {
           ...DEFAULT_PREFERENCES,
           themeMode:
             data.preferences?.themeMode ||
@@ -659,19 +851,37 @@ export default function SettingsPage({
           ...(localAppearance || {}),
         };
 
-        setFormData({
+        nextFormData = {
           fullName:
             data.fullName ||
             profile?.displayName ||
+            profile?.fullName ||
             currentUser.displayName ||
             "",
-          email: currentUser.email || "",
-          phone: data.phone || "",
-        });
+          email:
+            currentUser.email ||
+            profile?.email ||
+            "",
+          phone:
+            data.phone ||
+            profile?.phone ||
+            "",
+        };
+        setFormData(nextFormData);
 
         setPreferences(savedPreferences);
         setLastSavedAt(data.updatedAt || null);
         setSyncStatus(snap.exists() ? "Synced" : "Local defaults");
+
+        if (isAdmin && workspaceOwnerId) {
+          const sharedLogins =
+            await getSharedRoleLoginSettings(
+              workspaceOwnerId
+            );
+
+          nextSharedRoleLogins = sharedLogins;
+          setSharedRoleLogins(sharedLogins);
+        }
 
         if (!localAppearance) {
           setTheme(savedPreferences.themeId);
@@ -683,7 +893,19 @@ export default function SettingsPage({
         console.error(error);
         toast.error("Failed to load settings");
       } finally {
+        savedSettingsSignature.current =
+          buildSettingsSignature({
+            formData:
+              nextFormData,
+            preferences:
+              savedPreferences,
+            sharedRoleLogins:
+              nextSharedRoleLogins,
+          });
+        savedAutoSave.current =
+          Boolean(savedPreferences.autoSave);
         didInitialLoad.current = true;
+        isHydrating.current = false;
         setLoading(false);
       }
     };
@@ -694,16 +916,41 @@ export default function SettingsPage({
     currentUser,
     getLocalAppearancePreferences,
     profile?.displayName,
+    profile?.email,
+    profile?.fullName,
+    profile?.phone,
+    profile?.role,
+    isAdmin,
+    workspaceOwnerId,
     setAccentColor,
     setReducedMotion,
     setTheme,
   ]);
 
   useEffect(() => {
+    const isDisablingAutoSave =
+      savedAutoSave.current === true &&
+      preferences.autoSave === false;
+
     if (
       !didInitialLoad.current ||
-      !preferences.autoSave ||
-      !preferences.firebaseSync
+      isHydrating.current ||
+      !preferences.firebaseSync ||
+      (!preferences.autoSave && !isDisablingAutoSave)
+    ) {
+      return;
+    }
+
+    const nextSignature =
+      buildSettingsSignature({
+        formData,
+        preferences,
+        sharedRoleLogins,
+      });
+
+    if (
+      nextSignature ===
+      savedSettingsSignature.current
     ) {
       return;
     }
@@ -711,6 +958,13 @@ export default function SettingsPage({
     clearTimeout(autoSaveTimer.current);
 
     autoSaveTimer.current = setTimeout(() => {
+      if (
+        latestSettingsSignature.current ===
+        savedSettingsSignature.current
+      ) {
+        return;
+      }
+
       persistSettings({
         silent: true,
       }).then((ok) => {
@@ -729,6 +983,7 @@ export default function SettingsPage({
     formData,
     persistSettings,
     preferences,
+    sharedRoleLogins,
   ]);
 
   const handleSaveSettings = () => {
@@ -1353,6 +1608,50 @@ export default function SettingsPage({
                 />
               </div>
             </SectionCard>
+
+            {profile?.role === "admin" && (
+              <SectionCard
+                title="Shared Role Login"
+                subtitle="Control the one workspace-wide member login and one manager login"
+                icon={Shield}
+                tone="indigo"
+              >
+                <div className="mb-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  Changing a password rotates the shared Firebase Auth login.
+                  Old credentials stop working as soon as this section is saved.
+                </div>
+
+                <div className="grid gap-4">
+                  <RoleLoginSettings
+                    title="Member Login"
+                    subtitle="Shared view-only access for this workspace."
+                    icon={UserRound}
+                    login={sharedRoleLogins.member}
+                    accent={selectedAccent}
+                    onChange={(patch) =>
+                      updateSharedRoleLogin(
+                        ROLES.MEMBER,
+                        patch
+                      )
+                    }
+                  />
+
+                  <RoleLoginSettings
+                    title="Manager Login"
+                    subtitle="Shared limited management access for this workspace."
+                    icon={KeyRound}
+                    login={sharedRoleLogins.manager}
+                    accent={selectedAccent}
+                    onChange={(patch) =>
+                      updateSharedRoleLogin(
+                        ROLES.MANAGER,
+                        patch
+                      )
+                    }
+                  />
+                </div>
+              </SectionCard>
+            )}
 
             <SectionCard
               title="Security Settings"

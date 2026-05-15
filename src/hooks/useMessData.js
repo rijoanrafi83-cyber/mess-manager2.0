@@ -4,6 +4,10 @@ import {
 } from "react";
 
 import {
+  where
+} from "firebase/firestore";
+
+import {
 
   subscribeCollection,
 
@@ -16,7 +20,8 @@ import {
 
 
 export function useMessData(
-  ownerId
+  ownerId,
+  userProfile = null
 ) {
 
   const [members, setMembers] =
@@ -75,6 +80,13 @@ export function useMessData(
 
 
 
+    const isPersonalMember =
+      userProfile?.role === "member" &&
+      Boolean(userProfile?.memberId);
+
+    const memberId =
+      userProfile?.memberId;
+
     let loadCount = 0;
 
     const total = 10;
@@ -102,6 +114,12 @@ export function useMessData(
         onLoad();
       };
 
+    const empty = (setter) => {
+      setter([]);
+      onLoad();
+      return undefined;
+    };
+
 
 
     const unsubs = [
@@ -110,11 +128,18 @@ export function useMessData(
          MEMBERS
       ========================================= */
 
-      subscribeCollection(
-        "members",
-        ownerId,
-        wrap(setMembers)
-      ),
+      isPersonalMember
+        ? subscribeCollection(
+            "members",
+            ownerId,
+            wrap(setMembers),
+            where("authUid", "==", userProfile.uid)
+          )
+        : subscribeCollection(
+            "members",
+            ownerId,
+            wrap(setMembers)
+          ),
 
 
 
@@ -122,11 +147,18 @@ export function useMessData(
          MEALS
       ========================================= */
 
-      subscribeCollection(
-        "meals",
-        ownerId,
-        wrap(setMeals)
-      ),
+      isPersonalMember
+        ? subscribeCollection(
+            "meals",
+            ownerId,
+            wrap(setMeals),
+            where("memberId", "==", memberId)
+          )
+        : subscribeCollection(
+            "meals",
+            ownerId,
+            wrap(setMeals)
+          ),
 
 
 
@@ -134,11 +166,13 @@ export function useMessData(
          GUEST MEALS
       ========================================= */
 
-      subscribeCollection(
-        "guestMeals",
-        ownerId,
-        wrap(setGuestMeals)
-      ),
+      isPersonalMember
+        ? empty(setGuestMeals)
+        : subscribeCollection(
+            "guestMeals",
+            ownerId,
+            wrap(setGuestMeals)
+          ),
 
 
 
@@ -146,10 +180,17 @@ export function useMessData(
          PERMANENT MEAL SETTINGS
       ========================================= */
 
-      subscribeMealSettings(
-        ownerId,
-        wrap(setMealSettings)
-      ),
+      isPersonalMember
+        ? subscribeCollection(
+            "mealSettings",
+            ownerId,
+            wrap(setMealSettings),
+            where("memberId", "==", memberId)
+          )
+        : subscribeMealSettings(
+            ownerId,
+            wrap(setMealSettings)
+          ),
 
 
 
@@ -157,11 +198,13 @@ export function useMessData(
          BAZAAR
       ========================================= */
 
-      subscribeCollection(
-        "bazaar",
-        ownerId,
-        wrap(setBazaar)
-      ),
+      isPersonalMember
+        ? empty(setBazaar)
+        : subscribeCollection(
+            "bazaar",
+            ownerId,
+            wrap(setBazaar)
+          ),
 
 
 
@@ -169,11 +212,18 @@ export function useMessData(
          DEPOSITS
       ========================================= */
 
-      subscribeCollection(
-        "deposits",
-        ownerId,
-        wrap(setDeposits)
-      ),
+      isPersonalMember
+        ? subscribeCollection(
+            "deposits",
+            ownerId,
+            wrap(setDeposits),
+            where("memberId", "==", memberId)
+          )
+        : subscribeCollection(
+            "deposits",
+            ownerId,
+            wrap(setDeposits)
+          ),
 
 
 
@@ -181,11 +231,13 @@ export function useMessData(
          EXTRA COSTS
       ========================================= */
 
-      subscribeCollection(
-        "extraCosts",
-        ownerId,
-        wrap(setExtraCosts)
-      ),
+      isPersonalMember
+        ? empty(setExtraCosts)
+        : subscribeCollection(
+            "extraCosts",
+            ownerId,
+            wrap(setExtraCosts)
+          ),
 
 
 
@@ -193,11 +245,13 @@ export function useMessData(
          NOTICES
       ========================================= */
 
-      subscribeCollection(
-        "notices",
-        ownerId,
-        wrap(setNotices)
-      ),
+      isPersonalMember
+        ? empty(setNotices)
+        : subscribeCollection(
+            "notices",
+            ownerId,
+            wrap(setNotices)
+          ),
 
 
 
@@ -205,11 +259,13 @@ export function useMessData(
          NOTIFICATIONS
       ========================================= */
 
-      subscribeCollection(
-        "notifications",
-        ownerId,
-        wrap(setNotifications)
-      ),
+      isPersonalMember
+        ? empty(setNotifications)
+        : subscribeCollection(
+            "notifications",
+            ownerId,
+            wrap(setNotifications)
+          ),
 
 
 
@@ -232,7 +288,12 @@ export function useMessData(
       );
     };
 
-  }, [ownerId]);
+  }, [
+    ownerId,
+    userProfile?.uid,
+    userProfile?.role,
+    userProfile?.memberId,
+  ]);
 
 
 

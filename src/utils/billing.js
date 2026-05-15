@@ -88,6 +88,7 @@ export function calculateMonthlyBill(
 
   extraCosts = []
 ) {
+  void mealSettings;
 
   // =====================================================
   // EXPENSES

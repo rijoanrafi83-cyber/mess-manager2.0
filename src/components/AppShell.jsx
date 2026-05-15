@@ -50,48 +50,54 @@ import SettingsPage from "../pages/SettingsPage";
 import { calculateMonthlyBill } from "../utils/billing";
 import { ensureDailyPermanentMeals } from "../services/firestoreService";
 import { getLocalDateKey } from "../utils/permanentMeals";
+import {
+  PERMISSIONS,
+  ROLE_LABELS,
+  ROLES,
+  hasPermission,
+} from "../utils/roles";
 
 const NAV_ITEMS = [
   {
     to: "/dashboard",
     icon: LayoutDashboard,
     label: "Dashboard",
-    roles: ["admin", "member"],
+    roles: ["admin", "manager", "member"],
   },
 
   {
     to: "/members",
     icon: Users,
     label: "Members",
-    roles: ["admin"],
+    roles: ["admin", "manager"],
   },
 
   {
     to: "/meals",
     icon: UtensilsCrossed,
     label: "Meals",
-    roles: ["admin", "member"],
+    roles: ["admin", "manager", "member"],
   },
 
   {
     to: "/bazaar",
     icon: ShoppingCart,
     label: "Bazaar",
-    roles: ["admin"],
+    roles: ["admin", "manager"],
   },
 
   {
     to: "/deposits",
     icon: Wallet,
     label: "Deposits",
-    roles: ["admin"],
+    roles: ["admin", "manager", "member"],
   },
 
   {
     to: "/reports",
     icon: BarChart3,
     label: "Reports",
-    roles: ["admin", "member"],
+    roles: ["admin", "manager", "member"],
   },
 
   {
@@ -160,8 +166,51 @@ export function AppShell() {
     settings,
     loading,
   } = useMessData(
-    userProfile?.ownerId
+    userProfile?.ownerId,
+    userProfile
   );
+
+  const isPersonalMember =
+    userProfile?.role === ROLES.MEMBER &&
+    Boolean(userProfile?.memberId);
+
+  const visibleMembers = isPersonalMember
+    ? members.filter(
+        (member) =>
+          member.id ===
+            userProfile?.memberId ||
+          member.authUid ===
+            userProfile?.uid
+      )
+    : members;
+
+  const visibleMeals = isPersonalMember
+    ? meals.filter(
+        (meal) =>
+          meal.memberId ===
+          userProfile?.memberId
+      )
+    : meals;
+
+  const visibleMealSettings = isPersonalMember
+    ? mealSettings.filter(
+        (setting) =>
+          setting.memberId ===
+          userProfile?.memberId
+      )
+    : mealSettings;
+
+  const visibleDeposits = isPersonalMember
+    ? deposits.filter(
+        (deposit) =>
+          deposit.memberId ===
+          userProfile?.memberId
+      )
+    : deposits;
+
+  const visibleGuestMeals = isPersonalMember ? [] : guestMeals;
+  const visibleBazaar = isPersonalMember ? [] : bazaar;
+  const visibleExtraCosts = isPersonalMember ? [] : extraCosts;
 
   /* =========================================================
      BILL CALCULATION
@@ -169,13 +218,13 @@ export function AppShell() {
 
   const billData =
     calculateMonthlyBill(
-      members,
-      meals,
-      guestMeals,
-      mealSettings,
-      bazaar,
-      deposits,
-      extraCosts
+      visibleMembers,
+      visibleMeals,
+      visibleGuestMeals,
+      visibleMealSettings,
+      visibleBazaar,
+      visibleDeposits,
+      visibleExtraCosts
     );
 
   useEffect(() => {
@@ -197,7 +246,8 @@ export function AppShell() {
   useEffect(() => {
     if (
       loading ||
-      !userProfile?.ownerId
+      !userProfile?.ownerId ||
+      userProfile?.role === ROLES.MEMBER
     ) {
       return;
     }
@@ -222,6 +272,7 @@ export function AppShell() {
     meals,
     mealSettings,
     currentDay,
+    userProfile?.role,
   ]);
 
   /* =========================================================
@@ -385,10 +436,8 @@ export function AppShell() {
               </p>
 
               <p className="text-xs theme-muted-text truncate">
-                {userProfile?.role ===
-                "admin"
-                  ? "Administrator"
-                  : "Member"}
+                {ROLE_LABELS[userProfile?.role] ||
+                  "Member"}
               </p>
             </motion.div>
           )}
@@ -769,10 +818,8 @@ export function AppShell() {
               </p>
 
               <p className="text-xs theme-muted-text mt-1">
-                {userProfile?.role ===
-                "admin"
-                  ? "Admin"
-                  : "Member"}
+                {ROLE_LABELS[userProfile?.role] ||
+                  "Member"}
               </p>
             </div>
           </div>
@@ -868,17 +915,17 @@ export function AppShell() {
               path="/dashboard"
               element={
                 <DashboardPage
-                  members={members}
-                  meals={meals}
+                  members={visibleMembers}
+                  meals={visibleMeals}
                   guestMeals={
-                    guestMeals
+                    visibleGuestMeals
                   }
                   mealSettings={
-                    mealSettings
+                    visibleMealSettings
                   }
-                  bazaar={bazaar}
+                  bazaar={visibleBazaar}
                   deposits={
-                    deposits
+                    visibleDeposits
                   }
                   billData={
                     billData
@@ -893,18 +940,28 @@ export function AppShell() {
             <Route
               path="/members"
               element={
-                <MembersPage
-                  members={members}
-                  ownerId={
-                    userProfile?.ownerId
-                  }
-                  billData={
-                    billData
-                  }
-                  userProfile={
-                    userProfile
-                  }
-                />
+                hasPermission(
+                  userProfile?.role,
+                  PERMISSIONS.VIEW_MEMBERS
+                ) ? (
+                  <MembersPage
+                    members={visibleMembers}
+                    ownerId={
+                      userProfile?.ownerId
+                    }
+                    billData={
+                      billData
+                    }
+                    userProfile={
+                      userProfile
+                    }
+                  />
+                ) : (
+                  <Navigate
+                    to="/unauthorized"
+                    replace
+                  />
+                )
               }
             />
 
@@ -912,13 +969,13 @@ export function AppShell() {
               path="/meals"
               element={
                 <MealsPage
-                  members={members}
-                  meals={meals}
+                  members={visibleMembers}
+                  meals={visibleMeals}
                   guestMeals={
-                    guestMeals
+                    visibleGuestMeals
                   }
                   mealSettings={
-                    mealSettings
+                    visibleMealSettings
                   }
                   ownerId={
                     userProfile?.ownerId
@@ -933,13 +990,26 @@ export function AppShell() {
             <Route
               path="/bazaar"
               element={
-                <BazaarPage
-                  bazaar={bazaar}
-                  members={members}
-                  ownerId={
-                    userProfile?.ownerId
-                  }
-                />
+                hasPermission(
+                  userProfile?.role,
+                  PERMISSIONS.MANAGE_BAZAAR
+                ) ? (
+                  <BazaarPage
+                    bazaar={visibleBazaar}
+                    members={visibleMembers}
+                    ownerId={
+                      userProfile?.ownerId
+                    }
+                    userProfile={
+                      userProfile
+                    }
+                  />
+                ) : (
+                  <Navigate
+                    to="/unauthorized"
+                    replace
+                  />
+                )
               }
             />
 
@@ -948,11 +1018,14 @@ export function AppShell() {
               element={
                 <DepositsPage
                   deposits={
-                    deposits
+                    visibleDeposits
                   }
-                  members={members}
+                  members={visibleMembers}
                   ownerId={
                     userProfile?.ownerId
+                  }
+                  userProfile={
+                    userProfile
                   }
                 />
               }
@@ -965,17 +1038,17 @@ export function AppShell() {
                   billData={
                     billData
                   }
-                  members={members}
-                  meals={meals}
+                  members={visibleMembers}
+                  meals={visibleMeals}
                   guestMeals={
-                    guestMeals
+                    visibleGuestMeals
                   }
                   mealSettings={
-                    mealSettings
+                    visibleMealSettings
                   }
-                  bazaar={bazaar}
+                  bazaar={visibleBazaar}
                   deposits={
-                    deposits
+                    visibleDeposits
                   }
                   settings={
                     settings
@@ -987,17 +1060,25 @@ export function AppShell() {
             <Route
               path="/settings"
               element={
-                <SettingsPage
-                  ownerId={
-                    userProfile?.ownerId
-                  }
-                  settings={
-                    settings
-                  }
-                  userProfile={
-                    userProfile
-                  }
-                />
+                userProfile?.role ===
+                "admin" ? (
+                  <SettingsPage
+                    ownerId={
+                      userProfile?.ownerId
+                    }
+                    settings={
+                      settings
+                    }
+                    userProfile={
+                      userProfile
+                    }
+                  />
+                ) : (
+                  <Navigate
+                    to="/unauthorized"
+                    replace
+                  />
+                )
               }
             />
 

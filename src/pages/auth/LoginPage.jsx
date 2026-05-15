@@ -6,10 +6,12 @@ import {
   useNavigate,
 } from "react-router-dom";
 import {
+  BriefcaseBusiness,
   Eye,
   EyeOff,
   Lock,
   Mail,
+  UserRound,
   ShieldCheck,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -70,7 +72,8 @@ export function LoginPage() {
 
     const result = await login(
       email.trim(),
-      password
+      password,
+      { expectedRole: "admin" }
     );
 
     if (result.success) {
@@ -219,6 +222,24 @@ export function LoginPage() {
           Create an account
         </Link>
       </p>
+
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <Link
+          to="/member-login"
+          className="theme-focus flex items-center justify-center gap-2 rounded-2xl border theme-muted px-3 py-3 text-xs font-black theme-text hover:bg-[var(--bg-card-muted)]"
+        >
+          <UserRound size={15} />
+          Member Login
+        </Link>
+
+        <Link
+          to="/manager-login"
+          className="theme-focus flex items-center justify-center gap-2 rounded-2xl border theme-muted px-3 py-3 text-xs font-black theme-text hover:bg-[var(--bg-card-muted)]"
+        >
+          <BriefcaseBusiness size={15} />
+          Manager Login
+        </Link>
+      </div>
     </AuthShell>
   );
 }

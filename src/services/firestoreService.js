@@ -968,6 +968,7 @@ export const updateSettings = (
     ),
 
     {
+      ownerId,
       ...data,
       updatedAt:
         serverTimestamp(),

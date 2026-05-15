@@ -23,7 +23,7 @@ import {
   Eye,
   UserCheck,
   UserX,
-  Wallet
+  Wallet,
 } from "lucide-react";
 
 import {
@@ -48,8 +48,8 @@ import {
 
 import {
   addMember,
-  updateMember,
-  deleteMember
+  deleteMember,
+  updateMember
 } from "../services/firestoreService";
 
 
@@ -59,21 +59,11 @@ const MEMBER_STATUS = [
   "inactive"
 ];
 
-const MEMBER_ROLES = [
-  "member",
-  "admin"
-];
-
-
-
 const defaultForm = {
 
   name: "",
-  email: "",
   phone: "",
   roomNumber: "",
-
-  role: "member",
 
   status: "active",
 
@@ -145,7 +135,10 @@ function MemberForm({
 }) {
 
   const [form, setForm] =
-    useState(initial);
+    useState({
+      ...defaultForm,
+      ...initial,
+    });
 
   const [errors, setErrors] =
     useState({});
@@ -164,10 +157,6 @@ function MemberForm({
 
     if (!form.name.trim()) {
       e.name = "Name is required";
-    }
-
-    if (!form.email.trim()) {
-      e.email = "Email is required";
     }
 
     setErrors(e);
@@ -214,20 +203,6 @@ function MemberForm({
         />
 
         <Input
-          label="Email"
-          type="email"
-          value={form.email}
-          onChange={(e) =>
-            set(
-              "email",
-              e.target.value
-            )
-          }
-          error={errors.email}
-          required
-        />
-
-        <Input
           label="Phone"
           value={form.phone}
           onChange={(e) =>
@@ -250,36 +225,6 @@ function MemberForm({
           }
           placeholder="101"
         />
-
-        <Select
-          label="Role"
-          value={form.role}
-          onChange={(e) =>
-            set(
-              "role",
-              e.target.value
-            )
-          }
-        >
-
-          {MEMBER_ROLES.map(
-            (r) => (
-
-              <option
-                key={r}
-                value={r}
-              >
-                {r
-                  .charAt(0)
-                  .toUpperCase() +
-                  r.slice(1)}
-              </option>
-            )
-          )}
-
-        </Select>
-
-
 
         <Select
           label="Status"
@@ -397,7 +342,9 @@ function MemberProfileModal({
             </h3>
 
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {member.email}
+              {member.roomNumber
+                ? `Room ${member.roomNumber}`
+                : member.phone || "No contact added"}
             </p>
 
             <div className="flex gap-2 mt-2">
@@ -411,10 +358,6 @@ function MemberProfileModal({
                 }
               >
                 {member.status}
-              </Badge>
-
-              <Badge variant="purple">
-                {member.role}
               </Badge>
 
             </div>
@@ -451,12 +394,6 @@ function MemberProfileModal({
               icon: Calendar,
             },
 
-            {
-              label: "Role",
-              value:
-                member.role || "—",
-              icon: Shield,
-            },
           ].map(
             ({
               label,
@@ -579,7 +516,8 @@ function MemberProfileModal({
 export function MembersPage({
   members = [],
   ownerId,
-  billData
+  billData,
+  userProfile
 }) {
 
   const [search, setSearch] =
@@ -611,6 +549,8 @@ export function MembersPage({
     useState(1);
 
   const PER_PAGE = 10;
+  const canManageUsers =
+    userProfile?.role === "admin";
 
   const memberBills = useMemo(
     () => billData?.memberBills || [],
@@ -639,12 +579,6 @@ export function MembersPage({
           (m) =>
 
             m.name
-              ?.toLowerCase()
-              .includes(
-                search.toLowerCase()
-              ) ||
-
-            m.email
               ?.toLowerCase()
               .includes(
                 search.toLowerCase()
@@ -720,10 +654,7 @@ export function MembersPage({
 
         try {
 
-          await addMember(
-            ownerId,
-            form
-          );
+          await addMember(ownerId, form);
 
           toast.success(
             "Member added!"
@@ -733,10 +664,10 @@ export function MembersPage({
             false
           );
 
-        } catch {
+        } catch (err) {
 
           toast.error(
-            "Failed to add member"
+            err.message || "Failed to add member"
           );
 
         } finally {
@@ -758,10 +689,7 @@ export function MembersPage({
 
         try {
 
-          await updateMember(
-            editMember.id,
-            form
-          );
+          await updateMember(editMember.id, form);
 
           toast.success(
             "Member updated!"
@@ -769,10 +697,10 @@ export function MembersPage({
 
           setEditMember(null);
 
-        } catch {
+        } catch (err) {
 
           toast.error(
-            "Failed to update member"
+            err.message || "Failed to update member"
           );
 
         } finally {
@@ -795,9 +723,7 @@ export function MembersPage({
 
       try {
 
-        await deleteMember(
-          delId
-        );
+        await deleteMember(delId);
 
         toast.success(
           "Member deleted"
@@ -805,10 +731,10 @@ export function MembersPage({
 
         setDelId(null);
 
-      } catch {
+      } catch (err) {
 
         toast.error(
-          "Failed to delete member"
+          err.message || "Failed to delete member"
         );
 
       } finally {
@@ -842,7 +768,9 @@ export function MembersPage({
             </p>
 
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {row.email}
+              {row.roomNumber
+                ? `Room ${row.roomNumber}`
+                : row.phone || "No contact"}
             </p>
 
           </div>
@@ -903,7 +831,7 @@ export function MembersPage({
 
 
 
-    {
+    canManageUsers && {
       key: "id",
       label: "Actions",
 
@@ -957,7 +885,7 @@ export function MembersPage({
         </div>
       )
     },
-  ];
+  ].filter(Boolean);
 
 
 
@@ -977,6 +905,7 @@ export function MembersPage({
         ]}
 
         actions={
+          canManageUsers ? (
 
           <Button
             onClick={() =>
@@ -988,13 +917,15 @@ export function MembersPage({
             <Plus size={16} />
             Add Member
           </Button>
+          ) : null
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         <MetricCard label="Active Members" value={activeMembers} caption="ready for meal tracking" icon={UserCheck} tone="green" />
         <MetricCard label="Inactive Members" value={inactiveMembers} caption="filtered separately" icon={UserX} tone="orange" />
         <MetricCard label="Pending Collection" value={`৳${totalDue.toFixed(0)}`} caption="open member due" icon={Wallet} tone={totalDue > 0 ? "red" : "green"} />
+        <MetricCard label="Shared Access" value="Settings" caption="member and manager login" icon={Shield} tone="blue" />
       </div>
 
       {memberCards.length > 0 && (
@@ -1022,7 +953,7 @@ export function MembersPage({
                       </Badge>
                     </div>
                     <p className="text-xs theme-muted-text truncate mt-1">
-                      {member.roomNumber ? `Room ${member.roomNumber}` : member.email}
+                      {member.roomNumber ? `Room ${member.roomNumber}` : member.phone || "No contact"}
                     </p>
                     <div className="grid grid-cols-3 gap-2 mt-4 text-xs">
                       <div>
@@ -1057,7 +988,7 @@ export function MembersPage({
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search by name, email, or room..."
+          placeholder="Search by name or room..."
           className="flex-1"
         />
 
@@ -1117,6 +1048,7 @@ export function MembersPage({
                 description="Add your first member to get started."
 
                 action={
+                  canManageUsers ? (
 
                   <Button
                     onClick={() =>
@@ -1128,6 +1060,7 @@ export function MembersPage({
                     <Plus size={16} />
                     Add Member
                   </Button>
+                  ) : null
                 }
               />
 
@@ -1240,7 +1173,7 @@ export function MembersPage({
 
       <AnimatePresence>
 
-        {showAddModal && (
+        {showAddModal && canManageUsers && (
 
           <Modal
             open
@@ -1281,7 +1214,7 @@ export function MembersPage({
 
       <AnimatePresence>
 
-        {editMember && (
+        {editMember && canManageUsers && (
 
           <Modal
             open
@@ -1339,7 +1272,7 @@ export function MembersPage({
 
       <AnimatePresence>
 
-        {delId && (
+        {delId && canManageUsers && (
 
           <Modal
             open

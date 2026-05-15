@@ -79,7 +79,8 @@ function BazaarForm({ initial, ownerId, onClose }) {
   );
 }
 
-export function BazaarPage({ bazaar = [], ownerId }) {
+export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
+  const canManage = ["admin", "manager"].includes(userProfile?.role);
   const [showAdd,      setShowAdd]      = useState(false);
   const [editItem,     setEditItem]     = useState(null);
   const [delId,        setDelId]        = useState(null);
@@ -159,7 +160,7 @@ export function BazaarPage({ bazaar = [], ownerId }) {
       key: "amount", label: "Amount",
       render: (v) => <span className="font-semibold theme-text">{formatCurrency(v)}</span>
     },
-    {
+    ...(canManage ? [{
       key: "id", label: "",
       render: (id, row) => (
         <div className="flex gap-1">
@@ -167,7 +168,7 @@ export function BazaarPage({ bazaar = [], ownerId }) {
           <Button variant="danger" size="xs" onClick={e => { e.stopPropagation(); setDelId(id); }}><Trash2 size={12} /></Button>
         </div>
       )
-    },
+    }] : []),
   ];
 
   return (
@@ -182,11 +183,11 @@ export function BazaarPage({ bazaar = [], ownerId }) {
           { label: "Average", value: formatCurrency(averageExpense), caption: "per transaction" },
           { label: "Categories", value: catChartData.length, caption: "active buckets" },
         ]}
-        actions={
+        actions={canManage ? (
           <Button onClick={() => setShowAdd(true)}>
             <Plus size={16} /> Add Expense
           </Button>
-        }
+        ) : null}
       />
 
       {/* Stats */}
@@ -241,24 +242,24 @@ export function BazaarPage({ bazaar = [], ownerId }) {
           data={filtered}
           emptyState={
             <div className="p-12">
-              <EmptyState icon={ShoppingCart} title="No expenses found" description="Start tracking your mess expenses." action={<Button onClick={() => setShowAdd(true)}><Plus size={16}/>Add Expense</Button>} />
+              <EmptyState icon={ShoppingCart} title="No expenses found" description="Start tracking your mess expenses." action={canManage ? <Button onClick={() => setShowAdd(true)}><Plus size={16}/>Add Expense</Button> : null} />
             </div>
           }
         />
       </Card>
 
       <AnimatePresence>
-        {showAdd && (
+        {canManage && showAdd && (
           <Modal open onClose={() => setShowAdd(false)} title="Add Expense" subtitle="Record a new bazaar or mess expense">
             <BazaarForm ownerId={ownerId} onClose={() => setShowAdd(false)} />
           </Modal>
         )}
-        {editItem && (
+        {canManage && editItem && (
           <Modal open onClose={() => setEditItem(null)} title="Edit Expense">
             <BazaarForm initial={editItem} ownerId={ownerId} onClose={() => setEditItem(null)} />
           </Modal>
         )}
-        {delId && (
+        {canManage && delId && (
           <Modal open onClose={() => setDelId(null)} title="Delete Expense" size="sm">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Permanently delete this expense entry?</p>
             <div className="flex gap-3">

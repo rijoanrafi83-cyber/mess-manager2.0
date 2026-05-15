@@ -2,8 +2,208 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function accessProfile() {
+      return get(/databases/$(database)/documents/memberAccess/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/adminProfiles/$(request.auth.uid));
+    }
+
+    function isManagedUser() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/memberAccess/$(request.auth.uid)) &&
+        accessProfile().accountStatus == "active";
+    }
+
+    function isAdminOwner(ownerId) {
+      return isAdmin() &&
+        request.auth.uid == ownerId;
+    }
+
+    function isWorkspaceUser(ownerId) {
+      return signedIn() && (
+        isAdminOwner(ownerId) ||
+        (isManagedUser() && accessProfile().ownerId == ownerId)
+      );
+    }
+
+    function isManager(ownerId) {
+      return isManagedUser() &&
+        accessProfile().ownerId == ownerId &&
+        accessProfile().role == "manager";
+    }
+
+    function canManageOps(ownerId) {
+      return isAdminOwner(ownerId) || isManager(ownerId);
+    }
+
+    function isSelfMemberDocument() {
+      return isManagedUser() && (
+        resource.data.authUid == request.auth.uid ||
+        resource.data.memberId == accessProfile().memberId
+      );
+    }
+
+    function canReadWorkspaceRecord() {
+      return isAdminOwner(resource.data.ownerId) ||
+        isManager(resource.data.ownerId) ||
+        (
+          isManagedUser() &&
+          accessProfile().ownerId == resource.data.ownerId
+        );
+    }
+
+    function canReadMemberScopedRecord() {
+      return canReadWorkspaceRecord() ||
+        (
+          isManagedUser() &&
+          accessProfile().ownerId == resource.data.ownerId &&
+          resource.data.memberId == accessProfile().memberId
+        );
+    }
+
+    match /adminProfiles/{uid} {
+      allow read: if signedIn() && (
+        request.auth.uid == uid ||
+        resource.data.createdBy == request.auth.uid
+      );
+      allow create: if signedIn() && (
+        (
+          request.auth.uid == uid &&
+          request.resource.data.role == "admin" &&
+          request.resource.data.ownerId == uid
+        ) ||
+        (
+          isAdmin() &&
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.managedFromOwnerId == request.auth.uid &&
+          request.resource.data.ownerId == uid
+        )
+      );
+      allow update: if signedIn() && (
+        (
+          request.auth.uid == uid &&
+          request.resource.data.role == "admin" &&
+          request.resource.data.ownerId == uid
+        ) ||
+        (
+          isAdmin() &&
+          resource.data.createdBy == request.auth.uid &&
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.managedFromOwnerId == request.auth.uid &&
+          request.resource.data.ownerId == uid
+        )
+      );
+      allow delete: if false;
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if signedIn() &&
+        request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    match /roleLogins/{id} {
+      allow get: if isAdmin();
+      allow list: if false;
+      allow create, update: if isAdminOwner(request.resource.data.ownerId);
+      allow delete: if false;
+    }
+
+    match /roleLoginAliases/{aliasId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if isAdminOwner(request.resource.data.ownerId);
+      allow delete: if isAdminOwner(resource.data.ownerId);
+    }
+
+    match /memberAccess/{uid} {
+      allow read: if signedIn() && (
+        request.auth.uid == uid ||
+        isAdminOwner(resource.data.ownerId)
+      );
+      allow create, update: if isAdminOwner(request.resource.data.ownerId);
+      allow delete: if false;
+    }
+
+    match /members/{id} {
+      allow read: if canReadWorkspaceRecord() || isSelfMemberDocument();
+      allow create: if isAdminOwner(request.resource.data.ownerId);
+      allow update: if isAdminOwner(resource.data.ownerId) &&
+        request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isAdminOwner(resource.data.ownerId);
+    }
+
+    match /meals/{id} {
+      allow read: if canReadMemberScopedRecord();
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /guestMeals/{id} {
+      allow read: if canReadWorkspaceRecord();
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /bazaar/{id} {
+      allow read: if canReadWorkspaceRecord();
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /deposits/{id} {
+      allow read: if canReadMemberScopedRecord();
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /extraCosts/{id} {
+      allow read: if canReadWorkspaceRecord();
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /mealSettings/{id} {
+      allow read: if canReadMemberScopedRecord();
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /autoMealSkips/{id} {
+      allow read: if canReadMemberScopedRecord();
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /settings/{id} {
+      allow read: if isWorkspaceUser(id);
+      allow create: if isAdminOwner(request.resource.data.ownerId);
+      allow update, delete: if isAdminOwner(resource.data.ownerId);
+    }
+
+    match /notices/{id} {
+      allow read: if isWorkspaceUser(resource.data.ownerId);
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /notifications/{id} {
+      allow read: if isWorkspaceUser(resource.data.ownerId);
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
+    }
+
+    match /monthlyReports/{id} {
+      allow read: if isWorkspaceUser(resource.data.ownerId);
+      allow create: if canManageOps(request.resource.data.ownerId);
+      allow update, delete: if canManageOps(resource.data.ownerId);
     }
   }
 }

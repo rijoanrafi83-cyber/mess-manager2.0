@@ -59,7 +59,6 @@ import {
 import { calculateMealCount } from "../utils/billing";
 import {
   MEAL_KEYS,
-  getEnabledMealKeys,
   getAutoMealPreview,
   getTodayAutoMealStats,
   isAutoPermanentMeal,
@@ -921,7 +920,7 @@ export function MealsPage({
     useState(false);
 
   const isAdmin =
-    userProfile?.role === "admin";
+    ["admin", "manager"].includes(userProfile?.role);
 
 
 

@@ -77,7 +77,8 @@ function DepositForm({ members, ownerId, initial, onClose }) {
   );
 }
 
-export function DepositsPage({ deposits = [], members = [], ownerId }) {
+export function DepositsPage({ deposits = [], members = [], ownerId, userProfile }) {
+  const canManage = ["admin", "manager"].includes(userProfile?.role);
   const [showAdd,   setShowAdd]   = useState(false);
   const [editItem,  setEditItem]  = useState(null);
   const [delId,     setDelId]     = useState(null);
@@ -162,7 +163,7 @@ export function DepositsPage({ deposits = [], members = [], ownerId }) {
       key: "amount", label: "Amount",
       render: (v) => <span className="font-semibold text-green-600 dark:text-green-400 text-sm">+{formatCurrency(v)}</span>
     },
-    {
+    ...(canManage ? [{
       key: "id", label: "",
       render: (id, row) => (
         <div className="flex gap-1">
@@ -170,7 +171,7 @@ export function DepositsPage({ deposits = [], members = [], ownerId }) {
           <Button variant="danger" size="xs" onClick={e => { e.stopPropagation(); setDelId(id); }}><Trash2 size={12} /></Button>
         </div>
       )
-    },
+    }] : []),
   ];
 
   return (
@@ -185,11 +186,11 @@ export function DepositsPage({ deposits = [], members = [], ownerId }) {
           { label: "Average", value: formatCurrency(averageDeposit), caption: "per transaction" },
           { label: "Transactions", value: deposits.length, caption: "payment records" },
         ]}
-        actions={
+        actions={canManage ? (
           <Button onClick={() => setShowAdd(true)}>
             <Plus size={16} /> Record Deposit
           </Button>
-        }
+        ) : null}
       />
 
       {/* Stats */}
@@ -237,24 +238,24 @@ export function DepositsPage({ deposits = [], members = [], ownerId }) {
           data={filtered}
           emptyState={
             <div className="p-12">
-              <EmptyState icon={Wallet} title="No deposits yet" description="Record member deposit payments here." action={<Button onClick={() => setShowAdd(true)}><Plus size={16}/>Record Deposit</Button>} />
+              <EmptyState icon={Wallet} title="No deposits yet" description="Record member deposit payments here." action={canManage ? <Button onClick={() => setShowAdd(true)}><Plus size={16}/>Record Deposit</Button> : null} />
             </div>
           }
         />
       </Card>
 
       <AnimatePresence>
-        {showAdd && (
+        {canManage && showAdd && (
           <Modal open onClose={() => setShowAdd(false)} title="Record Deposit" subtitle="Log a member's payment">
             <DepositForm members={members} ownerId={ownerId} onClose={() => setShowAdd(false)} />
           </Modal>
         )}
-        {editItem && (
+        {canManage && editItem && (
           <Modal open onClose={() => setEditItem(null)} title="Edit Deposit">
             <DepositForm members={members} ownerId={ownerId} initial={editItem} onClose={() => setEditItem(null)} />
           </Modal>
         )}
-        {delId && (
+        {canManage && delId && (
           <Modal open onClose={() => setDelId(null)} title="Delete Deposit" size="sm">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Delete this deposit record permanently?</p>
             <div className="flex gap-3">

@@ -25,6 +25,10 @@ import {
 } from "./pages/auth/LoginPage";
 
 import {
+  RoleLoginPage
+} from "./pages/auth/RoleLoginPage";
+
+import {
   RegisterPage
 } from "./pages/auth/RegisterPage";
 
@@ -39,6 +43,10 @@ import {
 import {
   AppShell
 } from "./components/AppShell";
+
+import {
+  ROLES
+} from "./utils/roles";
 
 
 
@@ -159,6 +167,24 @@ function AppWithTheme() {
           />
 
           <Route
+            path="/member-login"
+            element={
+              <RoleLoginPage
+                role={ROLES.MEMBER}
+              />
+            }
+          />
+
+          <Route
+            path="/manager-login"
+            element={
+              <RoleLoginPage
+                role={ROLES.MANAGER}
+              />
+            }
+          />
+
+          <Route
             path="/register"
             element={<RegisterPage />}
           />
@@ -191,6 +217,7 @@ function AppWithTheme() {
               <ProtectedRoute
                 allowedRoles={[
                   "admin",
+                  "manager",
                   "member",
                 ]}
               >
