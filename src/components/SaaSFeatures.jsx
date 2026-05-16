@@ -1,4 +1,9 @@
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -23,6 +28,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "../services/firestoreService";
+import { NotificationsPortal } from "./NotificationsPortal";
 
 function formatTime(value) {
   const date =
@@ -100,7 +106,15 @@ export function NotificationsCenter({
   notifications = [],
   open,
   onToggle,
+  onClose,
 }) {
+  const buttonRef = useRef(null);
+  const panelRef = useRef(null);
+  const [panelStyle, setPanelStyle] = useState({
+    top: 72,
+    left: 12,
+    width: 352,
+  });
   const unreadCount = notifications.filter((item) => !item.read).length;
   const grouped = useMemo(() => {
     const groups = new Map();
@@ -113,11 +127,96 @@ export function NotificationsCenter({
     return [...groups.entries()];
   }, [notifications]);
 
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const updatePanelPosition = () => {
+      const buttonRect = buttonRef.current?.getBoundingClientRect();
+
+      if (!buttonRect) {
+        return;
+      }
+
+      const viewportWidth = window.innerWidth;
+      const gutter = 12;
+      const width = Math.min(352, viewportWidth - gutter * 2);
+      const top = Math.max(gutter, buttonRect.bottom + 8);
+      const preferredLeft = buttonRect.right - width;
+      const left = Math.min(
+        Math.max(gutter, preferredLeft),
+        viewportWidth - width - gutter
+      );
+
+      setPanelStyle({
+        top,
+        left,
+        width,
+      });
+    };
+
+    updatePanelPosition();
+
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (
+        buttonRef.current?.contains(event.target) ||
+        panelRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+
+      onClose?.();
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose, open]);
+
+  const markAllRead = () => {
+    if (ownerId) {
+      markAllNotificationsRead(ownerId);
+    }
+  };
+
+  const clearAll = () => {
+    if (ownerId) {
+      clearNotifications(ownerId);
+    }
+  };
+
   return (
-    <div className="relative">
+    <div className="relative z-[150]">
       <button
+        ref={buttonRef}
+        type="button"
         onClick={onToggle}
-        className="relative rounded-xl p-2.5 transition-all hover:bg-white/10"
+        className="relative rounded-xl p-2.5 transition-all hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_55%,transparent)]"
         title="Notifications"
       >
         <Bell size={20} className="theme-subtext" />
@@ -128,84 +227,94 @@ export function NotificationsCenter({
         )}
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute right-0 z-[150] mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border theme-card shadow-2xl"
-          >
-            <div className="flex items-center justify-between gap-3 border-b p-4">
-              <div>
-                <h3 className="font-semibold theme-text">Notifications</h3>
-                <p className="text-xs theme-muted-text">
-                  {unreadCount} unread
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => markAllNotificationsRead(ownerId)}
-                  className="rounded-lg p-2 hover:bg-white/10"
-                  title="Mark all read"
-                >
-                  <Check size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => clearNotifications(ownerId)}
-                  className="rounded-lg p-2 text-red-400 hover:bg-red-500/10"
-                  title="Clear notifications"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="max-h-[70vh] overflow-y-auto">
-              {grouped.length > 0 ? (
-                grouped.map(([category, items]) => (
-                  <section key={category} className="border-b last:border-b-0">
-                    <p className="px-4 pt-3 text-[11px] font-black uppercase tracking-wider theme-muted-text">
-                      {category}
-                    </p>
-                    {items.map((item) => (
-                      <button
-                        type="button"
-                        key={item.id}
-                        onClick={() => markNotificationRead(item.id)}
-                        className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-white/10"
-                      >
-                        <span
-                          className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                            item.read ? "bg-slate-500/40" : "bg-violet-500"
-                          }`}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold theme-text">
-                            {item.title}
-                          </span>
-                          <span className="mt-1 block text-xs leading-5 theme-muted-text">
-                            {item.message}
-                          </span>
-                          <span className="mt-1 block text-[11px] theme-muted-text">
-                            {formatTime(item.createdAt)}
-                          </span>
-                        </span>
-                      </button>
-                    ))}
-                  </section>
-                ))
-              ) : (
-                <div className="p-8 text-center text-sm theme-muted-text">
-                  No notifications
+      <NotificationsPortal>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={panelRef}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              style={panelStyle}
+              className="fixed z-[1000] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border shadow-2xl bg-white dark:bg-slate-950/95 dark:backdrop-blur-xl md:bg-[var(--bg-card)] md:dark:bg-slate-900/90"
+            >
+              <div className="flex items-center justify-between gap-3 border-b p-4 bg-opacity-50">
+                <div>
+                  <h3 className="font-semibold theme-text text-base">Notifications</h3>
+                  <p className="text-xs theme-muted-text mt-0.5">
+                    {unreadCount} unread
+                  </p>
                 </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={markAllRead}
+                    className="rounded-lg p-2 hover:bg-white/10"
+                    title="Mark all read"
+                  >
+                    <Check size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    className="rounded-lg p-2 text-red-400 hover:bg-red-500/10"
+                    title="Clear notifications"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="max-h-[min(70vh,32rem)] overflow-y-auto">
+                {grouped.length > 0 ? (
+                  grouped.map(([category, items]) => (
+                    <section
+                      key={category}
+                      className="border-b last:border-b-0"
+                    >
+                      <p className="px-4 pt-3 text-[11px] font-black uppercase tracking-wider theme-muted-text">
+                        {category}
+                      </p>
+                      {items.map((item) => (
+                        <button
+                          type="button"
+                          key={item.id}
+                          onClick={() => markNotificationRead(item.id)}
+                          className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-white/10"
+                        >
+                          <span
+                            className={`mt-1 h-2.5 w-2.5 rounded-full ${
+                              item.read
+                                ? "bg-slate-500/40"
+                                : "bg-violet-500"
+                            }`}
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-semibold theme-text">
+                              {item.title}
+                            </span>
+                            <span className="mt-1 block text-xs leading-5 theme-muted-text">
+                              {item.message}
+                            </span>
+                            <span className="mt-1 block text-[11px] theme-muted-text">
+                              {formatTime(item.createdAt)}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </section>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-sm theme-muted-text">
+                    No notifications
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </NotificationsPortal>
     </div>
   );
 }
@@ -294,29 +403,48 @@ export function ActivityLogViewer({ logs = [] }) {
 }
 
 export function MobileBottomNav({ items = [] }) {
-  const allowed = items.filter((item) =>
-    ["/dashboard", "/meals", "/reports", "/settings"].includes(item.to)
-  );
-
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-[120] border-t theme-topbar px-2 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-2 md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
-        {allowed.map(({ to, icon: Icon, label }) => (
+    <nav className="fixed inset-x-0 bottom-0 z-[120] border-t theme-topbar px-2 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-2 shadow-[0_-18px_45px_rgba(0,0,0,0.18)] backdrop-blur-2xl md:hidden">
+      <div className="mx-auto max-w-screen-sm overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-w-max items-center gap-1.5 px-0.5">
+          {items.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex min-h-[3.25rem] flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-bold transition ${
+              `group relative flex min-h-[3.05rem] w-[4.55rem] flex-shrink-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border px-2 text-[10px] font-black transition-all duration-200 active:scale-95 ${
                 isActive
-                  ? "theme-accent-bg text-white"
-                  : "theme-muted-text hover:bg-white/10"
+                  ? "theme-accent-bg border-transparent text-white shadow-lg shadow-[color-mix(in_srgb,var(--accent)_22%,transparent)]"
+                  : "border-white/10 bg-white/[0.04] theme-muted-text hover:bg-white/10 hover:text-[var(--text-primary)]"
               }`
             }
           >
-            <Icon size={18} />
-            <span className="leading-none">{label}</span>
+            {({ isActive }) => (
+              <>
+                <motion.span
+                  layout
+                  className={`absolute inset-x-2 top-1 h-0.5 rounded-full ${
+                    isActive
+                      ? "bg-white/80"
+                      : "bg-transparent"
+                  }`}
+                />
+                <Icon
+                  size={17}
+                  className={
+                    isActive
+                      ? "text-white"
+                      : "theme-muted-text group-hover:text-[var(--text-primary)]"
+                  }
+                />
+                <span className="max-w-full truncate leading-tight">
+                  {label}
+                </span>
+              </>
+            )}
           </NavLink>
-        ))}
+          ))}
+        </div>
       </div>
     </nav>
   );

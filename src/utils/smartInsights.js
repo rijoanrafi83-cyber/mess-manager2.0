@@ -21,6 +21,15 @@ function mealUnits(meal) {
   );
 }
 
+function memberDepositTotal(member = {}) {
+  return Number(
+    member.deposit ??
+    member.deposits ??
+    member.totalDeposits ??
+    0
+  );
+}
+
 export function buildSmartInsights({
   members = [],
   meals = [],
@@ -40,9 +49,11 @@ export function buildSmartInsights({
   );
   const memberBills = billData.memberBills || [];
   const topEater = [...memberBills].sort((a, b) => b.meals - a.meals)[0];
-  const topContributor = [...memberBills].sort(
-    (a, b) => b.deposits - a.deposits
-  )[0];
+  const topContributor = [...memberBills]
+    .filter((member) => memberDepositTotal(member) > 0)
+    .sort(
+      (a, b) => memberDepositTotal(b) - memberDepositTotal(a)
+    )[0];
   const highDueMembers = memberBills
     .filter((member) => Number(member.due || 0) > 0)
     .sort((a, b) => b.due - a.due);
@@ -130,7 +141,7 @@ export function buildSmartInsights({
         label: "Top contributor",
         value: topContributor?.name || "No data",
         caption: topContributor
-          ? formatCurrency(topContributor.deposits, currency)
+          ? formatCurrency(memberDepositTotal(topContributor), currency)
           : "No deposits yet",
         tone: "cyan",
       },
@@ -145,7 +156,7 @@ export function buildSmartInsights({
         title: "Biggest Contributor",
         name: topContributor?.name || "Waiting",
         value: topContributor
-          ? formatCurrency(topContributor.deposits, currency)
+          ? formatCurrency(memberDepositTotal(topContributor), currency)
           : "No deposits yet",
       },
       {

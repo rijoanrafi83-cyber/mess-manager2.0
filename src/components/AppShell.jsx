@@ -241,6 +241,11 @@ export function AppShell() {
   ] = useState(false);
 
   const [
+    loggingOut,
+    setLoggingOut,
+  ] = useState(false);
+
+  const [
     profileOpen,
     setProfileOpen,
   ] = useState(false);
@@ -512,12 +517,34 @@ export function AppShell() {
 
   const handleLogout =
     async () => {
+      if (loggingOut) {
+        return;
+      }
+
+      setLoggingOut(true);
+      setShowNotif(false);
+      setProfileOpen(false);
+      setMobileOpen(false);
+
       try {
-        await recordSessionLogout(userProfile);
-        await logout();
-        navigate("/login");
+        recordSessionLogout(userProfile).catch((err) => {
+          console.error("record logout:", err);
+        });
+
+        const result = await logout();
+
+        if (result?.success === false) {
+          console.error(result.message);
+          return;
+        }
+
+        navigate("/login", {
+          replace: true,
+        });
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoggingOut(false);
       }
     };
 
@@ -714,20 +741,24 @@ export function AppShell() {
         </button>
 
         <button
+          type="button"
           onClick={handleLogout}
+          disabled={loggingOut}
           className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all ${
             collapsed &&
             !isMobile
               ? "justify-center"
               : ""
-          }`}
+          } disabled:cursor-not-allowed disabled:opacity-60`}
         >
           <LogOut size={18} />
 
           {(!collapsed ||
             isMobile) && (
             <span>
-              Sign Out
+              {loggingOut
+                ? "Signing Out"
+                : "Sign Out"}
             </span>
           )}
         </button>
@@ -886,8 +917,11 @@ export function AppShell() {
             open={showNotif}
             onToggle={() =>
               setShowNotif(
-                !showNotif
+                (value) => !value
               )
+            }
+            onClose={() =>
+              setShowNotif(false)
             }
           />
 

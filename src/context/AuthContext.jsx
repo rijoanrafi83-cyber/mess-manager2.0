@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -33,6 +34,8 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [status, setStatus] = useState("loading");
+  const authSequenceRef = useRef(0);
+  const signingOutRef = useRef(false);
 
   const buildAdminProfile = (firebaseUser, adminData = {}, userData = {}) => ({
     uid: firebaseUser.uid,
@@ -180,12 +183,20 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
+        const sequence = authSequenceRef.current + 1;
+        authSequenceRef.current = sequence;
+
         try {
           // No user
           if (!firebaseUser) {
+            signingOutRef.current = false;
             setCurrentUser(null);
             setUserProfile(null);
             setStatus("guest");
+            return;
+          }
+
+          if (signingOutRef.current) {
             return;
           }
 
@@ -214,6 +225,13 @@ export function AuthProvider({ children }) {
             userSnap
           );
 
+          if (
+            signingOutRef.current ||
+            sequence !== authSequenceRef.current
+          ) {
+            return;
+          }
+
           if (adminProfile) {
             setUserProfile(adminProfile);
             setStatus("authed");
@@ -230,6 +248,13 @@ export function AuthProvider({ children }) {
           );
 
           const memberSnap = await getDoc(memberRef);
+
+          if (
+            signingOutRef.current ||
+            sequence !== authSequenceRef.current
+          ) {
+            return;
+          }
 
           if (memberSnap.exists()) {
             const data = memberSnap.data();
@@ -546,6 +571,13 @@ export function AuthProvider({ children }) {
   // LOGOUT
   // =========================
   const logout = async () => {
+    signingOutRef.current = true;
+    authSequenceRef.current += 1;
+
+    setCurrentUser(null);
+    setUserProfile(null);
+    setStatus("guest");
+
     try {
       await signOut(auth);
 
@@ -565,6 +597,11 @@ export function AuthProvider({ children }) {
           err.message ||
           "Logout failed",
       };
+    } finally {
+      signingOutRef.current = false;
+      setCurrentUser(null);
+      setUserProfile(null);
+      setStatus("guest");
     }
   };
 

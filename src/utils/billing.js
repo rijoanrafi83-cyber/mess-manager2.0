@@ -294,6 +294,9 @@ export function calculateMonthlyBill(
 
         deposit,
 
+        deposits:
+          deposit,
+
         mealCost: total,
 
         total,

@@ -136,6 +136,7 @@ export const addActivityLog = async (
     entityType,
     entityId,
     ...actorFromProfile(actor || {}),
+    userId: actor?.uid || actor?.authUid || null,
     ...getDeviceInfo(),
     metadata,
     createdAt: serverTimestamp(),
@@ -1401,11 +1402,13 @@ export const upsertSessionActivity =
       {
         ownerId,
         userId,
+        sessionId,
         ...actorFromProfile(data.actor || {}),
         ...getDeviceInfo(),
         status: data.status || "active",
         lastSeenAt: serverTimestamp(),
         loginAt: data.loginAt || serverTimestamp(),
+        createdAt: data.loginAt || serverTimestamp(),
         logoutAt: data.logoutAt || null,
       },
       { merge: true }
@@ -1435,17 +1438,19 @@ export const upsertSessionActivity =
   };
 
 export const endSessionActivity =
-  async (ownerId, userId, actor = null) => {
+  async (ownerId, userId, actor = null, sessionId = null) => {
     if (!ownerId || !userId) return;
 
-    const sessionId =
+    const activeSessionId =
+      sessionId ||
       `${userId}_${new Date().toISOString().slice(0, 10)}`;
 
     await setDoc(
-      docRef("sessionActivity", sessionId),
+      docRef("sessionActivity", activeSessionId),
       {
         ownerId,
         userId,
+        sessionId: activeSessionId,
         ...actorFromProfile(actor || {}),
         ...getDeviceInfo(),
         status: "signed-out",
@@ -1461,7 +1466,7 @@ export const endSessionActivity =
       title: "User logout",
       message: "Session ended",
       entityType: "session",
-      entityId: sessionId,
+      entityId: activeSessionId,
       actor,
     });
   };

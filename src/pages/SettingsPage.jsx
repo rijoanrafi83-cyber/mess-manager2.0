@@ -66,8 +66,12 @@ import { addActivityLog } from "../services/firestoreService";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import {
+  ACCENT_STORAGE_KEY,
   DEFAULT_THEME_ID,
+  REDUCED_MOTION_STORAGE_KEY,
   THEME_OPTIONS,
+  THEME_NAME_STORAGE_KEY,
+  THEME_STORAGE_KEY,
 } from "../theme/themeConfig";
 import {
   getSharedRoleLoginSettings,
@@ -557,6 +561,7 @@ export default function SettingsPage({
     isAdmin
       ? currentUser?.uid
       : profile?.ownerId;
+  const currentUserId = currentUser?.uid || "";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -643,24 +648,61 @@ export default function SettingsPage({
 
   const getLocalAppearancePreferences = useCallback(
     () => {
-      if (typeof window === "undefined") {
+      if (
+        typeof window === "undefined" ||
+        !currentUserId
+      ) {
         return null;
       }
 
+      const scopedKey = (key) =>
+        `${key}_${currentUserId}`;
       const hasLocalTheme =
-        localStorage.getItem("mm_theme_name") ||
-        localStorage.getItem("mm_theme_mode") ||
-        localStorage.getItem("mm_accent_color");
+        localStorage.getItem(
+          scopedKey(THEME_NAME_STORAGE_KEY)
+        ) ||
+        localStorage.getItem(
+          scopedKey(THEME_STORAGE_KEY)
+        ) ||
+        localStorage.getItem(
+          scopedKey(ACCENT_STORAGE_KEY)
+        ) ||
+        localStorage.getItem(
+          scopedKey(REDUCED_MOTION_STORAGE_KEY)
+        );
 
       if (!hasLocalTheme) {
         return null;
       }
 
+      const reducedMotionValue =
+        localStorage.getItem(
+          scopedKey(REDUCED_MOTION_STORAGE_KEY)
+        );
+
       return {
-        ...appearanceRef.current,
+        themeMode:
+          localStorage.getItem(
+            scopedKey(THEME_STORAGE_KEY)
+          ) || appearanceRef.current.themeMode,
+        themeId:
+          localStorage.getItem(
+            scopedKey(THEME_NAME_STORAGE_KEY)
+          ) || appearanceRef.current.themeId,
+        accentColor:
+          localStorage.getItem(
+            scopedKey(ACCENT_STORAGE_KEY)
+          ) || appearanceRef.current.accentColor,
+        ...(reducedMotionValue === "true" ||
+        reducedMotionValue === "false"
+          ? {
+              reduceMotion:
+                reducedMotionValue === "true",
+            }
+          : {}),
       };
     },
-    []
+    [currentUserId]
   );
 
   const applyThemePreference = useCallback(
@@ -1567,6 +1609,15 @@ export default function SettingsPage({
                       </span>
                     </div>
                     <p className="mt-3 text-[11px] theme-muted-text">
+                      Login: {formatDateTime(
+                        session.loginAt?.toDate
+                          ? session.loginAt.toDate().toISOString()
+                          : session.loginAt?.seconds
+                            ? new Date(session.loginAt.seconds * 1000).toISOString()
+                            : session.loginAt
+                      )}
+                    </p>
+                    <p className="mt-1 text-[11px] theme-muted-text">
                       Last seen: {formatDateTime(
                         session.lastSeenAt?.toDate
                           ? session.lastSeenAt.toDate().toISOString()
