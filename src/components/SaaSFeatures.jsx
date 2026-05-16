@@ -404,48 +404,83 @@ export function ActivityLogViewer({ logs = [] }) {
 
 export function MobileBottomNav({ items = [] }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-[120] border-t theme-topbar px-2 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-2 shadow-[0_-18px_45px_rgba(0,0,0,0.18)] backdrop-blur-2xl md:hidden">
-      <div className="mx-auto max-w-screen-sm overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex min-w-max items-center gap-1.5 px-0.5">
-          {items.map(({ to, icon: Icon, label }) => (
+    <nav className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[120] px-3 md:hidden">
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: 18,
+          scale: 0.98,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+          scale: 1,
+        }}
+        transition={{
+          duration: 0.28,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        className="pointer-events-auto mx-auto grid h-[4.2rem] w-full max-w-[26.5rem] grid-cols-7 items-center gap-1 overflow-hidden rounded-full border border-white/15 bg-black/45 px-2 shadow-[0_18px_46px_rgba(0,0,0,0.42),0_0_34px_color-mix(in_srgb,var(--accent)_18%,transparent),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-black/35"
+      >
+        {items.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
+            aria-label={label}
+            title={label}
             className={({ isActive }) =>
-              `group relative flex min-h-[3.05rem] w-[4.55rem] flex-shrink-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border px-2 text-[10px] font-black transition-all duration-200 active:scale-95 ${
+              `group relative flex h-12 min-w-0 items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-90 ${
                 isActive
-                  ? "theme-accent-bg border-transparent text-white shadow-lg shadow-[color-mix(in_srgb,var(--accent)_22%,transparent)]"
-                  : "border-white/10 bg-white/[0.04] theme-muted-text hover:bg-white/10 hover:text-[var(--text-primary)]"
+                  ? "text-white"
+                  : "text-white/58 hover:text-white"
               }`
             }
           >
             {({ isActive }) => (
               <>
+                {isActive && (
+                  <motion.span
+                    layoutId="mobile-bottom-nav-active"
+                    className="absolute inset-0 rounded-full bg-[color-mix(in_srgb,var(--accent)_68%,#38bdf8_32%)] shadow-[0_8px_26px_color-mix(in_srgb,var(--accent)_44%,transparent),0_0_18px_rgba(56,189,248,0.35)]"
+                    transition={{
+                      type: "spring",
+                      stiffness: 420,
+                      damping: 34,
+                    }}
+                  />
+                )}
+
                 <motion.span
-                  layout
-                  className={`absolute inset-x-2 top-1 h-0.5 rounded-full ${
-                    isActive
-                      ? "bg-white/80"
-                      : "bg-transparent"
-                  }`}
-                />
-                <Icon
-                  size={17}
-                  className={
-                    isActive
-                      ? "text-white"
-                      : "theme-muted-text group-hover:text-[var(--text-primary)]"
-                  }
-                />
-                <span className="max-w-full truncate leading-tight">
-                  {label}
-                </span>
+                  animate={{
+                    scale: isActive
+                      ? 1.12
+                      : 1,
+                    y: isActive
+                      ? -1
+                      : 0,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 420,
+                    damping: 24,
+                  }}
+                  className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full"
+                >
+                  <Icon
+                    size={21}
+                    strokeWidth={isActive ? 2.7 : 2.25}
+                    className={
+                      isActive
+                        ? "drop-shadow-[0_0_10px_rgba(255,255,255,0.55)]"
+                        : "transition-colors duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.24)]"
+                    }
+                  />
+                </motion.span>
               </>
             )}
           </NavLink>
-          ))}
-        </div>
-      </div>
+        ))}
+      </motion.div>
     </nav>
   );
 }
