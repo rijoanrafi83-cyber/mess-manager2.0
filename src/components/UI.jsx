@@ -9,7 +9,7 @@ export function PageWrapper({ children, className = "" }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className={`p-6 md:p-8 max-w-7xl mx-auto theme-app ${className}`}
+      className={`min-h-full p-4 sm:p-6 md:p-8 max-w-7xl mx-auto theme-app ${className}`}
     >
       {children}
     </motion.div>
@@ -86,7 +86,7 @@ const btnSizes = {
 };
 const btnVariants = {
   primary: "theme-accent-bg hover:brightness-110 active:scale-[.98] text-white shadow-lg shadow-[color-mix(in_srgb,var(--accent)_22%,transparent)]",
-  secondary: "theme-muted hover:bg-white/15 theme-subtext",
+  secondary: "theme-muted hover:bg-[var(--bg-card)] theme-subtext",
   danger: "bg-red-500/10 hover:bg-red-500/20 text-red-500",
   ghost: "hover:bg-[var(--bg-card-muted)] theme-subtext hover:text-[var(--text-primary)]",
   success: "bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400",
@@ -169,12 +169,12 @@ export function Modal({ open, onClose, title, subtitle, children, size = "md" })
   const widths = { sm: "max-w-sm", md: "max-w-md", lg: "max-w-lg", xl: "max-w-2xl", "2xl": "max-w-3xl" };
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-md"
         onClick={onClose}
       />
       <motion.div
@@ -182,7 +182,7 @@ export function Modal({ open, onClose, title, subtitle, children, size = "md" })
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className={`relative w-full ${widths[size]} theme-card rounded-2xl border shadow-2xl max-h-[90vh] flex flex-col`}
+        className={`relative w-full ${widths[size]} glass-popover rounded-2xl max-h-[90vh] flex flex-col`}
       >
         <div className="flex items-start justify-between p-6 pb-0 flex-shrink-0">
           <div>
@@ -204,7 +204,7 @@ export function Modal({ open, onClose, title, subtitle, children, size = "md" })
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
 const badgeVariants = {
-  default:  "bg-gray-100 dark:bg-white/8 text-gray-700 dark:text-gray-300",
+  default:  "theme-muted text-gray-700 dark:text-gray-300",
   success:  "bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400",
   warning:  "bg-yellow-100 dark:bg-yellow-500/15 text-yellow-700 dark:text-yellow-400",
   danger:   "bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400",
@@ -214,7 +214,7 @@ const badgeVariants = {
 
 export function Badge({ children, variant = "default", className = "" }) {
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${badgeVariants[variant]} ${className}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ring-1 ring-inset ring-white/10 ${badgeVariants[variant]} ${className}`}>
       {children}
     </span>
   );
@@ -262,10 +262,10 @@ export function Table({ columns, data, onRowClick, loading, emptyState }) {
   }
   if (!data?.length) return emptyState || null;
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-2xl border theme-muted">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b">
+          <tr className="border-b bg-[color-mix(in_srgb,var(--bg-elevated)_64%,transparent)]">
             {columns.map((col) => (
               <th key={col.key} className={`text-left py-3 px-4 text-xs font-semibold theme-muted-text uppercase tracking-wider ${col.className || ""}`}>
                 {col.label}
@@ -278,7 +278,7 @@ export function Table({ columns, data, onRowClick, loading, emptyState }) {
             <tr
               key={row.id || i}
               onClick={() => onRowClick?.(row)}
-              className={`transition-colors ${onRowClick ? "cursor-pointer hover:bg-[var(--bg-card-muted)]" : ""}`}
+              className={`transition-colors ${onRowClick ? "cursor-pointer hover:bg-[var(--bg-card)]" : ""}`}
             >
               {columns.map((col) => (
                 <td key={col.key} className={`py-3.5 px-4 theme-subtext ${col.className || ""}`}>
@@ -358,13 +358,13 @@ export function NumberInput({ label, value, onChange, min = 0, max = 99, classNa
         <button
           type="button"
           onClick={() => onChange(Math.max(min, Number(value) - 1))}
-          className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/8 text-gray-700 dark:text-gray-300 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-white/15 transition-colors text-lg font-bold"
+          className="w-8 h-8 rounded-lg theme-muted text-gray-700 dark:text-gray-300 flex items-center justify-center hover:bg-[var(--bg-card)] transition-colors text-lg font-bold"
         >−</button>
         <span className="w-10 text-center text-sm font-semibold text-gray-900 dark:text-white">{value}</span>
         <button
           type="button"
           onClick={() => onChange(Math.min(max, Number(value) + 1))}
-          className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/8 text-gray-700 dark:text-gray-300 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-white/15 transition-colors text-lg font-bold"
+          className="w-8 h-8 rounded-lg theme-muted text-gray-700 dark:text-gray-300 flex items-center justify-center hover:bg-[var(--bg-card)] transition-colors text-lg font-bold"
         >+</button>
       </div>
     </div>

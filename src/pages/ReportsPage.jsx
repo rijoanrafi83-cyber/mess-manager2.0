@@ -1548,7 +1548,7 @@ export default function ReportsPage({
 
 
 
-                    <div className="w-11 h-11 rounded-2xl bg-white/5 flex items-center justify-center">
+                    <div className="w-11 h-11 rounded-2xl theme-muted border flex items-center justify-center">
 
                       <stat.icon
                         size={20}
@@ -1734,7 +1734,7 @@ export default function ReportsPage({
 
                       <tr
                         key={member.id}
-                        className="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
+                        className="border-b border-gray-100 dark:border-white/10 hover:bg-[var(--bg-card-muted)] transition-colors"
                       >
 
                         <td className="px-6 py-4">
@@ -1952,7 +1952,7 @@ export default function ReportsPage({
 
           <div className="space-y-3 text-sm">
 
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5">
+            <div className="p-4 rounded-xl theme-muted border">
 
               <p className="font-semibold mb-1">
                 Meal Rate
@@ -1973,7 +1973,7 @@ export default function ReportsPage({
 
 
 
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5">
+            <div className="p-4 rounded-xl theme-muted border">
 
               <p className="font-semibold mb-1">
                 Individual Bill
@@ -1990,7 +1990,7 @@ export default function ReportsPage({
 
 
 
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5">
+            <div className="p-4 rounded-xl theme-muted border">
 
               <p className="font-semibold mb-1">
                 Due / Balance

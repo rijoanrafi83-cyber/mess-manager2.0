@@ -14,12 +14,15 @@
   --bg-card-muted: #f1f5f9;
   --bg-field: #f8fafc;
   --bg-elevated: #ffffff;
+  --bg-glass-overlay: rgba(255, 255, 255, 0.18);
+  --bg-glass-depth: rgba(15, 23, 42, 0.08);
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #64748b;
   --border-soft: rgba(15, 23, 42, 0.1);
   --shadow-soft: 0 24px 80px rgba(15, 23, 42, 0.08);
   --shadow-glow: 0 0 36px rgba(139, 92, 246, 0.18);
+  --shadow-glass: 0 18px 54px rgba(15, 23, 42, 0.14);
   --gradient-app: linear-gradient(135deg, #f8fafc 0%, #ffffff 55%, #eef2ff 100%);
   --chart-1: #8b5cf6;
   --chart-2: #06b6d4;
@@ -31,6 +34,9 @@
 
 .dark {
   color-scheme: dark;
+  --bg-glass-overlay: rgba(255, 255, 255, 0.12);
+  --bg-glass-depth: rgba(0, 0, 0, 0.18);
+  --shadow-glass: 0 18px 58px rgba(0, 0, 0, 0.34);
 }
 
 html {
@@ -165,46 +171,90 @@ html[data-reduce-motion="true"] *::after {
   }
 
   .theme-sidebar {
-    background: var(--bg-sidebar);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-glass-overlay) 28%, transparent), transparent 34%),
+      var(--bg-sidebar);
     border-color: var(--border-soft);
     color: var(--text-secondary);
-    box-shadow: inset -1px 0 0 color-mix(in srgb, var(--accent) 10%, transparent);
+    backdrop-filter: blur(28px) saturate(1.25);
+    -webkit-backdrop-filter: blur(28px) saturate(1.25);
+    box-shadow:
+      18px 0 54px rgba(0, 0, 0, 0.2),
+      inset -1px 0 0 color-mix(in srgb, var(--accent) 12%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
   .theme-topbar {
-    background: var(--bg-topbar);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--bg-glass-overlay) 22%, transparent), transparent 42%),
+      var(--bg-topbar);
     border-color: var(--border-soft);
     color: var(--text-secondary);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(28px) saturate(1.25);
+    -webkit-backdrop-filter: blur(28px) saturate(1.25);
+    box-shadow:
+      0 14px 46px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
   .theme-card {
-    background: var(--bg-card);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--bg-glass-overlay) 32%, transparent), transparent 34%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-glass-depth) 32%, transparent), transparent 70%),
+      var(--bg-card);
     border-color: var(--border-soft);
-    box-shadow: var(--shadow-soft);
+    box-shadow:
+      var(--shadow-soft),
+      var(--shadow-glass),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.035);
     color: var(--text-primary);
-    backdrop-filter: blur(24px) saturate(1.25);
+    backdrop-filter: blur(26px) saturate(1.22);
+    -webkit-backdrop-filter: blur(26px) saturate(1.22);
+    background-clip: padding-box;
   }
 
   .theme-card:hover {
     border-color: color-mix(in srgb, var(--accent) 24%, var(--border-soft));
     box-shadow:
       var(--shadow-soft),
+      var(--shadow-glass),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
       0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
   }
 
   .theme-muted {
-    background: var(--bg-card-muted);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--bg-glass-overlay) 20%, transparent), transparent 46%),
+      var(--bg-card-muted);
+    border-color: var(--border-soft);
+    backdrop-filter: blur(18px) saturate(1.12);
+    -webkit-backdrop-filter: blur(18px) saturate(1.12);
   }
 
   .theme-elevated {
-    background: var(--bg-elevated);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--bg-glass-overlay) 22%, transparent), transparent 44%),
+      var(--bg-elevated);
+    border-color: var(--border-soft);
+    box-shadow:
+      0 22px 64px rgba(0, 0, 0, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(26px) saturate(1.2);
+    -webkit-backdrop-filter: blur(26px) saturate(1.2);
   }
 
   .theme-field {
-    background: var(--bg-field);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--bg-glass-overlay) 14%, transparent), transparent 46%),
+      var(--bg-field);
     border-color: var(--border-soft);
     color: var(--text-primary);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.055),
+      0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px) saturate(1.08);
+    -webkit-backdrop-filter: blur(16px) saturate(1.08);
   }
 
   .theme-field:focus,
@@ -252,6 +302,33 @@ html[data-reduce-motion="true"] *::after {
       var(--shadow-glow);
   }
 
+  .glass-solid {
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--bg-glass-overlay) 30%, transparent), transparent 40%),
+      var(--bg-card);
+    border: 1px solid var(--border-soft);
+    box-shadow:
+      var(--shadow-soft),
+      var(--shadow-glass),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(26px) saturate(1.22);
+    -webkit-backdrop-filter: blur(26px) saturate(1.22);
+    color: var(--text-primary);
+  }
+
+  .glass-popover {
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--bg-glass-overlay) 26%, transparent), transparent 42%),
+      var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    box-shadow:
+      0 24px 80px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(30px) saturate(1.24);
+    -webkit-backdrop-filter: blur(30px) saturate(1.24);
+    color: var(--text-primary);
+  }
+
   .theme-hover {
     transition:
       transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -293,11 +370,17 @@ html[data-reduce-motion="true"] *::after {
       color-mix(in srgb, var(--accent) 18%, transparent)
     );
     pointer-events: none;
+    z-index: 0;
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
+  }
+
+  .theme-gradient-border > * {
+    position: relative;
+    z-index: 1;
   }
 
   .theme-scrollbar {

@@ -47,7 +47,7 @@ export function SmartHero({
           {metrics.map((metric) => (
             <div
               key={metric.label}
-              className="rounded-2xl border bg-white/50 dark:bg-white/[0.045] backdrop-blur-xl p-4"
+              className="rounded-2xl border theme-muted p-4"
             >
               <p className="text-[11px] uppercase tracking-[0.18em] theme-muted-text font-bold">
                 {metric.label}

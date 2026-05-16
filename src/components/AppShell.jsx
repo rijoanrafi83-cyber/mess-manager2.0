@@ -155,7 +155,7 @@ const MobileDrawer = memo(function MobileDrawer({
             transition={{
               duration: 0.16,
             }}
-            className="fixed inset-0 z-[130] bg-black/55 md:hidden"
+            className="fixed inset-0 z-[130] bg-black/70 backdrop-blur-md md:hidden"
             onClick={onClose}
           />
 
@@ -173,11 +173,11 @@ const MobileDrawer = memo(function MobileDrawer({
               duration: 0.2,
               ease: [0.22, 1, 0.36, 1],
             }}
-            className="mobile-perf-surface fixed bottom-0 left-0 top-0 z-[140] flex w-64 flex-col border-r theme-sidebar shadow-xl md:hidden"
+            className="mobile-perf-surface fixed bottom-0 left-0 top-0 z-[140] flex w-72 max-w-[86vw] flex-col border-r theme-sidebar shadow-xl md:hidden"
           >
             <button
               onClick={onClose}
-              className="absolute right-4 top-4 rounded-xl p-2 transition-colors hover:bg-white/10"
+              className="absolute right-4 top-4 rounded-xl p-2 transition-colors hover:bg-[var(--bg-card-muted)]"
             >
               <X
                 size={18}
@@ -578,7 +578,7 @@ export function AppShell() {
           }
           aria-label="Open About MessManager"
           title="About MessManager"
-          className={`group w-full rounded-3xl p-1 text-left transition-all duration-200 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent)_55%,transparent)] focus:ring-offset-2 focus:ring-offset-transparent active:scale-[0.98] ${
+          className={`group w-full rounded-3xl p-1 text-left transition-all duration-200 hover:bg-[var(--bg-card-muted)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent)_55%,transparent)] focus:ring-offset-2 focus:ring-offset-transparent active:scale-[0.98] ${
             collapsed &&
             !isMobile
               ? "flex justify-center"
@@ -595,7 +595,7 @@ export function AppShell() {
       {/* USER */}
 
       <div
-        className={`mx-3 mb-4 p-3 rounded-2xl theme-muted border backdrop-blur-xl ${
+        className={`mx-3 mb-4 p-3 rounded-2xl theme-muted border ${
           collapsed &&
           !isMobile
             ? "flex justify-center"
@@ -664,7 +664,7 @@ export function AppShell() {
                 } ${
                   isActive
                 ? "theme-accent-bg text-white shadow-xl shadow-[color-mix(in_srgb,var(--accent)_24%,transparent)]"
-                    : "theme-muted-text hover:bg-white/10 hover:text-[var(--text-primary)]"
+                    : "theme-muted-text hover:bg-[var(--bg-card-muted)] hover:text-[var(--text-primary)]"
                 }`
               }
             >
@@ -713,7 +713,7 @@ export function AppShell() {
 
         <button
           onClick={cycleThemeMode}
-          className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium theme-muted-text hover:bg-white/10 hover:text-[var(--text-primary)] transition-all ${
+          className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium theme-muted-text hover:bg-[var(--bg-card-muted)] hover:text-[var(--text-primary)] transition-all ${
             collapsed &&
             !isMobile
               ? "justify-center"
@@ -796,7 +796,7 @@ export function AppShell() {
         position="top-right"
         toastOptions={{
           className:
-            "theme-card border",
+            "glass-popover",
           style: {
             background:
               themeTokens["--bg-elevated"] ||
@@ -834,7 +834,7 @@ export function AppShell() {
         transition={{
           duration: 0.2,
         }}
-        className="hidden md:flex flex-col flex-shrink-0 theme-sidebar backdrop-blur-2xl border-r relative"
+        className="hidden md:flex flex-col flex-shrink-0 theme-sidebar border-r relative"
       >
         {renderSidebarContent()}
 
@@ -846,7 +846,7 @@ export function AppShell() {
               !collapsed
             )
           }
-          className="absolute -right-3 top-16 w-7 h-7 theme-card border rounded-full flex items-center justify-center shadow-xl"
+          className="absolute -right-3 top-16 w-7 h-7 glass-solid rounded-full flex items-center justify-center shadow-xl"
         >
           <motion.div
             animate={{
@@ -870,7 +870,7 @@ export function AppShell() {
 
         {/* TOPBAR */}
 
-        <header className="flex items-center gap-4 px-6 py-4 theme-topbar backdrop-blur-2xl border-b flex-shrink-0">
+        <header className="flex items-center gap-3 px-4 py-3 theme-topbar border-b flex-shrink-0 sm:gap-4 sm:px-6 sm:py-4">
 
           {/* MOBILE MENU */}
 
@@ -886,9 +886,8 @@ export function AppShell() {
               p-2.5
               rounded-xl
               border
-              border
-              bg-white/10
-              hover:bg-white/15
+              theme-muted
+              hover:bg-[var(--bg-card)]
               active:scale-95
               transition-all
               duration-200
@@ -932,7 +931,7 @@ export function AppShell() {
             onClick={() =>
               setProfileOpen(true)
             }
-            className="group flex items-center gap-3 rounded-2xl border-l pl-4 pr-2 py-1.5 transition-all hover:bg-white/10 active:scale-[0.99]"
+            className="group flex items-center gap-3 rounded-2xl border border-transparent px-2 py-1.5 transition-all hover:border-[var(--border-soft)] hover:bg-[var(--bg-card-muted)] active:scale-[0.99] sm:border-l sm:pl-4"
           >
             <ProfileAvatar
               name={userProfile?.displayName}

@@ -9,9 +9,9 @@ import { inputCls, labelCls } from "../components/UI";
 
 function AuthCard({ children, title, sub }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-indigo-950 flex items-center justify-center p-4">
+    <div className="min-h-screen theme-app flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 border border-gray-100 dark:border-gray-800">
+        <div className="theme-card rounded-3xl p-8 border">
           <div className="text-center mb-8">
             <div className="text-6xl mb-3">🍛</div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">MessManager</h1>
@@ -293,7 +293,7 @@ export function ForgotPasswordPage() {
 export function UnauthorizedPage() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+    <div className="min-h-screen theme-app flex items-center justify-center p-4">
       <div className="text-center">
         <div className="text-6xl mb-4">🚫</div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h1>

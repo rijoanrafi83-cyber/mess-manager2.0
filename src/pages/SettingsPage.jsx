@@ -425,7 +425,7 @@ const MiniStat = ({
   value,
 }) => (
   <div className="rounded-2xl border theme-muted p-4">
-    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 theme-subtext">
+    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl theme-card theme-subtext">
       <Icon size={17} />
     </div>
     <p className="text-xs uppercase tracking-wider theme-muted-text">
@@ -1324,7 +1324,7 @@ export default function SettingsPage({
         >
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-violet-200">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border theme-muted px-3 py-1 text-xs font-semibold theme-accent-text">
                 <Sparkles size={14} />
                 Workspace control
               </div>
@@ -1430,7 +1430,7 @@ export default function SettingsPage({
                       Use light, dark, or follow your device.
                     </p>
                   </div>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold theme-subtext">
+                  <span className="rounded-full theme-card px-3 py-1 text-xs font-semibold theme-subtext">
                     {resolvedTheme}
                   </span>
                 </div>
@@ -1478,7 +1478,7 @@ export default function SettingsPage({
                         className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-bold transition ${
                           preferences.themeMode === option.value
                             ? "border-white/20 text-white"
-                            : "border-white/10 theme-muted-text hover:bg-white/10 hover:text-[var(--text-primary)]"
+                            : "border-white/10 theme-muted-text hover:bg-[var(--bg-card-muted)] hover:text-[var(--text-primary)]"
                         }`}
                         style={{
                           background:
@@ -1539,7 +1539,7 @@ export default function SettingsPage({
                       Balance comfort and information density.
                     </p>
                   </div>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold theme-subtext">
+                  <span className="rounded-full theme-card px-3 py-1 text-xs font-semibold theme-subtext">
                     Level {preferences.density}
                   </span>
                 </div>
@@ -1568,7 +1568,7 @@ export default function SettingsPage({
                 <button
                   type="button"
                   onClick={onReplayOnboarding}
-                  className="rounded-xl border px-3 py-2 text-xs font-bold theme-muted-text hover:bg-white/10"
+                  className="rounded-xl border theme-muted px-3 py-2 text-xs font-bold theme-muted-text hover:bg-[var(--bg-card)]"
                 >
                   Replay Welcome
                 </button>
@@ -1736,7 +1736,7 @@ export default function SettingsPage({
                         color.value
                       );
                     }}
-                    className={`rounded-2xl border theme-muted p-3 text-left transition hover:bg-white/10 ${
+                    className={`rounded-2xl border theme-muted p-3 text-left transition hover:bg-[var(--bg-card)] ${
                       selectedAccent === color.value
                         ? `ring-2 ${color.ring}`
                         : ""
@@ -1891,7 +1891,7 @@ export default function SettingsPage({
                       className={`h-2 rounded-full ${
                         passwordStrength >= item
                           ? "bg-emerald-400"
-                          : "bg-white/10"
+                          : "bg-[var(--bg-field)]"
                       }`}
                     />
                   ))}
@@ -1928,7 +1928,7 @@ export default function SettingsPage({
                   type="button"
                   onClick={handleManualSync}
                   disabled={syncing || saving}
-                  className="inline-flex items-center gap-2 rounded-xl border theme-muted px-3 py-2 text-xs font-semibold theme-text transition hover:bg-white/15 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl border theme-muted px-3 py-2 text-xs font-semibold theme-text transition hover:bg-[var(--bg-card)] disabled:opacity-60"
                 >
                   <RefreshCw
                     size={14}
@@ -1979,7 +1979,7 @@ export default function SettingsPage({
                 <button
                   type="button"
                   onClick={handleExportSettings}
-                  className="flex items-center justify-center gap-2 rounded-2xl border theme-muted px-4 py-3 text-sm font-semibold theme-text transition hover:bg-white/15"
+                  className="flex items-center justify-center gap-2 rounded-2xl border theme-muted px-4 py-3 text-sm font-semibold theme-text transition hover:bg-[var(--bg-card)]"
                 >
                   <Download size={18} />
                   Export Settings
@@ -1989,7 +1989,7 @@ export default function SettingsPage({
                   onClick={() =>
                     fileInputRef.current?.click()
                   }
-                  className="flex items-center justify-center gap-2 rounded-2xl border theme-muted px-4 py-3 text-sm font-semibold theme-text transition hover:bg-white/10"
+                  className="flex items-center justify-center gap-2 rounded-2xl border theme-muted px-4 py-3 text-sm font-semibold theme-text transition hover:bg-[var(--bg-card)]"
                 >
                   <Import size={18} />
                   Import Settings
@@ -2131,7 +2131,7 @@ export default function SettingsPage({
             exit={{
               opacity: 0,
             }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
           >
             <motion.div
               initial={{
@@ -2146,7 +2146,7 @@ export default function SettingsPage({
                 scale: 0.96,
                 y: 16,
               }}
-              className="w-full max-w-md rounded-[1.75rem] border theme-card p-6 shadow-2xl"
+              className="w-full max-w-md rounded-[1.75rem] glass-popover p-6"
             >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/15 text-red-300">
                 <Trash2 size={22} />
@@ -2161,7 +2161,7 @@ export default function SettingsPage({
                 <button
                   type="button"
                   onClick={() => setResetOpen(false)}
-                  className="rounded-2xl border theme-muted px-4 py-3 text-sm font-semibold theme-text transition hover:bg-white/15"
+                  className="rounded-2xl border theme-muted px-4 py-3 text-sm font-semibold theme-text transition hover:bg-[var(--bg-card)]"
                 >
                   Cancel
                 </button>

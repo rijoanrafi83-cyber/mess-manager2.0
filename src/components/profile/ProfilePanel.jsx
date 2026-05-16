@@ -382,7 +382,7 @@ export function ProfilePanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[180] bg-black/55 backdrop-blur-sm"
+            className="fixed inset-0 z-[180] bg-black/70 backdrop-blur-md"
             onClick={onClose}
           />
 
@@ -395,7 +395,7 @@ export function ProfilePanel({
               damping: 24,
               stiffness: 210,
             }}
-            className="fixed right-3 top-3 z-[190] flex max-h-[calc(100vh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-xl flex-col overflow-hidden rounded-[2rem] border theme-card shadow-2xl backdrop-blur-2xl sm:right-5 sm:top-5 sm:max-h-[calc(100vh-2.5rem)]"
+            className="fixed right-3 top-3 z-[190] flex max-h-[calc(100vh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-xl flex-col overflow-hidden rounded-[2rem] glass-popover sm:right-5 sm:top-5 sm:max-h-[calc(100vh-2.5rem)]"
           >
             <div className="relative overflow-hidden border-b p-5">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,color-mix(in_srgb,var(--accent)_36%,transparent),transparent_36%)]" />
@@ -411,7 +411,7 @@ export function ProfilePanel({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={processingImage}
-                      className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-2xl border border-white/20 theme-card shadow-xl transition hover:scale-105 disabled:cursor-wait disabled:opacity-60"
+                      className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-2xl glass-solid shadow-xl transition hover:scale-105 disabled:cursor-wait disabled:opacity-60"
                     >
                       {processingImage ? (
                         <Loader2
@@ -437,7 +437,7 @@ export function ProfilePanel({
                   </div>
 
                   <div className="min-w-0">
-                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold theme-accent-text">
+                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border theme-muted px-3 py-1 text-xs font-bold theme-accent-text">
                       <Sparkles size={13} />
                       Profile workspace
                     </div>
@@ -453,7 +453,7 @@ export function ProfilePanel({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-2xl p-2 theme-muted-text transition hover:bg-white/10 hover:text-[var(--text-primary)]"
+                  className="rounded-2xl p-2 theme-muted-text transition hover:bg-[var(--bg-card-muted)] hover:text-[var(--text-primary)]"
                 >
                   <X size={20} />
                 </button>
@@ -464,7 +464,7 @@ export function ProfilePanel({
                   <span>Profile completion</span>
                   <span>{completion}%</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-field)]">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${completion}%` }}

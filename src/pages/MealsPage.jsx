@@ -229,7 +229,7 @@ function MealEntryForm({
 
 
 
-      <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+      <div className="p-4 rounded-xl theme-muted border">
 
         <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-4">
           Meal Count
@@ -483,7 +483,7 @@ function GuestMealForm({
 
 
 
-      <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+      <div className="p-4 rounded-xl theme-muted border">
 
         <div className="grid grid-cols-3 gap-4">
 
@@ -670,7 +670,7 @@ function PermanentMealManager({
     };
 
   return (
-    <Card className="mb-6 overflow-hidden p-0 border-white/20 dark:border-white/10 bg-white/75 dark:bg-white/[0.04] backdrop-blur-xl">
+    <Card className="mb-6 overflow-hidden p-0">
       <div className="p-5 md:p-6 border-b border-gray-200/70 dark:border-white/10">
         <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5">
           <div className="flex items-start gap-4">

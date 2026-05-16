@@ -305,7 +305,7 @@ export default function AboutMessManagerPage() {
                 ].map((badge) => (
                   <span
                     key={badge}
-                    className="rounded-full border bg-white/55 px-3 py-1 text-xs font-bold theme-text shadow-sm backdrop-blur-xl dark:bg-white/[0.07]"
+                    className="rounded-full border theme-muted px-3 py-1 text-xs font-bold theme-text shadow-sm"
                   >
                     {badge}
                   </span>
@@ -337,7 +337,7 @@ export default function AboutMessManagerPage() {
                 ].map(([label, value]) => (
                   <div
                     key={label}
-                    className="flex items-center justify-between gap-3 rounded-2xl border bg-white/45 px-4 py-3 text-sm dark:bg-white/[0.045]"
+                    className="flex items-center justify-between gap-3 rounded-2xl border theme-muted px-4 py-3 text-sm"
                   >
                     <span className="theme-muted-text">
                       {label}
@@ -437,7 +437,7 @@ export default function AboutMessManagerPage() {
                 return (
                   <div
                     key={step.title}
-                    className="relative flex gap-4 rounded-2xl border bg-white/40 p-4 dark:bg-white/[0.04]"
+                    className="relative flex gap-4 rounded-2xl border theme-muted p-4"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl theme-accent-bg text-sm font-black text-white">
                       {index + 1}
@@ -498,7 +498,7 @@ export default function AboutMessManagerPage() {
                   return (
                     <div
                       key={item.title}
-                      className="rounded-2xl border bg-white/45 p-4 dark:bg-white/[0.04]"
+                      className="rounded-2xl border theme-muted p-4"
                     >
                       <Icon
                         size={20}
@@ -527,7 +527,7 @@ export default function AboutMessManagerPage() {
                 {roadmapItems.map((item, index) => (
                   <div
                     key={item}
-                    className="flex items-center gap-3 rounded-2xl border bg-white/45 px-4 py-3 dark:bg-white/[0.04]"
+                    className="flex items-center gap-3 rounded-2xl border theme-muted px-4 py-3"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--accent)_13%,transparent)] text-xs font-black theme-accent-text">
                       {index + 1}
@@ -616,7 +616,7 @@ export default function AboutMessManagerPage() {
                 return (
                   <div
                     key={item.title}
-                    className="flex gap-3 rounded-2xl border bg-white/45 p-4 dark:bg-white/[0.04]"
+                    className="flex gap-3 rounded-2xl border theme-muted p-4"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--accent)_13%,transparent)] theme-accent-text">
                       <Icon size={18} />

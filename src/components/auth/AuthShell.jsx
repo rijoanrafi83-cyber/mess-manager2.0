@@ -24,40 +24,8 @@ export function AuthShell({
   return (
     <main className="min-h-screen theme-app relative overflow-hidden px-4 py-6 sm:px-6 lg:px-8">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <motion.div
-          aria-hidden="true"
-          animate={{
-            x: [0, 18, 0],
-            y: [0, -14, 0],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute -left-24 top-16 h-72 w-72 rounded-full blur-3xl"
-          style={{
-            background:
-              "color-mix(in srgb, var(--accent) 18%, transparent)",
-          }}
-        />
-        <motion.div
-          aria-hidden="true"
-          animate={{
-            x: [0, -16, 0],
-            y: [0, 16, 0],
-          }}
-          transition={{
-            duration: 14,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute -right-24 bottom-10 h-80 w-80 rounded-full blur-3xl"
-          style={{
-            background:
-              "color-mix(in srgb, var(--chart-2) 16%, transparent)",
-          }}
-        />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,color-mix(in_srgb,var(--accent)_13%,transparent),transparent_34%,color-mix(in_srgb,var(--chart-2)_10%,transparent)_72%,transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,color-mix(in_srgb,var(--bg-elevated)_48%,transparent),transparent_58%)]" />
       </div>
 
       <div className="relative mx-auto grid min-h-[calc(100vh-3rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]">
@@ -129,7 +97,7 @@ export function AuthShell({
               <button
                 type="button"
                 onClick={() => setDark((value) => !value)}
-                className="theme-focus rounded-xl border theme-muted p-2 theme-subtext hover:text-[var(--text-primary)]"
+                className="theme-focus rounded-xl border theme-muted p-2 theme-subtext hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)]"
                 aria-label="Toggle color mode"
               >
                 {dark ? <Sun size={18} /> : <Moon size={18} />}

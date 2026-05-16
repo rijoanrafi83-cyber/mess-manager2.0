@@ -20,7 +20,7 @@ export function SmartLogo({
           stiffness: 320,
           damping: 18,
         }}
-        className="group relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-white/10 shadow-2xl shadow-[color-mix(in_srgb,var(--accent)_28%,transparent)] backdrop-blur-xl"
+        className="group relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-2xl glass-solid shadow-2xl shadow-[color-mix(in_srgb,var(--accent)_28%,transparent)]"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(255,255,255,.48),transparent_27%),linear-gradient(135deg,color-mix(in_srgb,var(--accent)_92%,#ffffff),#06b6d4_48%,#10b981)]" />
         <div className="absolute inset-[1px] rounded-2xl border border-white/25 bg-black/5" />

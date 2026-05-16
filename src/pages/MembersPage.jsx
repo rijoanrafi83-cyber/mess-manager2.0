@@ -403,7 +403,7 @@ function MemberProfileModal({
 
               <div
                 key={label}
-                className="flex items-center gap-2 p-3 rounded-xl bg-gray-50 dark:bg-white/5"
+                className="flex items-center gap-2 p-3 rounded-xl theme-muted"
               >
 
                 <Icon
@@ -1142,7 +1142,7 @@ export function MembersPage({
                     className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
                       page === i + 1
                         ? "bg-violet-600 text-white"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/8"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-[var(--bg-card-muted)]"
                     }`}
                   >
                     {i + 1}

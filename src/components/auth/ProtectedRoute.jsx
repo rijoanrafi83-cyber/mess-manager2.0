@@ -18,7 +18,7 @@ export function ProtectedRoute({ children, allowedRoles }) {
   // for the auth state to resolve before making any routing decision.
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen flex items-center justify-center theme-app">
         <Spinner label="Restoring session…" />
       </div>
     );

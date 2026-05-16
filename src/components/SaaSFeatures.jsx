@@ -88,7 +88,7 @@ export function InstallCTA({ pwa }) {
     <button
       type="button"
       onClick={pwa.canInstall ? pwa.install : undefined}
-      className="hidden items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold theme-muted-text transition hover:bg-white/10 hover:text-[var(--text-primary)] lg:flex"
+      className="hidden items-center gap-2 rounded-full border theme-muted px-3 py-1.5 text-xs font-bold theme-muted-text transition hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)] lg:flex"
       title={
         pwa.isiOS
           ? "On iPhone, use Share then Add to Home Screen"
@@ -216,7 +216,7 @@ export function NotificationsCenter({
         ref={buttonRef}
         type="button"
         onClick={onToggle}
-        className="relative rounded-xl p-2.5 transition-all hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_55%,transparent)]"
+        className="relative rounded-xl p-2.5 transition-all hover:bg-[var(--bg-card-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_55%,transparent)]"
         title="Notifications"
       >
         <Bell size={20} className="theme-subtext" />
@@ -237,7 +237,7 @@ export function NotificationsCenter({
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
               style={panelStyle}
-              className="fixed z-[1000] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border shadow-2xl bg-white dark:bg-slate-950/95 dark:backdrop-blur-xl md:bg-[var(--bg-card)] md:dark:bg-slate-900/90"
+              className="fixed z-[1000] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl glass-popover"
             >
               <div className="flex items-center justify-between gap-3 border-b p-4 bg-opacity-50">
                 <div>
@@ -250,7 +250,7 @@ export function NotificationsCenter({
                   <button
                     type="button"
                     onClick={markAllRead}
-                    className="rounded-lg p-2 hover:bg-white/10"
+                    className="rounded-lg p-2 hover:bg-[var(--bg-card-muted)]"
                     title="Mark all read"
                   >
                     <Check size={16} />
@@ -281,7 +281,7 @@ export function NotificationsCenter({
                           type="button"
                           key={item.id}
                           onClick={() => markNotificationRead(item.id)}
-                          className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-white/10"
+                          className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[var(--bg-card-muted)]"
                         >
                           <span
                             className={`mt-1 h-2.5 w-2.5 rounded-full ${
@@ -364,7 +364,7 @@ export function ActivityLogViewer({ logs = [] }) {
         </select>
       </div>
 
-      <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+      <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1 theme-scrollbar">
         {filtered.slice(0, 60).map((log) => (
           <div
             key={log.id}
@@ -379,7 +379,7 @@ export function ActivityLogViewer({ logs = [] }) {
                   {log.actorName || "Workspace user"} · {log.device || "Device"} · {log.browser || "Browser"}
                 </p>
               </div>
-              <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold theme-subtext">
+              <span className="rounded-full theme-card px-2.5 py-1 text-[11px] font-bold theme-subtext">
                 {log.action}
               </span>
             </div>
@@ -420,7 +420,7 @@ export function MobileBottomNav({ items = [] }) {
           duration: 0.28,
           ease: [0.22, 1, 0.36, 1],
         }}
-        className="pointer-events-auto mx-auto grid h-[4.2rem] w-full max-w-[26.5rem] grid-cols-7 items-center gap-1 overflow-hidden rounded-full border border-white/15 bg-black/45 px-2 shadow-[0_18px_46px_rgba(0,0,0,0.42),0_0_34px_color-mix(in_srgb,var(--accent)_18%,transparent),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-black/35"
+        className="pointer-events-auto mx-auto grid h-[4.2rem] w-full max-w-[26.5rem] grid-cols-7 items-center gap-1 overflow-hidden rounded-full glass-popover px-2 shadow-[0_18px_46px_rgba(0,0,0,0.46),0_0_34px_color-mix(in_srgb,var(--accent)_18%,transparent),inset_0_1px_0_rgba(255,255,255,0.16)]"
       >
         {items.map(({ to, icon: Icon, label }) => (
           <NavLink
@@ -519,20 +519,20 @@ export function OnboardingModal({ open, onClose }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[220] grid place-items-center bg-black/60 p-4"
+          className="fixed inset-0 z-[220] grid place-items-center bg-black/70 p-4 backdrop-blur-md"
         >
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 18 }}
-            className="w-full max-w-lg overflow-hidden rounded-[1.75rem] border theme-card"
+            className="w-full max-w-lg overflow-hidden rounded-[1.75rem] glass-popover"
           >
             <div className="flex items-center justify-between border-b p-4">
               <p className="text-sm font-bold theme-text">Workspace Welcome</p>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-xl p-2 hover:bg-white/10"
+                className="rounded-xl p-2 hover:bg-[var(--bg-card-muted)]"
               >
                 <X size={18} />
               </button>
@@ -564,7 +564,7 @@ export function OnboardingModal({ open, onClose }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-xl px-4 py-2 text-sm font-bold theme-muted-text hover:bg-white/10"
+                className="rounded-xl px-4 py-2 text-sm font-bold theme-muted-text hover:bg-[var(--bg-card-muted)]"
               >
                 Skip
               </button>
