@@ -23,7 +23,6 @@ import {
   UtensilsCrossed,
   ShoppingCart,
   Wallet,
-  TrendingUp,
   AlertCircle,
   Star,
   Calendar,
@@ -82,7 +81,7 @@ const CustomTooltip = ({
 
     <div className="theme-card border rounded-xl p-3 shadow-xl text-xs">
 
-      <p className="font-semibold text-gray-900 dark:text-white mb-2">
+      <p className="font-semibold theme-text mb-2">
         {label}
       </p>
 
@@ -101,11 +100,11 @@ const CustomTooltip = ({
             }}
           />
 
-          <span className="text-gray-500 dark:text-gray-400">
+          <span className="theme-muted-text">
             {p.name}:
           </span>
 
-          <span className="font-semibold text-gray-900 dark:text-white">
+          <span className="font-semibold theme-text">
 
             {currency
               ? formatCurrency(
@@ -393,153 +392,6 @@ export function DashboardPage({
 
 
 
-  /* =====================================================
-     STATS
-  ===================================================== */
-
-  const stats = [
-
-    {
-      label: "Total Members",
-
-      value: members.length,
-
-      icon: Users,
-
-      iconBg:
-        "bg-violet-500/10",
-
-      iconColor:
-        "text-violet-500",
-
-      sub: `${
-        members.filter(
-          (m) =>
-            m.status ===
-            "active"
-        ).length
-      } active`,
-    },
-
-
-
-    {
-      label: "Total Meals",
-
-      value:
-        totalMeals.toFixed(1),
-
-      icon: UtensilsCrossed,
-
-      iconBg:
-        "bg-blue-500/10",
-
-      iconColor:
-        "text-blue-500",
-
-      sub: `${
-        combinedMeals.length
-      } entries`,
-    },
-
-
-
-    {
-      label: "Meal Rate",
-
-      value: formatCurrency(
-        mealRate.toFixed(2),
-        currency
-      ),
-
-      icon: TrendingUp,
-
-      iconBg:
-        "bg-green-500/10",
-
-      iconColor:
-        "text-green-500",
-
-      sub: "per unit",
-    },
-
-
-
-    {
-      label: "Total Bazaar",
-
-      value: formatCurrency(
-        totalBazaar,
-        currency
-      ),
-
-      icon: ShoppingCart,
-
-      iconBg:
-        "bg-orange-500/10",
-
-      iconColor:
-        "text-orange-500",
-
-      sub: `${
-        bazaar.length
-      } transactions`,
-    },
-
-
-
-    {
-      label: "Total Deposits",
-
-      value: formatCurrency(
-        totalDeposits,
-        currency
-      ),
-
-      icon: Wallet,
-
-      iconBg:
-        "bg-teal-500/10",
-
-      iconColor:
-        "text-teal-500",
-
-      sub: `${
-        deposits.length
-      } payments`,
-    },
-
-
-
-    {
-      label: "Total Due",
-
-      value: formatCurrency(
-        totalDue,
-        currency
-      ),
-
-      icon: AlertCircle,
-
-      iconBg:
-        totalDue > 0
-          ? "bg-red-500/10"
-          : "bg-green-500/10",
-
-      iconColor:
-        totalDue > 0
-          ? "text-red-500"
-          : "text-green-500",
-
-      sub:
-        totalDue > 0
-          ? "pending collection"
-          : "all clear",
-    },
-  ];
-
-
-
 
 
 
@@ -706,36 +558,6 @@ export function DashboardPage({
       </SmartSection>
 
 
-
-      {/* =====================================================
-         STATS
-      ===================================================== */}
-
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-6 mb-8">
-
-        {stats.map((s) => (
-
-          <MetricCard
-            key={s.label}
-            label={s.label}
-            value={s.value}
-            caption={s.sub}
-            icon={s.icon}
-            tone={
-              s.iconColor.includes("red")
-                ? "red"
-                : s.iconColor.includes("green") || s.iconColor.includes("teal")
-                  ? "green"
-                  : s.iconColor.includes("orange")
-                    ? "orange"
-                    : s.iconColor.includes("blue")
-                      ? "blue"
-                      : "accent"
-            }
-          />
-        ))}
-
-      </div>
 
 
 
@@ -1044,7 +866,7 @@ export function DashboardPage({
 
               <div className="min-w-0">
 
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+                <p className="text-xs theme-muted-text font-medium mb-1">
                   Top Meal Eater
                 </p>
 
@@ -1052,13 +874,13 @@ export function DashboardPage({
 
                   <>
 
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                    <p className="font-semibold theme-text text-sm truncate">
                       {
                         topMealEater.name
                       }
                     </p>
 
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs theme-muted-text">
                       {topMealEater.meals.toFixed(
                         1
                       )}{" "}
@@ -1101,7 +923,7 @@ export function DashboardPage({
 
               <div className="min-w-0">
 
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+                <p className="text-xs theme-muted-text font-medium mb-1">
                   Highest Due
                 </p>
 
@@ -1109,7 +931,7 @@ export function DashboardPage({
 
                   <>
 
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                    <p className="font-semibold theme-text text-sm truncate">
 
                       {
                         topDueMember.name
@@ -1164,11 +986,11 @@ export function DashboardPage({
 
               <div>
 
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+                <p className="text-xs theme-muted-text font-medium mb-1">
                   This Month
                 </p>
 
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                <p className="text-sm font-semibold theme-text">
 
                   {new Date().toLocaleString(
                     "default",
@@ -1182,7 +1004,7 @@ export function DashboardPage({
 
                 </p>
 
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs theme-muted-text">
 
                   {totalMeals.toFixed(
                     0
@@ -1268,14 +1090,14 @@ export function DashboardPage({
 
                     <div className="flex-1 min-w-0">
 
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <p className="text-sm font-medium theme-text truncate">
 
                         {item.title ||
                           "Expense"}
 
                       </p>
 
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs theme-muted-text">
 
                         {item.date} ·{" "}
                         {item.category ||
@@ -1287,7 +1109,7 @@ export function DashboardPage({
 
 
 
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="text-sm font-semibold theme-text">
 
                       {formatCurrency(
                         item.amount,
@@ -1372,14 +1194,14 @@ export function DashboardPage({
 
                       <div className="flex-1 min-w-0">
 
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        <p className="text-sm font-medium theme-text truncate">
 
                           {member?.name ||
                             "Unknown"}
 
                         </p>
 
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs theme-muted-text">
 
                           {item.date} ·{" "}
                           {item.paymentMethod ||

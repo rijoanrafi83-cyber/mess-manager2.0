@@ -76,54 +76,6 @@ const defaultForm = {
 
 
 /* =========================================================
-   MEMBER AVATAR
-========================================================= */
-
-function MemberAvatar({
-  name,
-  size = "md"
-}) {
-
-  const initials =
-    (name || "?")
-      .split(" ")
-      .map((w) => w[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
-
-  const sz = {
-    sm: "w-8 h-8 text-xs",
-    md: "w-10 h-10 text-sm",
-    lg: "w-14 h-14 text-xl",
-  };
-
-  const colors = [
-    "from-violet-500 to-indigo-500",
-    "from-blue-500 to-cyan-500",
-    "from-teal-500 to-green-500",
-    "from-orange-500 to-red-500",
-    "from-pink-500 to-rose-500",
-  ];
-
-  const idx =
-    (name || "")
-      .charCodeAt(0) %
-    colors.length;
-
-  return (
-
-    <div
-      className={`${sz[size]} rounded-xl bg-gradient-to-br ${colors[idx]} flex items-center justify-center text-white font-bold flex-shrink-0`}
-    >
-      {initials}
-    </div>
-  );
-}
-
-
-
-/* =========================================================
    MEMBER FORM
 ========================================================= */
 
@@ -330,18 +282,18 @@ function MemberProfileModal({
 
         <div className="flex items-center gap-4">
 
-          <MemberAvatar
+          <PersonAvatar
             name={member.name}
             size="lg"
           />
 
           <div>
 
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+            <h3 className="text-lg font-bold theme-text">
               {member.name}
             </h3>
 
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm theme-muted-text">
               {member.roomNumber
                 ? `Room ${member.roomNumber}`
                 : member.phone || "No contact added"}
@@ -413,11 +365,11 @@ function MemberProfileModal({
 
                 <div>
 
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
+                  <p className="text-[10px] theme-muted-text font-medium uppercase tracking-wide">
                     {label}
                   </p>
 
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <p className="text-sm font-semibold theme-text">
                     {value}
                   </p>
 
@@ -764,18 +716,18 @@ export function MembersPage({
 
         <div className="flex items-center gap-3">
 
-          <MemberAvatar
+          <PersonAvatar
             name={row.name}
             size="sm"
           />
 
           <div>
 
-            <p className="font-medium text-gray-900 dark:text-white text-sm">
+            <p className="font-medium theme-text text-sm">
               {row.name}
             </p>
 
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs theme-muted-text">
               {row.roomNumber
                 ? `Room ${row.roomNumber}`
                 : row.phone || "No contact"}
@@ -1084,7 +1036,7 @@ export function MembersPage({
 
           <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-white/8">
 
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs theme-muted-text">
 
               Showing
               {" "}
