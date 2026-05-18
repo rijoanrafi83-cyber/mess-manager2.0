@@ -86,26 +86,26 @@ export function MetricCard({
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="group relative overflow-hidden rounded-3xl border theme-card p-5"
+      className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border theme-card p-3 sm:p-5"
     >
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-[radial-gradient(circle_at_top_right,color-mix(in_srgb,var(--accent)_16%,transparent),transparent_42%)]" />
-      <div className="relative flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.18em] theme-muted-text font-bold">
+      <div className="relative flex items-start justify-between gap-2 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.18em] theme-muted-text font-bold leading-tight">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-black theme-text truncate">{value}</p>
-          {caption && <p className="mt-1 text-xs theme-muted-text">{caption}</p>}
+          <p className="mt-1 sm:mt-2 text-base sm:text-2xl font-black theme-text truncate">{value}</p>
+          {caption && <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs theme-muted-text hidden sm:block">{caption}</p>}
           {trend && (
-            <p className="mt-3 inline-flex items-center gap-1 text-xs font-bold theme-accent-text">
+            <p className="mt-2 sm:mt-3 inline-flex items-center gap-1 text-xs font-bold theme-accent-text">
               <ArrowUpRight size={13} />
               {trend}
             </p>
           )}
         </div>
         {Icon && (
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${tones[tone] || tones.accent}`}>
-            <Icon size={19} />
+          <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${tones[tone] || tones.accent}`}>
+            <Icon className="w-[15px] h-[15px] sm:w-[19px] sm:h-[19px]" />
           </div>
         )}
       </div>

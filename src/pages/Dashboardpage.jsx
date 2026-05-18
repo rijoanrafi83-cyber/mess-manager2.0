@@ -151,10 +151,6 @@ export function DashboardPage({
 
     memberBills = [],
 
-    totalBazaar = 0,
-
-    totalDeposits = 0,
-
     totalDue = 0,
 
     mealRate = 0,
@@ -427,7 +423,7 @@ export function DashboardPage({
         }
       />
 
-      <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 xl:grid-cols-6">
         {[
           {
             label: "Today Meals",
@@ -504,29 +500,40 @@ export function DashboardPage({
         </SmartSection>
 
         <SmartSection title="Due Risk" subtitle="Smart collection alerts">
-          <div
-            className={`rounded-2xl border p-4 ${
-              smartInsights.due.riskLevel === "high"
-                ? "bg-red-500/10 text-red-300"
-                : smartInsights.due.riskLevel === "medium"
-                  ? "bg-amber-500/10 text-amber-300"
-                  : "bg-emerald-500/10 text-emerald-300"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <Zap size={18} />
-              <p className="text-sm font-bold">
-                {smartInsights.due.riskLevel === "clear"
-                  ? "No due risk"
-                  : `${smartInsights.due.risk?.name || "Member"} needs attention`}
+          {smartInsights.due.highDueMembers.length > 0 ? (
+            <div className="space-y-2">
+              {smartInsights.due.highDueMembers.map((member) => (
+                <div
+                  key={member.id || member.name}
+                  className={`rounded-2xl border p-3 sm:p-4 ${
+                    smartInsights.due.riskLevel === "high"
+                      ? "bg-red-500/10 text-red-300"
+                      : "bg-amber-500/10 text-amber-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Zap size={14} className="shrink-0" />
+                      <p className="text-sm font-bold truncate">{member.name}</p>
+                    </div>
+                    <p className="text-sm font-black shrink-0">
+                      {formatCurrency(member.due, currency)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border p-4 bg-emerald-500/10 text-emerald-300">
+              <div className="flex items-center gap-3">
+                <Zap size={18} />
+                <p className="text-sm font-bold">No due risk</p>
+              </div>
+              <p className="mt-2 text-xs leading-5 opacity-85">
+                All tracked member balances are settled.
               </p>
             </div>
-            <p className="mt-2 text-xs leading-5 opacity-85">
-              {smartInsights.due.risk
-                ? `${formatCurrency(smartInsights.due.risk.due, currency)} pending. Keep alerts visible but non-intrusive.`
-                : "All tracked member balances are settled."}
-            </p>
-          </div>
+          )}
         </SmartSection>
       </div>
 
