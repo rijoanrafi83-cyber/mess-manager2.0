@@ -394,7 +394,7 @@ export function ThemeProvider({ children }) {
             error
           );
         });
-      }, 450);
+      }, 2000);
     }
 
     if (!reducedMotion) {

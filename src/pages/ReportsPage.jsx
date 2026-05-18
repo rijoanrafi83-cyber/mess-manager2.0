@@ -1695,9 +1695,10 @@ export default function ReportsPage({
           {memberBills.length >
           0 ? (
 
-            <div className="overflow-x-auto">
+            <div className="relative">
+              <div className="overflow-x-auto">
 
-              <table className="w-full">
+              <table className="w-full min-w-[700px]">
 
                 <thead>
 
@@ -1715,7 +1716,7 @@ export default function ReportsPage({
 
                       <th
                         key={h}
-                        className="px-6 py-4 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold"
+                        className="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold"
                       >
                         {h}
                       </th>
@@ -1737,7 +1738,7 @@ export default function ReportsPage({
                         className="border-b border-gray-100 dark:border-white/10 hover:bg-[var(--bg-card-muted)] transition-colors"
                       >
 
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3 sm:px-6 sm:py-4">
 
                           <div>
 
@@ -1765,7 +1766,7 @@ export default function ReportsPage({
 
 
 
-                        <td className="px-6 py-4 font-semibold">
+                        <td className="px-3 py-3 sm:px-6 sm:py-4 font-semibold">
 
                           {member.meals.toFixed(
                             1
@@ -1775,7 +1776,7 @@ export default function ReportsPage({
 
 
 
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3 sm:px-6 sm:py-4">
 
                           {formatCurrency(
                             member.mealCost,
@@ -1786,7 +1787,7 @@ export default function ReportsPage({
 
 
 
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3 sm:px-6 sm:py-4">
 
                           {formatCurrency(
                             member.deposit,
@@ -1797,7 +1798,7 @@ export default function ReportsPage({
 
 
 
-                        <td className="px-6 py-4 font-bold">
+                        <td className="px-3 py-3 sm:px-6 sm:py-4 font-bold">
 
                           {formatCurrency(
                             member.total,
@@ -1808,7 +1809,7 @@ export default function ReportsPage({
 
 
 
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3 sm:px-6 sm:py-4">
 
                           {member.due >
                           0 ? (
@@ -1840,7 +1841,7 @@ export default function ReportsPage({
 
 
 
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3 sm:px-6 sm:py-4">
 
                           <div className="flex gap-2">
 
@@ -1915,6 +1916,9 @@ export default function ReportsPage({
 
               </table>
 
+            </div>
+            {/* Scroll hint gradient for mobile */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent sm:hidden" />
             </div>
 
           ) : (

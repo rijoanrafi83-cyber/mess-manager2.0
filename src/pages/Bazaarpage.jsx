@@ -59,7 +59,7 @@ function BazaarForm({ initial, ownerId, userProfile, onClose }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input label="Title" value={form.title} onChange={e => set("title", e.target.value)} error={errors.title} required />
         <Input label="Amount (৳)" type="number" min="0" step="0.01" value={form.amount} onChange={e => set("amount", e.target.value)} error={errors.amount} required />
         <Select label="Category" value={form.category} onChange={e => set("category", e.target.value)}>

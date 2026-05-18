@@ -57,7 +57,7 @@ function DepositForm({ members, ownerId, userProfile, initial, onClose }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select label="Member" value={form.memberId} onChange={e => set("memberId", e.target.value)} error={errors.memberId} required>
           <option value="">Select member...</option>
           {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}

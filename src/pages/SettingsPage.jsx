@@ -79,6 +79,7 @@ import {
 } from "../services/sharedRoleAuthService";
 import { ActivityLogViewer } from "../components/SaaSFeatures";
 import { ROLES } from "../utils/roles";
+import { OrphanCleanupPanel } from "../components/admin/OrphanCleanupPanel";
 
 const ACCENT_COLORS = [
   {
@@ -1370,7 +1371,7 @@ export default function SettingsPage({
           </div>
         </motion.div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,.65fr)]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)]">
           <div className="space-y-6">
             <SectionCard
               title="Profile Settings"
@@ -2063,6 +2064,15 @@ export default function SettingsPage({
                   value={deviceInfo.language}
                 />
               </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Data Cleanup"
+              subtitle="Remove orphaned records from deleted members"
+              icon={Database}
+              tone="red"
+            >
+              <OrphanCleanupPanel ownerId={workspaceOwnerId} />
             </SectionCard>
 
             <SectionCard

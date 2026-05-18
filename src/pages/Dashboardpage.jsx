@@ -540,39 +540,6 @@ export function DashboardPage({
 
 
 
-  /* =====================================================
-     ANIMATION
-  ===================================================== */
-
-  const containerVariants = {
-
-    hidden: {},
-
-    visible: {
-      transition: {
-        staggerChildren: 0.06,
-      },
-    },
-  };
-
-
-
-  const itemVariants = {
-
-    hidden: {
-      opacity: 0,
-      y: 12,
-    },
-
-    visible: {
-      opacity: 1,
-      y: 0,
-
-      transition: {
-        duration: 0.3,
-      },
-    },
-  };
 
 
 
@@ -608,7 +575,7 @@ export function DashboardPage({
         }
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-6">
         {[
           {
             label: "Today Meals",
@@ -744,43 +711,31 @@ export function DashboardPage({
          STATS
       ===================================================== */}
 
-      <motion.div
-
-        variants={
-          containerVariants
-        }
-
-        initial="hidden"
-
-        animate="visible"
-
-        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8"
-      >
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-6 mb-8">
 
         {stats.map((s) => (
 
-          <motion.div key={s.label} variants={itemVariants}>
-            <MetricCard
-              label={s.label}
-              value={s.value}
-              caption={s.sub}
-              icon={s.icon}
-              tone={
-                s.iconColor.includes("red")
-                  ? "red"
-                  : s.iconColor.includes("green") || s.iconColor.includes("teal")
-                    ? "green"
-                    : s.iconColor.includes("orange")
-                      ? "orange"
-                      : s.iconColor.includes("blue")
-                        ? "blue"
-                        : "accent"
-              }
-            />
-          </motion.div>
+          <MetricCard
+            key={s.label}
+            label={s.label}
+            value={s.value}
+            caption={s.sub}
+            icon={s.icon}
+            tone={
+              s.iconColor.includes("red")
+                ? "red"
+                : s.iconColor.includes("green") || s.iconColor.includes("teal")
+                  ? "green"
+                  : s.iconColor.includes("orange")
+                    ? "orange"
+                    : s.iconColor.includes("blue")
+                      ? "blue"
+                      : "accent"
+            }
+          />
         ))}
 
-      </motion.div>
+      </div>
 
 
 
@@ -802,7 +757,7 @@ export function DashboardPage({
 
           <ResponsiveContainer
             width="100%"
-            height={200}
+            height={160}
           >
 
             <AreaChart
@@ -994,7 +949,7 @@ export function DashboardPage({
 
             <ResponsiveContainer
               width="100%"
-              height={200}
+              height={160}
             >
 
               <BarChart

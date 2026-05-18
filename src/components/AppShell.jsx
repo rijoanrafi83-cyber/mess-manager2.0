@@ -1,5 +1,7 @@
 import {
+  lazy,
   memo,
+  Suspense,
   useEffect,
   useMemo,
   useState,
@@ -49,14 +51,18 @@ import {
   useSessionTracking,
 } from "../hooks/useSessionTracking";
 
+// Eager: landing page loads immediately
 import { DashboardPage } from "../pages/DashboardPage";
-import { MembersPage } from "../pages/MembersPage";
-import { MealsPage } from "../pages/MealsPage";
-import { BazaarPage } from "../pages/BazaarPage";
-import { DepositsPage } from "../pages/DepositsPage";
-import ReportsPage from "../pages/ReportsPage";
-import SettingsPage from "../pages/SettingsPage";
-import AboutMessManagerPage from "../pages/AboutMessManagerPage";
+
+// Lazy: loaded on-demand when user navigates to these routes
+const MembersPage = lazy(() => import("../pages/MembersPage").then(m => ({ default: m.MembersPage })));
+const MealsPage = lazy(() => import("../pages/MealsPage").then(m => ({ default: m.MealsPage })));
+const BazaarPage = lazy(() => import("../pages/BazaarPage").then(m => ({ default: m.BazaarPage })));
+const DepositsPage = lazy(() => import("../pages/DepositsPage").then(m => ({ default: m.DepositsPage })));
+const ReportsPage = lazy(() => import("../pages/ReportsPage"));
+const SettingsPage = lazy(() => import("../pages/SettingsPage"));
+const AboutMessManagerPage = lazy(() => import("../pages/AboutMessManagerPage"));
+
 import { SmartLogo } from "./brand/SmartLogo";
 import { ProfilePanel } from "./profile/ProfilePanel";
 import { ProfileAvatar } from "./profile/ProfileAvatar";
@@ -399,19 +405,26 @@ export function AppShell() {
       return;
     }
 
-    ensureDailyPermanentMeals({
-      ownerId:
-        userProfile.ownerId,
-      members,
-      meals,
-      mealSettings,
-      date: currentDay,
-    }).catch((err) => {
-      console.error(
-        "ensureDailyPermanentMeals:",
-        err
-      );
-    });
+    // Debounce: during initial hydration, members/meals/mealSettings arrive
+    // separately from Firestore, triggering this effect multiple times.
+    // Wait 2s after the last change before running the expensive operation.
+    const timer = window.setTimeout(() => {
+      ensureDailyPermanentMeals({
+        ownerId:
+          userProfile.ownerId,
+        members,
+        meals,
+        mealSettings,
+        date: currentDay,
+      }).catch((err) => {
+        console.error(
+          "ensureDailyPermanentMeals:",
+          err
+        );
+      });
+    }, 2000);
+
+    return () => window.clearTimeout(timer);
   }, [
     loading,
     userProfile?.ownerId,
@@ -987,6 +1000,11 @@ export function AppShell() {
 
         <main className="flex-1 overflow-y-auto">
 
+          <Suspense fallback={
+            <div className="flex items-center justify-center min-h-[50vh]">
+              <div className="w-10 h-10 rounded-2xl border-4 border-violet-500/30 border-t-violet-500 animate-spin" />
+            </div>
+          }>
           <Routes>
 
             <Route
@@ -1203,6 +1221,7 @@ export function AppShell() {
             />
 
           </Routes>
+          </Suspense>
         </main>
 
         <MobileBottomNav

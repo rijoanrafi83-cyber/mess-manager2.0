@@ -50,19 +50,24 @@ function shouldLogLogin(sessionId) {
 
 export function useSessionTracking(userProfile) {
   const trackedRef = useRef("");
+  const profileRef = useRef(userProfile);
+
+  // Keep profileRef current without re-triggering the effect
+  profileRef.current = userProfile;
 
   useEffect(() => {
     if (!userProfile?.ownerId || !userProfile?.uid) {
       return undefined;
     }
 
-    const sessionId = getSessionId(userProfile);
-    const key = `${userProfile.ownerId}:${userProfile.uid}:${sessionId}`;
+    const profile = profileRef.current;
+    const sessionId = getSessionId(profile);
+    const key = `${profile.ownerId}:${profile.uid}:${sessionId}`;
     const firstSeen = trackedRef.current !== key;
     trackedRef.current = key;
 
-    upsertSessionActivity(userProfile.ownerId, userProfile.uid, {
-      actor: userProfile,
+    upsertSessionActivity(profile.ownerId, profile.uid, {
+      actor: profile,
       sessionId,
       logLogin: firstSeen && shouldLogLogin(sessionId),
     }).catch((error) => {
@@ -70,16 +75,20 @@ export function useSessionTracking(userProfile) {
     });
 
     const heartbeat = window.setInterval(() => {
-      upsertSessionActivity(userProfile.ownerId, userProfile.uid, {
-        actor: userProfile,
+      const current = profileRef.current;
+      if (!current?.ownerId || !current?.uid) return;
+      upsertSessionActivity(current.ownerId, current.uid, {
+        actor: current,
         sessionId,
       }).catch(() => {});
     }, 120000);
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
-        upsertSessionActivity(userProfile.ownerId, userProfile.uid, {
-          actor: userProfile,
+        const current = profileRef.current;
+        if (!current?.ownerId || !current?.uid) return;
+        upsertSessionActivity(current.ownerId, current.uid, {
+          actor: current,
           sessionId,
         }).catch(() => {});
       }
@@ -91,12 +100,11 @@ export function useSessionTracking(userProfile) {
       window.clearInterval(heartbeat);
       document.removeEventListener("visibilitychange", onVisibility);
     };
+  // Only re-run when identity changes, not on every profile object reference change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    userProfile,
     userProfile?.ownerId,
     userProfile?.uid,
-    userProfile?.displayName,
-    userProfile?.role,
   ]);
 }
 

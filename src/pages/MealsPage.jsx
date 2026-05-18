@@ -183,7 +183,7 @@ function MealEntryForm({
       className="space-y-5"
     >
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         <Select
           label="Member"
@@ -407,7 +407,7 @@ function GuestMealForm({
       className="space-y-4"
     >
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         <Select
           label="Host Member"
