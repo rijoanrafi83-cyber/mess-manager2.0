@@ -38,6 +38,7 @@ import {
   SearchInput,
   Table
 } from "../components/ui";
+import { ConfirmModal } from "../components/ui/ConfirmModal";
 import {
   FilterSurface,
   MetricCard,
@@ -1234,55 +1235,14 @@ export function MembersPage({
 
         {delId && canManageUsers && (
 
-          <Modal
+          <ConfirmModal
             open
-
-            onClose={() =>
-              setDelId(null)
-            }
-
+            onClose={() => setDelId(null)}
+            onConfirm={handleDelete}
+            loading={loading}
             title="Delete Member"
-            size="sm"
-          >
-
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-
-              Are you sure?
-
-              This will permanently remove the member and cannot be undone.
-
-            </p>
-
-
-
-            <div className="flex gap-3">
-
-              <Button
-                variant="danger"
-                loading={loading}
-                onClick={
-                  handleDelete
-                }
-                className="flex-1"
-              >
-                Delete
-              </Button>
-
-              <Button
-                variant="secondary"
-
-                onClick={() =>
-                  setDelId(null)
-                }
-
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-
-            </div>
-
-          </Modal>
+            message="Are you sure? This will permanently remove the member and all related records."
+          />
         )}
 
       </AnimatePresence>

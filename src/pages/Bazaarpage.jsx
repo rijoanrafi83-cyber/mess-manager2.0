@@ -6,6 +6,7 @@ import {
   PageWrapper, Card, Button, Input, Select,
   Textarea, Modal, Badge, EmptyState, SearchInput, Table
 } from "../components/ui";
+import { ConfirmModal } from "../components/ui/ConfirmModal";
 import {
   ActivityTimeline,
   FilterSurface,
@@ -260,13 +261,14 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
           </Modal>
         )}
         {canManage && delId && (
-          <Modal open onClose={() => setDelId(null)} title="Delete Expense" size="sm">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Permanently delete this expense entry?</p>
-            <div className="flex gap-3">
-              <Button variant="danger" loading={loading} onClick={handleDelete} className="flex-1">Delete</Button>
-              <Button variant="secondary" onClick={() => setDelId(null)} className="flex-1">Cancel</Button>
-            </div>
-          </Modal>
+          <ConfirmModal
+            open
+            onClose={() => setDelId(null)}
+            onConfirm={handleDelete}
+            loading={loading}
+            title="Delete Expense"
+            message="Permanently delete this expense entry?"
+          />
         )}
       </AnimatePresence>
     </PageWrapper>
