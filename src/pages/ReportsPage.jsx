@@ -733,12 +733,21 @@ async function exportMemberPDF(
   );
 
   doc.text(
+    `Extra Bills: ${formatCurrency(
+      member.extraBillsTotal || 0,
+      currency
+    )}`,
+    20,
+    85
+  );
+
+  doc.text(
     `Deposit: ${formatCurrency(
       member.deposit,
       currency
     )}`,
     20,
-    85
+    100
   );
 
   doc.text(
@@ -747,7 +756,7 @@ async function exportMemberPDF(
       currency
     )}`,
     20,
-    100
+    115
   );
 
   doc.save(
@@ -766,6 +775,8 @@ export default function ReportsPage({
   billData = {},
 
   members = [],
+
+  extraCosts = [],
 
   settings,
 
@@ -839,6 +850,8 @@ export default function ReportsPage({
 
         "Meal Cost",
 
+        "Extra Bills",
+
         "Deposit",
 
         "Total Bill",
@@ -857,6 +870,8 @@ export default function ReportsPage({
           m.meals,
 
           m.mealCost,
+
+          m.extraBillsTotal || 0,
 
           m.deposit,
 
@@ -1320,6 +1335,18 @@ export default function ReportsPage({
       [memberBills]
     );
 
+  const extraBillCategories = useMemo(() => {
+    const map = {};
+    extraCosts.forEach((bill) => {
+      const cat = bill.category || "other";
+      const label = cat.charAt(0).toUpperCase() + cat.slice(1);
+      if (!map[cat]) map[cat] = { category: label, total: 0, count: 0 };
+      map[cat].total += Number(bill.totalAmount || bill.amount || 0);
+      map[cat].count += 1;
+    });
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  }, [extraCosts]);
+
 
 
   const stats = [
@@ -1485,6 +1512,34 @@ export default function ReportsPage({
         </SmartSection>
       )}
 
+      {/* =====================================
+          EXTRA BILLS CATEGORY ANALYTICS
+      ===================================== */}
+
+      {extraBillCategories.length > 0 && (
+        <SmartSection
+          className="mb-6"
+          title="Extra Bills by Category"
+          subtitle="Shared expense breakdown for the current month"
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {extraBillCategories.map(({ category, total, count }) => (
+              <div key={category} className="rounded-2xl border theme-muted p-4">
+                <p className="text-[11px] font-bold uppercase tracking-wider theme-muted-text">
+                  {category}
+                </p>
+                <p className="mt-2 text-lg font-black theme-text">
+                  {formatCurrency(total, currency)}
+                </p>
+                <p className="mt-1 text-xs theme-muted-text">
+                  {count} bill{count === 1 ? "" : "s"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </SmartSection>
+      )}
+
 
 
       <div
@@ -1497,7 +1552,7 @@ export default function ReportsPage({
             STATS
         ===================================== */}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
 
           {stats.map(
             (
@@ -1522,22 +1577,23 @@ export default function ReportsPage({
                   delay:
                     idx * 0.05,
                 }}
+                className="min-w-0"
               >
 
                 <Card>
 
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2 sm:gap-3">
 
-                    <div>
+                    <div className="min-w-0 flex-1">
 
-                      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold">
+                      <p className="text-[10px] sm:text-xs uppercase tracking-wide theme-muted-text font-semibold">
 
                         {stat.label}
 
                       </p>
 
                       <h3
-                        className={`mt-2 text-3xl font-black ${stat.color}`}
+                        className={`mt-1 sm:mt-2 text-xl sm:text-2xl xl:text-[1.7rem] font-black leading-tight ${stat.color}`}
                       >
 
                         {stat.value}
@@ -1548,10 +1604,10 @@ export default function ReportsPage({
 
 
 
-                    <div className="w-11 h-11 rounded-2xl theme-muted border flex items-center justify-center">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl theme-muted border flex items-center justify-center shrink-0">
 
                       <stat.icon
-                        size={20}
+                        size={18}
                         className={
                           stat.color
                         }
@@ -1708,6 +1764,7 @@ export default function ReportsPage({
                       "Member",
                       "Meals",
                       "Meal Cost",
+                      "Extra Bills",
                       "Deposit",
                       "Total Bill",
                       "Status",
@@ -1780,6 +1837,17 @@ export default function ReportsPage({
 
                           {formatCurrency(
                             member.mealCost,
+                            currency
+                          )}
+
+                        </td>
+
+
+
+                        <td className="px-3 py-3 sm:px-6 sm:py-4">
+
+                          {formatCurrency(
+                            member.extraBillsTotal || 0,
                             currency
                           )}
 

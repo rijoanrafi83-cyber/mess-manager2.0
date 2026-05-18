@@ -44,11 +44,13 @@ html {
   background: var(--bg-app);
   color: var(--text-primary);
   accent-color: var(--accent);
+  overflow-x: hidden;
 }
 
 body {
   min-height: 100%;
   margin: 0;
+  overflow-x: hidden;
   background:
     var(--gradient-app),
     var(--bg-app);
@@ -59,6 +61,8 @@ body {
 
 #root {
   min-height: 100vh;
+  max-width: 100vw;
+  overflow-x: hidden;
   background:
     var(--gradient-app),
     var(--bg-app);
@@ -220,7 +224,7 @@ html[data-reduce-motion="true"] *::after {
       var(--shadow-soft),
       var(--shadow-glass),
       inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
+      inset 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
   }
 
   .theme-muted {

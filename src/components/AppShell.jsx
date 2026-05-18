@@ -30,6 +30,7 @@ import {
   BarChart3,
   ShoppingCart,
   Wallet,
+  Receipt,
   Settings,
   LogOut,
   ChevronLeft,
@@ -62,6 +63,7 @@ const DepositsPage = lazy(() => import("../pages/DepositsPage").then(m => ({ def
 const ReportsPage = lazy(() => import("../pages/ReportsPage"));
 const SettingsPage = lazy(() => import("../pages/SettingsPage"));
 const AboutMessManagerPage = lazy(() => import("../pages/AboutMessManagerPage"));
+const ExtraBillsPanel = lazy(() => import("./extra-bills/ExtraBillsPanel").then(m => ({ default: m.ExtraBillsPanel })));
 
 import { SmartLogo } from "./brand/SmartLogo";
 import { ProfilePanel } from "./profile/ProfilePanel";
@@ -121,6 +123,13 @@ const NAV_ITEMS = [
     to: "/deposits",
     icon: Wallet,
     label: "Deposits",
+    roles: ["admin", "manager", "member"],
+  },
+
+  {
+    to: "/extra-bills",
+    icon: Receipt,
+    label: "Extra Bills",
     roles: ["admin", "manager", "member"],
   },
 
@@ -998,11 +1007,11 @@ export function AppShell() {
 
         {/* ROUTES */}
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
 
           <Suspense fallback={
-            <div className="flex items-center justify-center min-h-[50vh]">
-              <div className="w-10 h-10 rounded-2xl border-4 border-violet-500/30 border-t-violet-500 animate-spin" />
+            <div className="flex items-center justify-center min-h-[30vh]">
+              <div className="w-8 h-8 rounded-xl border-3 border-violet-500/30 border-t-violet-500 animate-spin" />
             </div>
           }>
           <Routes>
@@ -1141,6 +1150,18 @@ export function AppShell() {
             />
 
             <Route
+              path="/extra-bills"
+              element={
+                <ExtraBillsPanel
+                  extraCosts={visibleExtraCosts}
+                  members={visibleMembers}
+                  ownerId={userProfile?.ownerId}
+                  userProfile={userProfile}
+                />
+              }
+            />
+
+            <Route
               path="/reports"
               element={
                 <ReportsPage
@@ -1159,6 +1180,7 @@ export function AppShell() {
                   deposits={
                     visibleDeposits
                   }
+                  extraCosts={visibleExtraCosts}
                   settings={
                     settings
                   }

@@ -420,7 +420,8 @@ export function MobileBottomNav({ items = [] }) {
           duration: 0.28,
           ease: [0.22, 1, 0.36, 1],
         }}
-        className="pointer-events-auto mx-auto grid h-[4.2rem] w-full max-w-[26.5rem] grid-cols-7 items-center gap-1 overflow-hidden rounded-full glass-popover px-2 shadow-[0_18px_46px_rgba(0,0,0,0.46),0_0_34px_color-mix(in_srgb,var(--accent)_18%,transparent),inset_0_1px_0_rgba(255,255,255,0.16)]"
+        className="pointer-events-auto mx-auto grid h-[3.75rem] w-full max-w-[26.5rem] items-center gap-0.5 overflow-hidden rounded-full glass-popover px-1.5 shadow-[0_14px_36px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.14)]"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         {items.map(({ to, icon: Icon, label }) => (
           <NavLink
@@ -429,7 +430,7 @@ export function MobileBottomNav({ items = [] }) {
             aria-label={label}
             title={label}
             className={({ isActive }) =>
-              `group relative flex h-12 min-w-0 items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-90 ${
+              `group relative flex h-10 min-w-0 items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-90 ${
                 isActive
                   ? "text-white"
                   : "text-white/58 hover:text-white"
@@ -441,7 +442,7 @@ export function MobileBottomNav({ items = [] }) {
                 {isActive && (
                   <motion.span
                     layoutId="mobile-bottom-nav-active"
-                    className="absolute inset-0 rounded-full bg-[color-mix(in_srgb,var(--accent)_68%,#38bdf8_32%)] shadow-[0_8px_26px_color-mix(in_srgb,var(--accent)_44%,transparent),0_0_18px_rgba(56,189,248,0.35)]"
+                    className="absolute inset-1 rounded-full bg-[color-mix(in_srgb,var(--accent)_72%,#38bdf8_28%)] shadow-[0_4px_14px_color-mix(in_srgb,var(--accent)_36%,transparent)]"
                     transition={{
                       type: "spring",
                       stiffness: 420,
@@ -453,10 +454,10 @@ export function MobileBottomNav({ items = [] }) {
                 <motion.span
                   animate={{
                     scale: isActive
-                      ? 1.12
+                      ? 1.08
                       : 1,
                     y: isActive
-                      ? -1
+                      ? -0.5
                       : 0,
                   }}
                   transition={{
@@ -464,15 +465,15 @@ export function MobileBottomNav({ items = [] }) {
                     stiffness: 420,
                     damping: 24,
                   }}
-                  className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full"
+                  className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full"
                 >
                   <Icon
-                    size={21}
+                    size={19}
                     strokeWidth={isActive ? 2.7 : 2.25}
                     className={
                       isActive
-                        ? "drop-shadow-[0_0_10px_rgba(255,255,255,0.55)]"
-                        : "transition-colors duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.24)]"
+                        ? "drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                        : "transition-colors duration-300 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
                     }
                   />
                 </motion.span>

@@ -102,23 +102,17 @@ export function calculateMonthlyBill(
       0
     );
 
-
-
   const totalExtra =
     extraCosts.reduce(
       (s, e) =>
         s +
-        Number(e.amount || 0),
+        Number(e.totalAmount || e.amount || 0),
       0
     );
 
-
-
-  const grandExpense =
-    totalBazaar +
-    totalExtra;
-
-
+  // Meal rate is based on bazaar only — extra bills are charged
+  // per-member based on their inclusion in selectedMemberIds.
+  const grandExpense = totalBazaar;
 
   // =====================================================
   // MAPS
@@ -128,8 +122,6 @@ export function calculateMonthlyBill(
 
   const depositMap = {};
 
-
-
   members.forEach((m) => {
 
     mealMap[m.id] = 0;
@@ -137,8 +129,6 @@ export function calculateMonthlyBill(
     depositMap[m.id] = 0;
 
   });
-
-
 
   // =====================================================
   // NORMAL MEALS
@@ -168,8 +158,6 @@ export function calculateMonthlyBill(
       ] = count;
     }
   });
-
-
 
   // =====================================================
   // GUEST MEALS
@@ -203,8 +191,6 @@ export function calculateMonthlyBill(
     }
   );
 
-
-
   // =====================================================
   // DEPOSITS
   // =====================================================
@@ -233,8 +219,6 @@ export function calculateMonthlyBill(
     }
   });
 
-
-
   // =====================================================
   // TOTALS
   // =====================================================
@@ -247,15 +231,11 @@ export function calculateMonthlyBill(
       0
     );
 
-
-
   const mealRate =
     totalMeals > 0
       ? grandExpense /
         totalMeals
       : 0;
-
-
 
   const totalDeposits =
     Object.values(
@@ -265,7 +245,57 @@ export function calculateMonthlyBill(
       0
     );
 
+  // =====================================================
+  // EXTRA BILL SHARES (per-member calculation)
+  // =====================================================
 
+  const activeMembers = members.filter((m) => m.status !== "inactive");
+  const activeMemberIds = activeMembers.map((m) => m.id);
+
+  // Compute per-member extra bill shares
+  const extraShareMap = {};
+  const extraBreakdownMap = {};
+
+  members.forEach((m) => {
+    extraShareMap[m.id] = 0;
+    extraBreakdownMap[m.id] = [];
+  });
+
+  extraCosts.forEach((bill) => {
+    const billingMode = bill.billingMode || "total_shared";
+    const amount = Number(bill.totalAmount || bill.amount || 0);
+    // For legacy docs without selectedMemberIds, include all active members
+    const selectedIds = (bill.selectedMemberIds && bill.selectedMemberIds.length > 0)
+      ? bill.selectedMemberIds
+      : activeMemberIds;
+    const memberCount = selectedIds.length || 1;
+
+    let memberShare;
+    let totalAmount;
+
+    if (billingMode === "per_member_unit") {
+      // Per member unit: amount is per-member, total = amount × count
+      memberShare = Number(bill.amount || 0);
+      totalAmount = memberShare * memberCount;
+    } else {
+      // Total shared: amount is the total, split equally
+      totalAmount = amount;
+      memberShare = Math.round((totalAmount / memberCount) * 100) / 100;
+    }
+
+    selectedIds.forEach((memberId) => {
+      if (extraShareMap[memberId] !== undefined) {
+        extraShareMap[memberId] += memberShare;
+        extraBreakdownMap[memberId].push({
+          title: bill.title || "Extra bill",
+          category: bill.category || "other",
+          share: memberShare,
+          totalAmount,
+          billingMode,
+        });
+      }
+    });
+  });
 
   // =====================================================
   // MEMBER BILLS
@@ -274,14 +304,20 @@ export function calculateMonthlyBill(
   const memberBills =
     members.map((m) => {
 
-      const meals =
+      const memberMeals =
         mealMap[m.id] || 0;
 
       const deposit =
         depositMap[m.id] || 0;
 
+      const mealCost =
+        memberMeals * mealRate;
+
+      const extraBillsTotal =
+        Math.round((extraShareMap[m.id] || 0) * 100) / 100;
+
       const total =
-        meals * mealRate;
+        mealCost + extraBillsTotal;
 
       const due =
         total - deposit;
@@ -290,14 +326,19 @@ export function calculateMonthlyBill(
 
         ...m,
 
-        meals,
+        meals: memberMeals,
 
         deposit,
 
         deposits:
           deposit,
 
-        mealCost: total,
+        mealCost,
+
+        extraBillsTotal,
+
+        extraBillsBreakdown:
+          extraBreakdownMap[m.id] || [],
 
         total,
 
@@ -309,8 +350,6 @@ export function calculateMonthlyBill(
         mealRate,
       };
     });
-
-
 
   // =====================================================
   // TOTAL DUE
@@ -326,8 +365,6 @@ export function calculateMonthlyBill(
         ),
       0
     );
-
-
 
   // =====================================================
   // RETURN

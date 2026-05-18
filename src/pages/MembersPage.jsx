@@ -410,9 +410,23 @@ function MemberProfileModal({
               ],
 
               [
+                "Extra Bills",
+                `৳${(
+                  bill.extraBillsTotal || 0
+                ).toFixed(2)}`
+              ],
+
+              [
                 "Deposit",
                 `৳${(
                   bill.deposit || 0
+                ).toFixed(2)}`
+              ],
+
+              [
+                "Total Bill",
+                `৳${(
+                  bill.total || 0
                 ).toFixed(2)}`
               ],
 

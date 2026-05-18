@@ -1148,31 +1148,161 @@ export const deleteDeposit = (
 
 export const addExtraCost = (
   ownerId,
-  data
+  data,
+  actor = null
 ) =>
-
   addDoc(
     col("extraCosts"),
     {
       ...data,
       ownerId,
-      createdAt:
-        serverTimestamp(),
+      createdAt: serverTimestamp(),
     }
-  );
+  ).then(async (ref) => {
+    await notifyAndLog(ownerId, {
+      notification: {
+        title: "Extra bill added",
+        message: `${data.title || "Extra bill"} saved.`,
+        type: "billing",
+        category: "expenses",
+      },
+      log: {
+        type: "billing",
+        action: "create",
+        title: "Extra bill added",
+        message: data.title || "Extra bill created",
+        entityType: "extraCost",
+        entityId: ref.id,
+        actor,
+      },
+    });
+    return ref;
+  });
 
-
+export const updateExtraCost = (
+  id,
+  data,
+  actor = null,
+  ownerId = data?.ownerId
+) =>
+  updateDoc(
+    docRef("extraCosts", id),
+    {
+      ...data,
+      updatedAt: serverTimestamp(),
+    }
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "billing",
+        action: "update",
+        title: "Extra bill updated",
+        message: data.title || "Extra bill changed",
+        entityType: "extraCost",
+        entityId: id,
+        actor,
+      },
+    });
+  });
 
 export const deleteExtraCost = (
-  id
+  id,
+  actor = null,
+  ownerId = null
 ) =>
-
   deleteDoc(
-    docRef(
-      "extraCosts",
-      id
-    )
-  );
+    docRef("extraCosts", id)
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "billing",
+        action: "delete",
+        title: "Extra bill deleted",
+        message: "Extra bill removed",
+        entityType: "extraCost",
+        entityId: id,
+        actor,
+      },
+    });
+  });
+
+export const toggleExtraCostRecurring = (
+  id,
+  isRecurring,
+  actor = null,
+  ownerId = null
+) =>
+  updateDoc(
+    docRef("extraCosts", id),
+    {
+      isRecurring,
+      updatedAt: serverTimestamp(),
+    }
+  ).then(async () => {
+    await notifyAndLog(ownerId, {
+      log: {
+        type: "billing",
+        action: "update",
+        title: isRecurring ? "Recurring enabled" : "Recurring disabled",
+        message: `Extra bill recurrence ${isRecurring ? "enabled" : "disabled"}`,
+        entityType: "extraCost",
+        entityId: id,
+        actor,
+      },
+    });
+  });
+
+export const carryForwardRecurringBills = async (
+  ownerId,
+  bills = [],
+  targetDate,
+  actor = null
+) => {
+  if (!ownerId || !bills.length || !targetDate) return [];
+
+  const batch = writeBatch(db);
+  const newRefs = [];
+
+  bills.forEach((bill) => {
+    const ref = doc(col("extraCosts"));
+    newRefs.push(ref);
+    batch.set(ref, {
+      ownerId,
+      title: bill.title,
+      billingMode: bill.billingMode || "total_shared",
+      amount: Number(bill.amount || 0),
+      totalAmount: Number(bill.totalAmount || bill.amount || 0),
+      selectedMemberIds: bill.selectedMemberIds || [],
+      memberShare: Number(bill.memberShare || 0),
+      category: bill.category || "other",
+      isRecurring: true,
+      date: targetDate,
+      carriedFromId: bill.id || null,
+      createdAt: serverTimestamp(),
+    });
+  });
+
+  await batch.commit();
+
+  await notifyAndLog(ownerId, {
+    notification: {
+      title: "Bills carried forward",
+      message: `${bills.length} recurring bill${bills.length === 1 ? "" : "s"} carried to ${targetDate}.`,
+      type: "billing",
+      category: "expenses",
+    },
+    log: {
+      type: "billing",
+      action: "carry-forward",
+      title: "Recurring bills carried forward",
+      message: `${bills.length} bills carried to ${targetDate}`,
+      entityType: "extraCost",
+      actor,
+    },
+  });
+
+  return newRefs;
+};
 
 
 

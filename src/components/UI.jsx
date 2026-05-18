@@ -6,10 +6,10 @@ import { Loader2, X, AlertCircle, CheckCircle, Info, AlertTriangle } from "lucid
 export function PageWrapper({ children, className = "" }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className={`min-h-full p-4 sm:p-6 md:p-8 max-w-7xl mx-auto theme-app ${className}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
+      className={`min-h-full p-4 sm:p-6 md:p-8 max-w-7xl mx-auto overflow-x-hidden theme-app ${className}`}
     >
       {children}
     </motion.div>
@@ -58,7 +58,7 @@ export function StatCard({ label, value, sub, icon: Icon, iconBg = "bg-violet-50
 // ─── Card ─────────────────────────────────────────────────────────────────────
 export function Card({ children, className = "", noPad = false }) {
   return (
-    <div className={`theme-card theme-gradient-border border rounded-2xl ${noPad ? "" : "p-6"} ${className}`}>
+    <div className={`theme-card theme-gradient-border border rounded-2xl overflow-hidden ${noPad ? "" : "p-4 sm:p-6"} ${className}`}>
       {children}
     </div>
   );
