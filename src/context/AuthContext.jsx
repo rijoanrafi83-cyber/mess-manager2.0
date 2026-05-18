@@ -132,23 +132,10 @@ export function AuthProvider({ children }) {
       userData
     );
 
-    await setDoc(
-      doc(db, "adminProfiles", firebaseUser.uid),
-      {
-        displayName: profile.displayName,
-        fullName: profile.fullName,
-        email: profile.email,
-        phone: profile.phone,
-        bio: profile.bio,
-        photoURL: profile.photoURL,
-        role: ROLES.ADMIN,
-        ownerId: firebaseUser.uid,
-        accountStatus: "active",
-        status: "active",
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    // NOTE: We no longer write to adminProfiles on every auth state change.
+    // The profile is created during registration and updated via explicit saves
+    // (SettingsPage, ProfilePanel). This prevents race conditions when multiple
+    // tabs are open and avoids unnecessary Firestore writes on every page load.
 
     return profile;
   };

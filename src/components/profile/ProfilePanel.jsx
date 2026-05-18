@@ -356,13 +356,10 @@ export function ProfilePanel({
           },
           { merge: true }
         );
-      } else {
-        await setDoc(
-          doc(db, "memberAccess", currentUser.uid),
-          payload,
-          { merge: true }
-        );
       }
+      // NOTE: Non-admin users only write to the `users` collection (above).
+      // The `memberAccess` collection is admin-managed and Firestore rules
+      // reject writes from non-admin users to that collection.
 
       toast.success("Profile updated");
       onClose();

@@ -285,19 +285,52 @@ export const updateMember = (
 export const deleteMember =
   async (id, actor = null, ownerId = null) => {
 
-    const batch =
-      writeBatch(db);
+    // Cascade-delete related documents to prevent orphaned data
+    // that would corrupt billing calculations.
+    //
+    // Strategy: collect all document refs to delete, then commit
+    // in batches of up to 490 (under Firestore's 500-op limit).
 
-    batch.delete(
-      docRef("members", id)
-    );
+    const refsToDelete = [docRef("members", id)];
 
-    await batch.commit();
+    // Find related documents across collections.
+    // All related docs use `memberId` field to reference this member.
+    if (ownerId) {
+      const relatedCollections = [
+        "meals",
+        "guestMeals",
+        "deposits",
+        "mealSettings",
+        "autoMealSkips",
+      ];
+
+      for (const collectionName of relatedCollections) {
+        const q = query(
+          col(collectionName),
+          where("ownerId", "==", ownerId),
+          where("memberId", "==", id)
+        );
+
+        const snap = await getDocs(q);
+        snap.docs.forEach((docSnap) => {
+          refsToDelete.push(docSnap.ref);
+        });
+      }
+    }
+
+    // Commit deletes in batches of 490
+    const BATCH_LIMIT = 490;
+    for (let i = 0; i < refsToDelete.length; i += BATCH_LIMIT) {
+      const chunk = refsToDelete.slice(i, i + BATCH_LIMIT);
+      const batch = writeBatch(db);
+      chunk.forEach((ref) => batch.delete(ref));
+      await batch.commit();
+    }
 
     await notifyAndLog(ownerId, {
       notification: {
         title: "Member removed",
-        message: "A member was deleted from the workspace.",
+        message: "A member and all related records were deleted from the workspace.",
         type: "member",
         category: "members",
       },
@@ -305,7 +338,7 @@ export const deleteMember =
         type: "member",
         action: "delete",
         title: "Member deleted",
-        message: "Member record removed",
+        message: "Member record and related meals, deposits, and settings removed",
         entityType: "member",
         entityId: id,
         actor,
