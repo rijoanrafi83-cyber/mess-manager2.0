@@ -36,6 +36,8 @@ import {
   getLocalDateKey,
   getMealKeysWithValue,
   isAutoPermanentMeal,
+  resolveBreakfastMode,
+  getBreakfastRawValue,
 } from "../utils/permanentMeals";
 
 
@@ -671,7 +673,12 @@ export const ensureDailyPermanentMeals =
       };
 
       missing.forEach((key) => {
-        autoMeal[key] = 1;
+        if (key === "breakfast") {
+          const mode = resolveBreakfastMode(setting);
+          autoMeal.breakfast = getBreakfastRawValue(mode);
+        } else {
+          autoMeal[key] = 1;
+        }
       });
 
       batch.set(
@@ -854,9 +861,17 @@ export const saveMealSettings = (
   data,
   actor = null
 
-) =>
+) => {
 
-  setDoc(
+  // Validate breakfastMode if provided
+  if (data.breakfastMode !== undefined) {
+    const validModes = ["off", "half", "full"];
+    if (!validModes.includes(data.breakfastMode)) {
+      return Promise.reject(new Error(`Invalid breakfastMode: "${data.breakfastMode}". Must be one of: off, half, full`));
+    }
+  }
+
+  return setDoc(
 
     docRef(
       "mealSettings",
@@ -889,6 +904,7 @@ export const saveMealSettings = (
       },
     });
   });
+};
 
 
 

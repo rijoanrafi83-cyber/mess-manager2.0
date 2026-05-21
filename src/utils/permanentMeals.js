@@ -33,7 +33,11 @@ export function getSettingForMember(mealSettings = [], memberId) {
 }
 
 export function getEnabledMealKeys(setting = {}) {
-  return MEAL_KEYS.filter((key) => Boolean(setting[key]));
+  const keys = [];
+  if (resolveBreakfastMode(setting) !== "off") keys.push("breakfast");
+  if (setting.lunch) keys.push("lunch");
+  if (setting.dinner) keys.push("dinner");
+  return keys;
 }
 
 export function countMealUnits(meal = {}) {
@@ -96,4 +100,46 @@ export function getAutoMealPreview({
     present,
     overridden,
   };
+}
+
+// --- Breakfast Mode Utilities ---
+
+export const BREAKFAST_MODES = { OFF: "off", HALF: "half", FULL: "full" };
+
+/**
+ * Resolves the breakfast mode from a meal setting document.
+ * Uses the `breakfastMode` field if valid, otherwise falls back to legacy `breakfast` boolean.
+ * @param {object} setting - A meal setting document
+ * @returns {"off" | "half" | "full"}
+ */
+export function resolveBreakfastMode(setting = {}) {
+  if (
+    setting.breakfastMode &&
+    ["off", "half", "full"].includes(setting.breakfastMode)
+  ) {
+    return setting.breakfastMode;
+  }
+  return setting.breakfast ? "half" : "off";
+}
+
+/**
+ * Returns the next breakfast mode in the cycle: off → half → full → off.
+ * Defaults to "half" for unknown input.
+ * @param {string} current - The current breakfast mode
+ * @returns {"off" | "half" | "full"}
+ */
+export function getNextBreakfastMode(current) {
+  const CYCLE = { off: "half", half: "full", full: "off" };
+  return CYCLE[current] || "half";
+}
+
+/**
+ * Maps a breakfast mode to its raw integer value for storage in meal documents.
+ * The raw value × 0.5 gives the actual meal units.
+ * @param {string} mode - The breakfast mode ("off", "half", or "full")
+ * @returns {number} 0, 1, or 2
+ */
+export function getBreakfastRawValue(mode) {
+  const RAW = { off: 0, half: 1, full: 2 };
+  return RAW[mode] ?? 0;
 }

@@ -30,7 +30,11 @@ import {
   MEAL_KEYS,
   getAutoMealPreview,
   getSettingForMember,
+  resolveBreakfastMode,
+  getNextBreakfastMode,
+  BREAKFAST_MODES,
 } from "../../utils/permanentMeals";
+import { BreakfastModeToggle } from "./BreakfastModeToggle";
 
 const mealMeta = {
   breakfast: {
@@ -85,6 +89,53 @@ export function PermanentMealManager({
     } catch (err) {
       console.error(err);
       toast.error("Permanent meal update failed");
+    } finally {
+      setSavingKey("");
+    }
+  };
+
+  const cycleBreakfastMode = async (member) => {
+    if (!isAdmin || !ownerId) return;
+    const setting = getSettingForMember(mealSettings, member.id);
+    const currentMode = resolveBreakfastMode(setting);
+    const nextMode = getNextBreakfastMode(currentMode);
+
+    setSavingKey(`${member.id}_breakfast`);
+    try {
+      await saveMealSettings(ownerId, member.id, {
+        breakfast: nextMode !== "off",
+        breakfastMode: nextMode,
+        lunch: Boolean(setting.lunch),
+        dinner: Boolean(setting.dinner),
+      }, userProfile);
+      toast.success(`${member.name} breakfast set to ${nextMode}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Permanent meal update failed");
+    } finally {
+      setSavingKey("");
+    }
+  };
+
+  const setAllBreakfast = async (mode) => {
+    if (!isAdmin || !ownerId) return;
+    setSavingKey(`bulk_breakfast_${mode}`);
+    try {
+      await Promise.all(
+        members.map((member) => {
+          const setting = getSettingForMember(mealSettings, member.id);
+          return saveMealSettings(ownerId, member.id, {
+            breakfastMode: mode,
+            breakfast: mode !== "off",
+            lunch: Boolean(setting.lunch),
+            dinner: Boolean(setting.dinner),
+          }, userProfile);
+        })
+      );
+      toast.success(`Breakfast ${mode} for all members`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Bulk permanent meal update failed");
     } finally {
       setSavingKey("");
     }
@@ -162,12 +213,18 @@ export function PermanentMealManager({
               return (
                 <div key={key} className="flex items-center gap-2 rounded-2xl theme-muted p-1.5">
                   <span className="pl-2 text-xs font-bold theme-muted-text">{meta.label}</span>
-                  <Button size="xs" variant="success" disabled={Boolean(savingKey)} onClick={() => setAllForMeal(key, true)}>
-                    All ON
-                  </Button>
-                  <Button size="xs" variant="danger" disabled={Boolean(savingKey)} onClick={() => setAllForMeal(key, false)}>
-                    All OFF
-                  </Button>
+                  {key === "breakfast" ? (
+                    <>
+                      <Button size="xs" variant="ghost" disabled={Boolean(savingKey)} onClick={() => setAllBreakfast("off")}>Off</Button>
+                      <Button size="xs" variant="success" disabled={Boolean(savingKey)} onClick={() => setAllBreakfast("half")}>Half</Button>
+                      <Button size="xs" variant="success" disabled={Boolean(savingKey)} onClick={() => setAllBreakfast("full")}>Full</Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button size="xs" variant="success" disabled={Boolean(savingKey)} onClick={() => setAllForMeal(key, true)}>All ON</Button>
+                      <Button size="xs" variant="danger" disabled={Boolean(savingKey)} onClick={() => setAllForMeal(key, false)}>All OFF</Button>
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -219,6 +276,20 @@ export function PermanentMealManager({
                   </td>
 
                   {MEAL_KEYS.map((key) => {
+                    if (key === "breakfast") {
+                      const mode = resolveBreakfastMode(setting);
+                      return (
+                        <td key={key} className="px-4 py-4 text-center">
+                          <BreakfastModeToggle
+                            mode={mode}
+                            disabled={!isAdmin || Boolean(savingKey)}
+                            memberName={member.name}
+                            onCycle={() => cycleBreakfastMode(member)}
+                          />
+                        </td>
+                      );
+                    }
+
                     const active = Boolean(setting[key]);
                     const Icon = active ? Check : X;
                     const meta = mealMeta[key];
