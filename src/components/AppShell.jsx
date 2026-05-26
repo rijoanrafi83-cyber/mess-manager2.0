@@ -51,8 +51,31 @@ import {
   recordSessionLogout,
   useSessionTracking,
 } from "../hooks/useSessionTracking";
+import {
+  addNotification,
+  ensureDailyPermanentMeals,
+} from "../services/firestoreService";
+import { calculateMonthlyBill } from "../utils/billing";
+import { getLocalDateKey } from "../utils/permanentMeals";
+import {
+  PERMISSIONS,
+  ROLE_LABELS,
+  ROLES,
+  hasPermission,
+} from "../utils/roles";
 
 import { DashboardPage } from "../pages/DashboardPage";
+import {
+  InstallCTA,
+  MobileBottomNav,
+  NotificationsCenter,
+  OfflineBanner,
+  OnboardingModal,
+  SyncIndicator,
+} from "./SaaSFeatures";
+import { SmartLogo } from "./brand/SmartLogo";
+import { ProfileAvatar } from "./profile/ProfileAvatar";
+import { ProfilePanel } from "./profile/ProfilePanel";
 
 const MembersPage = lazy(() => import("../pages/MembersPage").then(m => ({ default: m.MembersPage })));
 const MealsPage = lazy(() => import("../pages/MealsPage").then(m => ({ default: m.MealsPage })));
@@ -62,31 +85,6 @@ const ReportsPage = lazy(() => import("../pages/ReportsPage"));
 const SettingsPage = lazy(() => import("../pages/SettingsPage"));
 const AboutMessManagerPage = lazy(() => import("../pages/AboutMessManagerPage"));
 const ExtraBillsPanel = lazy(() => import("./extra-bills/ExtraBillsPanel").then(m => ({ default: m.ExtraBillsPanel })));
-
-import { SmartLogo } from "./brand/SmartLogo";
-import { ProfilePanel } from "./profile/ProfilePanel";
-import { ProfileAvatar } from "./profile/ProfileAvatar";
-import {
-  InstallCTA,
-  MobileBottomNav,
-  NotificationsCenter,
-  OfflineBanner,
-  OnboardingModal,
-  SyncIndicator,
-} from "./SaaSFeatures";
-
-import { calculateMonthlyBill } from "../utils/billing";
-import {
-  addNotification,
-  ensureDailyPermanentMeals,
-} from "../services/firestoreService";
-import { getLocalDateKey } from "../utils/permanentMeals";
-import {
-  PERMISSIONS,
-  ROLE_LABELS,
-  ROLES,
-  hasPermission,
-} from "../utils/roles";
 
 const NAV_ITEMS = [
   {

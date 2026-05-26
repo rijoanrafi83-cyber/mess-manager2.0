@@ -3,14 +3,14 @@ import { AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Plus, Edit2, Trash2, Receipt, RefreshCw } from "lucide-react";
 
+import { deleteExtraCost } from "../../services/firestoreService";
+import { formatCurrency } from "../../utils/billing";
+import { EXTRA_BILL_CATEGORIES, BILLING_MODES } from "../../utils/extraBillConstants";
 import { PageWrapper, Card, Button, Badge, EmptyState } from "../ui";
 import { MetricCard, SmartHero, SmartSection } from "../SmartUI";
 import { BillForm } from "./BillForm";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import { NextMonthPreview } from "./NextMonthPreview";
-import { deleteExtraCost } from "../../services/firestoreService";
-import { EXTRA_BILL_CATEGORIES, BILLING_MODES } from "../../utils/extraBillConstants";
-import { formatCurrency } from "../../utils/billing";
 
 const categoryLabel = (value) =>
   EXTRA_BILL_CATEGORIES.find((c) => c.value === value)?.label || "Other";

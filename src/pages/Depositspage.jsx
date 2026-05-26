@@ -2,6 +2,9 @@ import { useState, useMemo, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Wallet, Plus, Trash2, Edit2, TrendingUp, CheckCircle, ReceiptText } from "lucide-react";
+
+import { addDeposit, updateDeposit, deleteDeposit } from "../services/firestoreService";
+import { formatCurrency } from "../utils/billing";
 import {
   PageWrapper, Card, Button, Input, Select,
   Textarea, Modal, Badge, EmptyState, SearchInput, Table
@@ -15,8 +18,6 @@ import {
   SmartHero,
   SmartSection,
 } from "../components/SmartUI";
-import { addDeposit, updateDeposit, deleteDeposit } from "../services/firestoreService";
-import { formatCurrency } from "../utils/billing";
 
 const PAYMENT_METHODS = ["Cash", "bKash", "Nagad", "Rocket", "Bank Transfer", "Other"];
 

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Loader2, X, AlertCircle, CheckCircle, Info, AlertTriangle } from "lucide-react";
+import { Loader2, X, AlertCircle, CheckCircle, Info, AlertTriangle, Search } from "lucide-react";
 export function PageWrapper({ children, className = "" }) {
   return (
     <motion.div
@@ -265,7 +265,6 @@ export function Table({ columns, data, onRowClick, loading, emptyState }) {
     </div>
   );
 }
-import { Search } from "lucide-react";
 export function SearchInput({ value, onChange, placeholder = "Search...", className = "" }) {
   return (
     <div className={`relative ${className}`}>

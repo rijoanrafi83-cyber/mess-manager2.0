@@ -2,6 +2,11 @@ import { useState, useMemo, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { ShoppingCart, Plus, Trash2, Edit2, TrendingDown, Tag, ReceiptText, Layers3 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+import { useChartTheme } from "../hooks/useChartTheme";
+import { addBazaar, updateBazaar, deleteBazaar } from "../services/firestoreService";
+import { formatCurrency } from "../utils/billing";
 import {
   PageWrapper, Card, Button, Input, Select,
   Textarea, Modal, Badge, EmptyState, SearchInput, Table
@@ -14,10 +19,6 @@ import {
   SmartHero,
   SmartSection,
 } from "../components/SmartUI";
-import { addBazaar, updateBazaar, deleteBazaar } from "../services/firestoreService";
-import { formatCurrency } from "../utils/billing";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useChartTheme } from "../hooks/useChartTheme";
 
 const CATEGORIES = ["Grocery", "Vegetables", "Fish & Meat", "Spices", "Cooking Gas", "Utilities", "Cleaning", "Other"];
 

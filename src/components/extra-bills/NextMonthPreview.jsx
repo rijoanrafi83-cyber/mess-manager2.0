@@ -2,14 +2,14 @@ import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Calendar, XCircle } from "lucide-react";
 
-import { Button, Badge } from "../ui";
-import { SmartSection } from "../SmartUI";
 import {
   toggleExtraCostRecurring,
   carryForwardRecurringBills,
 } from "../../services/firestoreService";
-import { EXTRA_BILL_CATEGORIES, BILLING_MODES } from "../../utils/extraBillConstants";
 import { formatCurrency } from "../../utils/billing";
+import { EXTRA_BILL_CATEGORIES, BILLING_MODES } from "../../utils/extraBillConstants";
+import { Button, Badge } from "../ui";
+import { SmartSection } from "../SmartUI";
 
 const categoryLabel = (value) =>
   EXTRA_BILL_CATEGORIES.find((c) => c.value === value)?.label || "Other";
