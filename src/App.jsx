@@ -142,11 +142,6 @@ function AppWithTheme() {
       <BrowserRouter>
 
         <Routes>
-
-          {/* =====================================
-              AUTH ROUTES
-          ===================================== */}
-
           <Route
             path="/login"
             element={<LoginPage />}
@@ -188,13 +183,6 @@ function AppWithTheme() {
               <UnauthorizedPage />
             }
           />
-
-
-
-          {/* =====================================
-              MAIN APP
-          ===================================== */}
-
           <Route
             path="/*"
 

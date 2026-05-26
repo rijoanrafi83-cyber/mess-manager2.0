@@ -1365,11 +1365,6 @@ export default function ReportsPage({
           </ResponsiveContainer>
         </SmartSection>
       )}
-
-      {/* =====================================
-          EXTRA BILLS CATEGORY ANALYTICS
-      ===================================== */}
-
       {extraBillCategories.length > 0 && (
         <SmartSection
           className="mb-6"
@@ -1401,11 +1396,6 @@ export default function ReportsPage({
         ref={reportRef}
         className="space-y-6"
       >
-
-        {/* =====================================
-            STATS
-        ===================================== */}
-
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
 
           {stats.map(
@@ -1478,13 +1468,6 @@ export default function ReportsPage({
           )}
 
         </div>
-
-
-
-        {/* =====================================
-            SUMMARY CARDS
-        ===================================== */}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
           <Card>
@@ -1562,13 +1545,6 @@ export default function ReportsPage({
           </Card>
 
         </div>
-
-
-
-        {/* =====================================
-            MEMBER BILLS
-        ===================================== */}
-
         <Card noPad>
 
           <div className="p-6 border-b border-gray-100 dark:border-white/5">
@@ -1839,7 +1815,6 @@ export default function ReportsPage({
               </table>
 
             </div>
-            {/* Scroll hint gradient for mobile */}
             <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent sm:hidden" />
             </div>
 
@@ -1859,13 +1834,6 @@ export default function ReportsPage({
           )}
 
         </Card>
-
-
-
-        {/* =====================================
-            FORMULA
-        ===================================== */}
-
         <Card>
 
           <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">

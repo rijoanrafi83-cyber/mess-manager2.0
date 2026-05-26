@@ -102,15 +102,11 @@ export function getAutoMealPreview({
   };
 }
 
-// --- Breakfast Mode Utilities ---
-
 export const BREAKFAST_MODES = { OFF: "off", HALF: "half", FULL: "full" };
 
 /**
  * Resolves the breakfast mode from a meal setting document.
  * Uses the `breakfastMode` field if valid, otherwise falls back to legacy `breakfast` boolean.
- * @param {object} setting - A meal setting document
- * @returns {"off" | "half" | "full"}
  */
 export function resolveBreakfastMode(setting = {}) {
   if (
@@ -125,8 +121,6 @@ export function resolveBreakfastMode(setting = {}) {
 /**
  * Returns the next breakfast mode in the cycle: off → half → full → off.
  * Defaults to "half" for unknown input.
- * @param {string} current - The current breakfast mode
- * @returns {"off" | "half" | "full"}
  */
 export function getNextBreakfastMode(current) {
   const CYCLE = { off: "half", half: "full", full: "off" };
@@ -136,8 +130,6 @@ export function getNextBreakfastMode(current) {
 /**
  * Maps a breakfast mode to its raw integer value for storage in meal documents.
  * The raw value × 0.5 gives the actual meal units.
- * @param {string} mode - The breakfast mode ("off", "half", or "full")
- * @returns {number} 0, 1, or 2
  */
 export function getBreakfastRawValue(mode) {
   const RAW = { off: 0, half: 1, full: 2 };

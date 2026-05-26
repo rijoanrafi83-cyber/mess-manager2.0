@@ -104,7 +104,6 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
   const totalAll      = useMemo(() => bazaar.reduce((s, b) => s + Number(b.amount || 0), 0), [bazaar]);
   const averageExpense = bazaar.length ? totalAll / bazaar.length : 0;
 
-  // Category chart data
   const catChartData = useMemo(() => {
     const map = {};
     bazaar.forEach(b => {
@@ -197,7 +196,6 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
         <MetricCard label="Categories" value={catChartData.length} icon={Layers3} tone="green" caption="spend groups" />
       </div>
 
-      {/* Category chart */}
       {catChartData.length > 0 && (
         <SmartSection className="mb-6" title="Expense by Category" subtitle="Realtime category distribution">
           <ResponsiveContainer width="100%" height={160}>

@@ -24,7 +24,6 @@ export function ExtraBillsPanel({ extraCosts = [], members = [], ownerId, userPr
 
   const currency = "৳";
 
-  // Summary metrics
   const totalAmount = useMemo(
     () => extraCosts.reduce((sum, bill) => sum + Number(bill.totalAmount || bill.amount || 0), 0),
     [extraCosts]
@@ -35,7 +34,6 @@ export function ExtraBillsPanel({ extraCosts = [], members = [], ownerId, userPr
     [extraCosts]
   );
 
-  // Group by category
   const grouped = useMemo(() => {
     const map = {};
     extraCosts.forEach((bill) => {

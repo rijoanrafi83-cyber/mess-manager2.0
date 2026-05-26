@@ -39,18 +39,11 @@ const RELATED_COLLECTIONS = [
 
 const BATCH_LIMIT = 490;
 
-/**
- * Scan for orphaned documents (dry-run mode).
- *
- * @param {string} ownerId - The workspace owner's UID
- * @returns {Promise<Object>} Report with orphan counts and refs
- */
 export async function scanOrphanedDocuments(ownerId) {
   if (!ownerId) {
     throw new Error("ownerId is required for orphan scan.");
   }
 
-  // Step 1: Get all current member IDs for this workspace
   const membersSnap = await getDocs(
     query(col("members"), where("ownerId", "==", ownerId))
   );
@@ -59,7 +52,6 @@ export async function scanOrphanedDocuments(ownerId) {
     membersSnap.docs.map((doc) => doc.id)
   );
 
-  // Step 2: Scan each related collection for orphaned documents
   const results = {};
   let totalOrphans = 0;
 
@@ -112,13 +104,6 @@ export async function scanOrphanedDocuments(ownerId) {
   };
 }
 
-/**
- * Delete orphaned documents identified by a prior scan.
- *
- * @param {string} ownerId - The workspace owner's UID
- * @param {Object} report - The report object from scanOrphanedDocuments
- * @returns {Promise<Object>} Deletion result with counts
- */
 export async function deleteOrphanedDocuments(ownerId, report) {
   if (!ownerId) {
     throw new Error("ownerId is required for orphan cleanup.");
@@ -145,7 +130,6 @@ export async function deleteOrphanedDocuments(ownerId, report) {
     return { deleted: 0, message: "No orphans to delete." };
   }
 
-  // Collect all refs from the report
   const allRefs = [];
   for (const collectionName of RELATED_COLLECTIONS) {
     const collectionData = report.collections[collectionName];
@@ -154,7 +138,6 @@ export async function deleteOrphanedDocuments(ownerId, report) {
     }
   }
 
-  // Delete in batches
   let deleted = 0;
   for (let i = 0; i < allRefs.length; i += BATCH_LIMIT) {
     const chunk = allRefs.slice(i, i + BATCH_LIMIT);

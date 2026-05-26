@@ -168,7 +168,6 @@ export function AuthProvider({ children }) {
         authSequenceRef.current = sequence;
 
         try {
-          // No user
           if (!firebaseUser) {
             signingOutRef.current = false;
             setCurrentUser(null);
@@ -182,7 +181,6 @@ export function AuthProvider({ children }) {
           }
 
           setCurrentUser(firebaseUser);
-          // ADMIN PROFILE CHECK
           const adminRef = doc(
             db,
             "adminProfiles",
@@ -215,7 +213,6 @@ export function AuthProvider({ children }) {
             setStatus("authed");
             return;
           }
-          // MEMBER PROFILE CHECK
           const memberRef = doc(
             db,
             "memberAccess",
@@ -248,7 +245,6 @@ export function AuthProvider({ children }) {
             setStatus("authed");
             return;
           }
-          // NO PROFILE FOUND
           setUserProfile(null);
           setStatus("guest");
 
@@ -497,7 +493,6 @@ export function AuthProvider({ children }) {
           password
         );
 
-      // Create admin profile
       await setDoc(
         doc(db, "adminProfiles", cred.user.uid),
         {

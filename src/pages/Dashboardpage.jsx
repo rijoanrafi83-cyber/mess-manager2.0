@@ -515,21 +515,7 @@ export function DashboardPage({
           ))}
         </div>
       </SmartSection>
-
-
-
-
-
-      {/* =====================================================
-         CHARTS
-      ===================================================== */}
-
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-
-        {/* =========================================
-           MEAL TREND
-        ========================================= */}
-
         <SmartSection
           className="xl:col-span-2"
           title="Monthly Meal Momentum"
@@ -636,13 +622,6 @@ export function DashboardPage({
           </ResponsiveContainer>
 
         </SmartSection>
-
-
-
-        {/* =========================================
-           PIE CHART
-        ========================================= */}
-
         <SmartSection title="Expense Mix" subtitle="Bazaar spend by category">
 
           {pieData.length >
@@ -714,13 +693,6 @@ export function DashboardPage({
         </SmartSection>
 
       </div>
-
-
-
-      {/* =====================================================
-         MEMBER COMPARISON
-      ===================================================== */}
-
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
 
         <SmartSection className="xl:col-span-2" title="Member Meal Leaders" subtitle="Highest meal consumers this month">
@@ -797,13 +769,6 @@ export function DashboardPage({
           )}
 
         </SmartSection>
-
-
-
-        {/* =========================================
-           SIDE CARDS
-        ========================================= */}
-
         <div className="space-y-4">
 
           <Card>
@@ -973,13 +938,6 @@ export function DashboardPage({
         </div>
 
       </div>
-
-
-
-      {/* =====================================================
-         RECENT ACTIVITY
-      ===================================================== */}
-
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <SmartSection title="Live Activity Feed" subtitle="Latest deposits and bazaar activity">
           <ActivityTimeline items={activityItems} empty="No deposits or expenses have been recorded yet." />
@@ -995,11 +953,6 @@ export function DashboardPage({
             format={(value) => formatCurrency(value, currency)}
           />
         </SmartSection>
-
-        {/* =========================================
-           RECENT BAZAAR
-        ========================================= */}
-
         <Card noPad className="xl:col-span-1">
 
           <div className="p-6 pb-0">
@@ -1088,13 +1041,6 @@ export function DashboardPage({
           )}
 
         </Card>
-
-
-
-        {/* =========================================
-           RECENT DEPOSITS
-        ========================================= */}
-
         <Card noPad>
 
           <div className="p-6 pb-0">

@@ -2,13 +2,6 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { Spinner } from "../ui/primitives";
 
-/**
- * Wraps routes that require authentication.
- *
- * - While Firebase resolves the session: shows spinner (no flash to /login)
- * - If unauthenticated: redirects to /login, preserving intended destination
- * - If role not allowed: redirects to /unauthorized
- */
 export function ProtectedRoute({ children, allowedRoles }) {
   const { status, userProfile } = useAuth();
   const location = useLocation();

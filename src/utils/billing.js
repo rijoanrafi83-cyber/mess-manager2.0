@@ -118,8 +118,6 @@ export function calculateMonthlyBill(
       ] = count;
     }
   });
-  // HOST MEMBER এর সাথে ADD হবে
-
   guestMeals.forEach(
     (meal) => {
 
@@ -190,12 +188,9 @@ export function calculateMonthlyBill(
       (s, v) => s + v,
       0
     );
-  // EXTRA BILL SHARES (per-member calculation)
-
   const activeMembers = members.filter((m) => m.status !== "inactive");
   const activeMemberIds = activeMembers.map((m) => m.id);
 
-  // Compute per-member extra bill shares
   const extraShareMap = {};
   const extraBreakdownMap = {};
 

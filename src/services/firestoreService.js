@@ -281,8 +281,6 @@ export const deleteMember =
 
     const refsToDelete = [docRef("members", id)];
 
-    // Find related documents across collections.
-    // All related docs use `memberId` field to reference this member.
     if (ownerId) {
       const relatedCollections = [
         "meals",
@@ -306,7 +304,6 @@ export const deleteMember =
       }
     }
 
-    // Commit deletes in batches of 490
     const BATCH_LIMIT = 490;
     for (let i = 0; i < refsToDelete.length; i += BATCH_LIMIT) {
       const chunk = refsToDelete.slice(i, i + BATCH_LIMIT);
@@ -828,7 +825,6 @@ export const saveMealSettings = (
 
 ) => {
 
-  // Validate breakfastMode if provided
   if (data.breakfastMode !== undefined) {
     const validModes = ["off", "half", "full"];
     if (!validModes.includes(data.breakfastMode)) {
