@@ -213,12 +213,13 @@ export function ProfilePanel({
   useEffect(() => {
     if (!open) return;
 
+    let active = true;
     const nextPhotoURL =
       userProfile?.photoURL ||
       currentUser?.photoURL ||
       "";
 
-    setForm({
+    const nextForm = {
       fullName:
         userProfile?.fullName ||
         userProfile?.displayName ||
@@ -231,8 +232,17 @@ export function ProfilePanel({
       phone: userProfile?.phone || "",
       bio: userProfile?.bio || "",
       photoURL: nextPhotoURL,
+    };
+
+    queueMicrotask(() => {
+      if (!active) return;
+      setForm(nextForm);
+      setAvatarPreviewURL(nextPhotoURL);
     });
-    setAvatarPreviewURL(nextPhotoURL);
+
+    return () => {
+      active = false;
+    };
   }, [
     currentUser?.displayName,
     currentUser?.email,

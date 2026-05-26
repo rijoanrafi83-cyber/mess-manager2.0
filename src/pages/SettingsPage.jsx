@@ -583,6 +583,21 @@ export default function SettingsPage({
     email: "",
     phone: "",
   });
+  const formDataRef = useRef(formData);
+  const preferencesRef = useRef(preferences);
+  const sharedRoleLoginsRef = useRef(sharedRoleLogins);
+
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
+
+  useEffect(() => {
+    preferencesRef.current = preferences;
+  }, [preferences]);
+
+  useEffect(() => {
+    sharedRoleLoginsRef.current = sharedRoleLogins;
+  }, [sharedRoleLogins]);
 
   const selectedAccent =
     preferences.accentColor ||
@@ -884,9 +899,9 @@ export default function SettingsPage({
 
     const loadUserData = async () => {
       isHydrating.current = true;
-      let nextFormData = formData;
-      let savedPreferences = preferences;
-      let nextSharedRoleLogins = sharedRoleLogins;
+      let nextFormData = formDataRef.current;
+      let savedPreferences = preferencesRef.current;
+      let nextSharedRoleLogins = sharedRoleLoginsRef.current;
 
       try {
         if (!currentUser) {

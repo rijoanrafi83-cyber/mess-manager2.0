@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { Modal, Button, Input, Select } from "../ui";
@@ -17,7 +17,14 @@ const today = () => new Date().toISOString().split("T")[0];
 
 export function BillForm({ open, onClose, ownerId, members = [], editBill = null, userProfile }) {
   const isEdit = Boolean(editBill?.id);
-  const activeMembers = members.filter((m) => m.status !== "inactive");
+  const activeMembers = useMemo(
+    () => members.filter((m) => m.status !== "inactive"),
+    [members]
+  );
+  const activeMemberIds = useMemo(
+    () => activeMembers.map((m) => m.id),
+    [activeMembers]
+  );
 
   const [form, setForm] = useState({
     title: "",
@@ -31,33 +38,40 @@ export function BillForm({ open, onClose, ownerId, members = [], editBill = null
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // Initialize form when opening or switching between create/edit
   useEffect(() => {
     if (!open) return;
 
-    if (editBill) {
-      setForm({
+    let active = true;
+    const nextForm = editBill
+      ? {
         title: editBill.title || "",
         billingMode: editBill.billingMode || BILLING_MODES.TOTAL_SHARED,
         amount: String(editBill.amount || ""),
         category: editBill.category || "other",
         isRecurring: editBill.isRecurring || false,
-        selectedMemberIds: editBill.selectedMemberIds || activeMembers.map((m) => m.id),
+        selectedMemberIds: editBill.selectedMemberIds || activeMemberIds,
         date: editBill.date || today(),
-      });
-    } else {
-      setForm({
+      }
+      : {
         title: "",
         billingMode: BILLING_MODES.TOTAL_SHARED,
         amount: "",
         category: "other",
         isRecurring: false,
-        selectedMemberIds: activeMembers.map((m) => m.id),
+        selectedMemberIds: activeMemberIds,
         date: today(),
-      });
-    }
-    setErrors({});
-  }, [open, editBill, activeMembers.length]);
+      };
+
+    queueMicrotask(() => {
+      if (!active) return;
+      setForm(nextForm);
+      setErrors({});
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [open, editBill, activeMemberIds]);
 
   const set = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -69,7 +83,6 @@ export function BillForm({ open, onClose, ownerId, members = [], editBill = null
     set("amount", "");
   };
 
-  // Real-time calculation preview
   const { memberShare, totalAmount } = computeBillAmounts(
     form.billingMode,
     Number(form.amount) || 0,

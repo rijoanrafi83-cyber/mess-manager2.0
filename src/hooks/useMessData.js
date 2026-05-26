@@ -83,9 +83,15 @@ export function useMessData(
 
     if (!ownerId) {
 
-      setLoading(false);
+      let active = true;
 
-      return;
+      queueMicrotask(() => {
+        if (active) setLoading(false);
+      });
+
+      return () => {
+        active = false;
+      };
     }
 
 

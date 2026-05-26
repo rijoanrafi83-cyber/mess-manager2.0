@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -34,7 +35,7 @@ export function AuthProvider({ children }) {
   const authSequenceRef = useRef(0);
   const signingOutRef = useRef(false);
 
-  const buildAdminProfile = (firebaseUser, adminData = {}, userData = {}) => ({
+  const buildAdminProfile = useCallback((firebaseUser, adminData = {}, userData = {}) => ({
     uid: firebaseUser.uid,
     authUid: firebaseUser.uid,
     email:
@@ -87,9 +88,9 @@ export function AuthProvider({ children }) {
       adminData.status ||
       "active",
     sessionId: firebaseUser.uid,
-  });
+  }), []);
 
-  const hydrateAdminProfile = async (
+  const hydrateAdminProfile = useCallback(async (
     firebaseUser,
     adminSnap,
     userSnap
@@ -135,7 +136,7 @@ export function AuthProvider({ children }) {
     // tabs are open and avoids unnecessary Firestore writes on every page load.
 
     return profile;
-  };
+  }, [buildAdminProfile]);
 
   const buildManagedProfile = (firebaseUser, data) => ({
     uid: firebaseUser.uid,
@@ -265,7 +266,7 @@ export function AuthProvider({ children }) {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [hydrateAdminProfile]);
 
   useEffect(() => {
     if (
@@ -301,6 +302,7 @@ export function AuthProvider({ children }) {
 
     return () => unsubscribe();
   }, [
+    buildAdminProfile,
     currentUser,
     status,
     userProfile?.uid,
