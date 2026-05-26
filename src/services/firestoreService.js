@@ -39,13 +39,6 @@ import {
   resolveBreakfastMode,
   getBreakfastRawValue,
 } from "../utils/permanentMeals";
-
-
-
-/* =========================================================
-   GENERIC HELPERS
-========================================================= */
-
 const col = (name) =>
   collection(db, name);
 
@@ -211,13 +204,6 @@ export const subscribeCollection = (
     }
   );
 };
-
-
-
-/* =========================================================
-   MEMBERS
-========================================================= */
-
 export const addMember = (
   ownerId,
   data,
@@ -347,13 +333,6 @@ export const deleteMember =
       },
     });
   };
-
-
-
-/* =========================================================
-   MEALS
-========================================================= */
-
 export const addMeal = (
   ownerId,
   data,
@@ -726,13 +705,6 @@ export const ensureDailyPermanentMeals =
 
     return writes;
   };
-
-
-
-/* =========================================================
-   GUEST MEALS
-========================================================= */
-
 export const addGuestMeal = (
   ownerId,
   data,
@@ -845,13 +817,6 @@ export const deleteGuestMeal = (
       },
     });
   });
-
-
-
-/* =========================================================
-   PERMANENT MEAL SETTINGS
-========================================================= */
-
 export const saveMealSettings = (
 
   ownerId,
@@ -940,13 +905,6 @@ export const subscribeMealSettings = (
     }
   );
 };
-
-
-
-/* =========================================================
-   BAZAAR
-========================================================= */
-
 export const addBazaar =
   async (
 
@@ -1059,13 +1017,6 @@ export const deleteBazaar = (
       },
     });
   });
-
-
-
-/* =========================================================
-   DEPOSITS
-========================================================= */
-
 export const addDeposit = (
   ownerId,
   data,
@@ -1155,13 +1106,6 @@ export const deleteDeposit = (
       },
     });
   });
-
-
-
-/* =========================================================
-   EXTRA COSTS
-========================================================= */
-
 export const addExtraCost = (
   ownerId,
   data,
@@ -1319,13 +1263,6 @@ export const carryForwardRecurringBills = async (
 
   return newRefs;
 };
-
-
-
-/* =========================================================
-   NOTICES
-========================================================= */
-
 export const addNotice = (
   ownerId,
   data
@@ -1350,13 +1287,6 @@ export const deleteNotice = (
   deleteDoc(
     docRef("notices", id)
   );
-
-
-
-/* =========================================================
-   NOTIFICATIONS
-========================================================= */
-
 export const addNotification = (
 
   ownerId,
@@ -1414,7 +1344,7 @@ export const clearNotifications =
   async (ownerId) => {
     if (!ownerId) return;
 
-    let deleted = 0;
+    let deleted;
 
     do {
       const q = ownerQuery(
@@ -1477,13 +1407,6 @@ export const markAllNotificationsRead =
 
     await batch.commit();
   };
-
-
-
-/* =========================================================
-   SETTINGS
-========================================================= */
-
 export const getSettings =
   async (ownerId) => {
 
@@ -1563,11 +1486,6 @@ export const subscribeSettings = (
       );
     }
   );
-
-/* =========================================================
-   SESSION ACTIVITY
-========================================================= */
-
 export const upsertSessionActivity =
   async (ownerId, userId, data = {}) => {
     if (!ownerId || !userId) return null;
@@ -1649,13 +1567,6 @@ export const endSessionActivity =
       actor,
     });
   };
-
-
-
-/* =========================================================
-   MONTHLY REPORTS
-========================================================= */
-
 export const saveMonthlyReport = (
 
   ownerId,

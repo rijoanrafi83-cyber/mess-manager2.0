@@ -73,13 +73,6 @@ const defaultForm = {
       .toISOString()
       .split("T")[0],
 };
-
-
-
-/* =========================================================
-   MEMBER FORM
-========================================================= */
-
 function MemberForm({
   initial = defaultForm,
   onSubmit,
@@ -248,13 +241,6 @@ function MemberForm({
     </form>
   );
 }
-
-
-
-/* =========================================================
-   MEMBER PROFILE MODAL
-========================================================= */
-
 function MemberProfileModal({
   member,
   onClose,
@@ -382,10 +368,6 @@ function MemberProfileModal({
 
         </div>
 
-
-
-        {/* BILL SUMMARY */}
-
         <div className="p-4 rounded-xl bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20">
 
           <p className="text-xs font-semibold text-violet-700 dark:text-violet-400 uppercase tracking-wide mb-3">
@@ -473,13 +455,6 @@ function MemberProfileModal({
     </Modal>
   );
 }
-
-
-
-/* =========================================================
-   MAIN PAGE
-========================================================= */
-
 export function MembersPage({
   members = [],
   ownerId,
@@ -954,10 +929,6 @@ export function MembersPage({
         </SmartSection>
       )}
 
-
-
-      {/* FILTERS */}
-
       <FilterSurface>
 
         <SearchInput
@@ -996,10 +967,6 @@ export function MembersPage({
         </Select>
 
       </FilterSurface>
-
-
-
-      {/* TABLE */}
 
       <Card noPad>
 
@@ -1042,10 +1009,6 @@ export function MembersPage({
             </div>
           }
         />
-
-
-
-        {/* PAGINATION */}
 
         {totalPages > 1 && (
 
@@ -1142,10 +1105,6 @@ export function MembersPage({
 
       </Card>
 
-
-
-      {/* ADD MODAL */}
-
       <AnimatePresence>
 
         {showAddModal && canManageUsers && (
@@ -1183,10 +1142,6 @@ export function MembersPage({
 
       </AnimatePresence>
 
-
-
-      {/* EDIT MODAL */}
-
       <AnimatePresence>
 
         {editMember && canManageUsers && (
@@ -1220,10 +1175,6 @@ export function MembersPage({
 
       </AnimatePresence>
 
-
-
-      {/* PROFILE MODAL */}
-
       <AnimatePresence>
 
         {viewMember && (
@@ -1240,10 +1191,6 @@ export function MembersPage({
         )}
 
       </AnimatePresence>
-
-
-
-      {/* DELETE CONFIRM */}
 
       <AnimatePresence>
 

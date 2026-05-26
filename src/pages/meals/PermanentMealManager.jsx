@@ -1,15 +1,3 @@
-/**
- * PermanentMealManager
- *
- * Self-contained component for managing automatic daily meal settings.
- * Extracted from MealsPage to reduce file complexity.
- *
- * Handles:
- * - Per-member meal toggle (breakfast/lunch/dinner)
- * - Bulk enable/disable for all members
- * - Visual status display with auto-meal preview
- */
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -32,7 +20,6 @@ import {
   getSettingForMember,
   resolveBreakfastMode,
   getNextBreakfastMode,
-  BREAKFAST_MODES,
 } from "../../utils/permanentMeals";
 import { BreakfastModeToggle } from "./BreakfastModeToggle";
 

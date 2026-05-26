@@ -1,10 +1,3 @@
-/**
- * ExtraBillsPanel
- *
- * Main panel for viewing, creating, editing, and deleting extra bills.
- * Groups bills by category, shows billing mode badges, and handles CRUD.
- */
-
 import { useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -86,8 +79,6 @@ export function ExtraBillsPanel({ extraCosts = [], members = [], ownerId, userPr
           </Button>
         ) : null}
       />
-
-      {/* Category summary cards */}
       {grouped.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 mb-6">
           {grouped.map(([cat, bills]) => (
@@ -105,8 +96,6 @@ export function ExtraBillsPanel({ extraCosts = [], members = [], ownerId, userPr
           ))}
         </div>
       )}
-
-      {/* Recurring bills preview */}
       {canManage && recurringCount > 0 && (
         <NextMonthPreview
           extraCosts={extraCosts}
@@ -115,8 +104,6 @@ export function ExtraBillsPanel({ extraCosts = [], members = [], ownerId, userPr
           members={members}
         />
       )}
-
-      {/* Bills list grouped by category */}
       {grouped.length > 0 ? (
         <div className="space-y-4">
           {grouped.map(([cat, bills]) => (
@@ -186,8 +173,6 @@ export function ExtraBillsPanel({ extraCosts = [], members = [], ownerId, userPr
           />
         </Card>
       )}
-
-      {/* Modals */}
       <AnimatePresence>
         {showAdd && (
           <BillForm

@@ -1,4 +1,4 @@
-export function getInitials(name = "User") {
+function getInitials(name = "User") {
   return String(name || "User")
     .trim()
     .split(/\s+/)

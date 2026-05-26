@@ -190,8 +190,6 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
           </Button>
         ) : null}
       />
-
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         <MetricCard label="Total Expenses" value={formatCurrency(totalAll)} icon={TrendingDown} tone="red" caption="all-time ledger" />
         <MetricCard label="This Filter" value={formatCurrency(totalFiltered)} icon={ShoppingCart} tone="orange" caption="visible records" />
@@ -223,8 +221,6 @@ export function BazaarPage({ bazaar = [], ownerId, userProfile }) {
           </ResponsiveContainer>
         </SmartSection>
       )}
-
-      {/* Filters */}
       <FilterSurface>
         <SearchInput value={search} onChange={setSearch} placeholder="Search expenses..." className="flex-1" />
         <Select value={filterCat} onChange={e => setFilterCat(e.target.value)} wrapperClass="sm:w-44">

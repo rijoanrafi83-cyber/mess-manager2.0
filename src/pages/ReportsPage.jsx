@@ -377,110 +377,6 @@ const getPdfSafeBackgroundColor = (
 
 
 
-const applyPdfSafeInlineColors = (
-  clonedReport
-) => {
-
-  const elements = [
-    clonedReport,
-    ...clonedReport.querySelectorAll(
-      "*"
-    ),
-  ];
-
-  elements.forEach(
-    (element) => {
-
-      const className =
-        typeof element.className ===
-        "string"
-          ? element.className
-          : "";
-
-      const tagName =
-        element.tagName;
-
-      const color =
-        getPdfSafeTextColor(
-          className
-        );
-
-      const backgroundColor =
-        getPdfSafeBackgroundColor(
-          className,
-          tagName
-        );
-
-      element.style.setProperty(
-        "color",
-        color,
-        "important"
-      );
-
-      element.style.setProperty(
-        "background-color",
-        backgroundColor,
-        "important"
-      );
-
-      [
-        "border-color",
-        "border-top-color",
-        "border-right-color",
-        "border-bottom-color",
-        "border-left-color",
-        "outline-color",
-        "text-decoration-color",
-        "-webkit-text-stroke-color",
-        "caret-color",
-      ].forEach((property) => {
-
-        element.style.setProperty(
-          property,
-          "#e5e7eb",
-          "important"
-        );
-      });
-
-      element.style.setProperty(
-        "box-shadow",
-        "none",
-        "important"
-      );
-
-      if (
-        element.namespaceURI ===
-        "http://www.w3.org/2000/svg"
-      ) {
-
-        element.style.setProperty(
-          "stroke",
-          color,
-          "important"
-        );
-
-        element.setAttribute(
-          "stroke",
-          color
-        );
-
-        if (
-          element.getAttribute(
-            "fill"
-          ) !== "none"
-        ) {
-
-          element.style.setProperty(
-            "fill",
-            color,
-            "important"
-          );
-        }
-      }
-    }
-  );
-};
-
 const waitForPaint = () =>
   new Promise((resolve) => {
     requestAnimationFrame(() => {
@@ -684,13 +580,6 @@ const createPdfExportClone = (
     clone,
   };
 };
-
-
-
-/* =========================================================
-   MEMBER PDF EXPORT
-========================================================= */
-
 async function exportMemberPDF(
   member,
   currency
@@ -763,13 +652,6 @@ async function exportMemberPDF(
     `${member.name}-report.pdf`
   );
 }
-
-
-
-/* =========================================================
-   MAIN PAGE
-========================================================= */
-
 export default function ReportsPage({
 
   billData = {},
@@ -831,13 +713,6 @@ export default function ReportsPage({
     mealRate = 0,
 
   } = billData;
-
-
-
-  /* =====================================================
-     CSV EXPORT
-  ===================================================== */
-
   const exportCSV = () => {
 
     try {
@@ -940,13 +815,6 @@ export default function ReportsPage({
       );
     }
   };
-
-
-
-  /* =====================================================
-     FULL PDF EXPORT
-  ===================================================== */
-
   const exportPDF =
     async () => {
       let exportWrapper = null;
@@ -1206,13 +1074,6 @@ export default function ReportsPage({
         exportWrapper?.remove();
       }
     };
-
-
-
-  /* =====================================================
-     PRINT
-  ===================================================== */
-
   const handlePrint = () => {
 
     const printContent =
@@ -1280,13 +1141,6 @@ export default function ReportsPage({
 
     WinPrint.close();
   };
-
-
-
-  /* =====================================================
-     SUMMARY
-  ===================================================== */
-
   const settledMembers =
     memberBills.filter(
       (m) => m.due <= 0

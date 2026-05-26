@@ -1,10 +1,3 @@
-/**
- * DeleteConfirmModal
- *
- * Enhanced confirmation modal for deleting extra bills.
- * Shows additional warning for recurring bills about stopping carry-forwards.
- */
-
 import { Modal, Button } from "../ui";
 import { AlertCircle } from "lucide-react";
 

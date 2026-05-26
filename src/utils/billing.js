@@ -1,19 +1,8 @@
-// =========================================================
-// MEAL WEIGHTS
-// =========================================================
-
 const MEAL_WEIGHT = {
   breakfast: 0.5,
   lunch: 1,
   dinner: 1,
 };
-
-
-
-// =========================================================
-// SINGLE MEAL COUNT
-// =========================================================
-
 export function calculateMealCount(
   meal
 ) {
@@ -36,13 +25,6 @@ export function calculateMealCount(
       MEAL_WEIGHT.dinner
   );
 }
-
-
-
-// =========================================================
-// GUEST MEAL COUNT
-// =========================================================
-
 export function calculateGuestMealCount(
   meal
 ) {
@@ -65,13 +47,6 @@ export function calculateGuestMealCount(
       MEAL_WEIGHT.dinner
   );
 }
-
-
-
-// =========================================================
-// MONTHLY BILL CALCULATION
-// =========================================================
-
 export function calculateMonthlyBill(
 
   members = [],
@@ -89,11 +64,6 @@ export function calculateMonthlyBill(
   extraCosts = []
 ) {
   void mealSettings;
-
-  // =====================================================
-  // EXPENSES
-  // =====================================================
-
   const totalBazaar =
     bazaar.reduce(
       (s, b) =>
@@ -113,11 +83,6 @@ export function calculateMonthlyBill(
   // Meal rate is based on bazaar only — extra bills are charged
   // per-member based on their inclusion in selectedMemberIds.
   const grandExpense = totalBazaar;
-
-  // =====================================================
-  // MAPS
-  // =====================================================
-
   const mealMap = {};
 
   const depositMap = {};
@@ -129,11 +94,6 @@ export function calculateMonthlyBill(
     depositMap[m.id] = 0;
 
   });
-
-  // =====================================================
-  // NORMAL MEALS
-  // =====================================================
-
   meals.forEach((meal) => {
 
     const count =
@@ -158,11 +118,7 @@ export function calculateMonthlyBill(
       ] = count;
     }
   });
-
-  // =====================================================
-  // GUEST MEALS
   // HOST MEMBER এর সাথে ADD হবে
-  // =====================================================
 
   guestMeals.forEach(
     (meal) => {
@@ -190,11 +146,6 @@ export function calculateMonthlyBill(
       }
     }
   );
-
-  // =====================================================
-  // DEPOSITS
-  // =====================================================
-
   deposits.forEach((d) => {
 
     if (
@@ -218,11 +169,6 @@ export function calculateMonthlyBill(
       );
     }
   });
-
-  // =====================================================
-  // TOTALS
-  // =====================================================
-
   const totalMeals =
     Object.values(
       mealMap
@@ -244,10 +190,7 @@ export function calculateMonthlyBill(
       (s, v) => s + v,
       0
     );
-
-  // =====================================================
   // EXTRA BILL SHARES (per-member calculation)
-  // =====================================================
 
   const activeMembers = members.filter((m) => m.status !== "inactive");
   const activeMemberIds = activeMembers.map((m) => m.id);
@@ -296,11 +239,6 @@ export function calculateMonthlyBill(
       }
     });
   });
-
-  // =====================================================
-  // MEMBER BILLS
-  // =====================================================
-
   const memberBills =
     members.map((m) => {
 
@@ -350,11 +288,6 @@ export function calculateMonthlyBill(
         mealRate,
       };
     });
-
-  // =====================================================
-  // TOTAL DUE
-  // =====================================================
-
   const totalDue =
     memberBills.reduce(
       (s, mb) =>
@@ -365,11 +298,6 @@ export function calculateMonthlyBill(
         ),
       0
     );
-
-  // =====================================================
-  // RETURN
-  // =====================================================
-
   return {
 
     memberBills,
@@ -399,13 +327,6 @@ export function calculateMonthlyBill(
       ),
   };
 }
-
-
-
-// =========================================================
-// FORMAT CURRENCY
-// =========================================================
-
 export function formatCurrency(
 
   amount,
@@ -431,13 +352,6 @@ export function formatCurrency(
     }
   )}`;
 }
-
-
-
-// =========================================================
-// MEAL RATE COLOR
-// =========================================================
-
 export function getMealRateColor(
   rate
 ) {
@@ -452,13 +366,6 @@ export function getMealRateColor(
 
   return "text-red-500";
 }
-
-
-
-// =========================================================
-// GROUP BAZAAR BY CATEGORY
-// =========================================================
-
 export function groupBazaarByCategory(
   bazaar = []
 ) {
@@ -482,13 +389,6 @@ export function groupBazaarByCategory(
     {}
   );
 }
-
-
-
-// =========================================================
-// MEAL TREND
-// =========================================================
-
 export function getMealTrend(
 
   meals = [],

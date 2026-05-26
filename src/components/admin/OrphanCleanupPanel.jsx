@@ -1,18 +1,3 @@
-/**
- * OrphanCleanupPanel
- *
- * Admin-only utility component for detecting and removing orphaned
- * documents (meals, deposits, etc.) that reference deleted members.
- *
- * Usage: Render inside SettingsPage or any admin-only view.
- *
- * Flow:
- *   1. Admin clicks "Scan" → dry-run shows orphan counts
- *   2. Admin reviews the report
- *   3. Admin clicks "Delete Orphans" → confirmed cleanup
- *   4. Panel shows success and disables re-execution
- */
-
 import { useState } from "react";
 import {
   AlertCircle,
@@ -97,24 +82,18 @@ export function OrphanCleanupPanel({ ownerId }) {
         no longer exist. This can happen if members were deleted before the
         cascade-delete fix was applied.
       </p>
-
-      {/* Error display */}
       {error && (
         <div className="flex items-start gap-3 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-500">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
-
-      {/* Success display */}
       {result && (
         <div className="flex items-start gap-3 rounded-2xl border border-green-500/25 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-500">
           <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
           <span>{result.message}</span>
         </div>
       )}
-
-      {/* Scan results */}
       {report && report.totalOrphans > 0 && (
         <div className="rounded-2xl border theme-muted p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -145,8 +124,6 @@ export function OrphanCleanupPanel({ ownerId }) {
               </div>
             ))}
           </div>
-
-          {/* Sample orphans preview */}
           {Object.entries(report.collections)
             .filter(([, data]) => data.samples.length > 0)
             .slice(0, 2)
@@ -170,8 +147,6 @@ export function OrphanCleanupPanel({ ownerId }) {
           <span>No orphaned records found. Your database is clean.</span>
         </div>
       )}
-
-      {/* Action buttons */}
       <div className="flex gap-3">
         <button
           type="button"

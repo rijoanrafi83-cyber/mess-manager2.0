@@ -4,7 +4,7 @@ import {
   useCallback
 } from "react";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 
 import toast from "react-hot-toast";
 
@@ -49,27 +49,17 @@ import {
   updateMeal,
   deleteMealWithAutoSkip,
   addGuestMeal,
-  deleteGuestMeal,
-  saveMealSettings
+  deleteGuestMeal
 } from "../services/firestoreService";
 
 import { calculateMealCount } from "../utils/billing";
 import {
-  MEAL_KEYS,
-  getAutoMealPreview,
   getTodayAutoMealStats,
   isAutoPermanentMeal,
   getSettingForMember
 } from "../utils/permanentMeals";
 
 import { PermanentMealManager } from "./meals/PermanentMealManager";
-
-
-
-/* =========================================================
-   MEAL ENTRY FORM
-========================================================= */
-
 function MealEntryForm({
   members,
   ownerId,
@@ -305,13 +295,6 @@ function MealEntryForm({
     </form>
   );
 }
-
-
-
-/* =========================================================
-   GUEST MEAL FORM
-========================================================= */
-
 function GuestMealForm({
   members,
   ownerId,
@@ -553,14 +536,6 @@ function GuestMealForm({
     </form>
   );
 }
-
-
-
-
-/* =========================================================
-   MAIN PAGE
-========================================================= */
-
 export function MealsPage({
   members = [],
   meals = [],
@@ -1117,10 +1092,6 @@ export function MealsPage({
         <MetricCard label="Recurring Plans" value={activeMealSettings} caption="automatic daily meals" icon={CalendarDays} tone="green" />
       </div>
 
-
-
-      {/* FILTERS */}
-
       <FilterSurface>
 
         <SearchInput
@@ -1220,10 +1191,6 @@ export function MealsPage({
         </SmartSection>
       </div>
 
-
-
-      {/* PERMANENT MEAL SYSTEM */}
-
       <PermanentMealManager
         members={members}
         meals={meals}
@@ -1233,8 +1200,6 @@ export function MealsPage({
         isAdmin={isAdmin}
         stats={permanentStats}
       />
-
-      {/* TABLE */}
 
       <Card noPad>
 
@@ -1281,10 +1246,6 @@ export function MealsPage({
         />
 
       </Card>
-
-
-
-      {/* MODALS */}
 
       <AnimatePresence>
 

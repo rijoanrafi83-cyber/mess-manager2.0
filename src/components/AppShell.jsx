@@ -42,7 +42,7 @@ import {
   Monitor,
 } from "lucide-react";
 
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { useTheme } from "../context/ThemeContext";
 import { useMessData } from "../hooks/useMessData";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
@@ -52,10 +52,8 @@ import {
   useSessionTracking,
 } from "../hooks/useSessionTracking";
 
-// Eager: landing page loads immediately
 import { DashboardPage } from "../pages/DashboardPage";
 
-// Lazy: loaded on-demand when user navigates to these routes
 const MembersPage = lazy(() => import("../pages/MembersPage").then(m => ({ default: m.MembersPage })));
 const MealsPage = lazy(() => import("../pages/MealsPage").then(m => ({ default: m.MealsPage })));
 const BazaarPage = lazy(() => import("../pages/BazaarPage").then(m => ({ default: m.BazaarPage })));
@@ -276,11 +274,6 @@ export function AppShell() {
   ] = useState(
     getLocalDateKey()
   );
-
-  /* =========================================================
-     DATA
-  ========================================================= */
-
   const {
     members,
     meals,
@@ -365,11 +358,6 @@ export function AppShell() {
     bazaar: visibleBazaar,
     extraCosts: visibleExtraCosts,
   } = visibleData;
-
-  /* =========================================================
-     BILL CALCULATION
-  ========================================================= */
-
   const billData =
     useMemo(() => calculateMonthlyBill(
       visibleMembers,
@@ -443,11 +431,6 @@ export function AppShell() {
     currentDay,
     userProfile?.role,
   ]);
-
-  /* =========================================================
-     NAVIGATION FILTER
-  ========================================================= */
-
   const allowedNav =
     useMemo(() => NAV_ITEMS.filter((item) =>
       item.roles.includes(
@@ -455,11 +438,6 @@ export function AppShell() {
           "member"
       )
     ), [userProfile?.role]);
-
-  /* =========================================================
-     CLOSE MOBILE DRAWER ON ROUTE CHANGE
-  ========================================================= */
-
   useEffect(() => {
     queueMicrotask(() => {
       setMobileOpen(false);
@@ -532,11 +510,6 @@ export function AppShell() {
     userProfile?.ownerId,
     userProfile?.role,
   ]);
-
-  /* =========================================================
-     LOGOUT
-  ========================================================= */
-
   const handleLogout =
     async () => {
       if (loggingOut) {
@@ -580,17 +553,10 @@ export function AppShell() {
 
     setThemeMode(nextMode);
   };
-
-  /* =========================================================
-     SIDEBAR
-  ========================================================= */
-
   const renderSidebarContent = (
     isMobile = false
   ) => (
     <div className="flex flex-col h-full">
-
-      {/* LOGO */}
 
       <div className="px-4 py-5">
         <button
@@ -613,8 +579,6 @@ export function AppShell() {
           />
         </button>
       </div>
-
-      {/* USER */}
 
       <div
         className={`mx-3 mb-4 p-3 rounded-2xl theme-muted border ${
@@ -660,8 +624,6 @@ export function AppShell() {
           )}
         </AnimatePresence>
       </div>
-
-      {/* NAVIGATION */}
 
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
 
@@ -729,8 +691,6 @@ export function AppShell() {
         )}
       </nav>
 
-      {/* BOTTOM */}
-
       <div className="p-3 border-t space-y-2">
 
         <button
@@ -787,11 +747,6 @@ export function AppShell() {
       </div>
     </div>
   );
-
-  /* =========================================================
-     LOADING
-  ========================================================= */
-
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center theme-app">
@@ -810,8 +765,6 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen theme-app overflow-hidden">
-
-      {/* TOASTER */}
 
       <Toaster
         key={themeId}
@@ -845,8 +798,6 @@ export function AppShell() {
         onClose={closeOnboarding}
       />
 
-      {/* DESKTOP SIDEBAR */}
-
       <motion.aside
         animate={{
           width: collapsed
@@ -859,8 +810,6 @@ export function AppShell() {
         className="hidden md:flex flex-col flex-shrink-0 theme-sidebar border-r relative"
       >
         {renderSidebarContent()}
-
-        {/* COLLAPSE BUTTON */}
 
         <button
           onClick={() =>
@@ -886,15 +835,9 @@ export function AppShell() {
         </button>
       </motion.aside>
 
-      {/* MAIN */}
-
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* TOPBAR */}
-
         <header className="flex items-center gap-3 px-4 py-3 theme-topbar border-b flex-shrink-0 sm:gap-4 sm:px-6 sm:py-4">
-
-          {/* MOBILE MENU */}
 
           <button
             type="button"
@@ -930,8 +873,6 @@ export function AppShell() {
             loading={loading}
           />
 
-          {/* NOTIFICATION */}
-
           <NotificationsCenter
             ownerId={userProfile?.ownerId}
             notifications={notifications}
@@ -945,8 +886,6 @@ export function AppShell() {
               setShowNotif(false)
             }
           />
-
-          {/* PROFILE */}
 
           <button
             type="button"
@@ -994,8 +933,6 @@ export function AppShell() {
           settings={settings}
         />
 
-        {/* MOBILE SIDEBAR */}
-
         <MobileDrawer
           open={mobileOpen}
           onClose={() =>
@@ -1004,8 +941,6 @@ export function AppShell() {
         >
           {renderSidebarContent(true)}
         </MobileDrawer>
-
-        {/* ROUTES */}
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
 

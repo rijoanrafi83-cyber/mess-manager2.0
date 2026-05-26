@@ -133,11 +133,6 @@ export function useMessData(
 
 
     const unsubs = [
-
-      /* =========================================
-         MEMBERS
-      ========================================= */
-
       isPersonalMember
         ? subscribeCollection(
             "members",
@@ -150,13 +145,6 @@ export function useMessData(
             ownerId,
             wrap(setMembers)
           ),
-
-
-
-      /* =========================================
-         MEALS
-      ========================================= */
-
       isPersonalMember
         ? subscribeCollection(
             "meals",
@@ -169,13 +157,6 @@ export function useMessData(
             ownerId,
             wrap(setMeals)
           ),
-
-
-
-      /* =========================================
-         GUEST MEALS
-      ========================================= */
-
       isPersonalMember
         ? empty(setGuestMeals)
         : subscribeCollection(
@@ -183,13 +164,6 @@ export function useMessData(
             ownerId,
             wrap(setGuestMeals)
           ),
-
-
-
-      /* =========================================
-         PERMANENT MEAL SETTINGS
-      ========================================= */
-
       isPersonalMember
         ? subscribeCollection(
             "mealSettings",
@@ -201,13 +175,6 @@ export function useMessData(
             ownerId,
             wrap(setMealSettings)
           ),
-
-
-
-      /* =========================================
-         BAZAAR
-      ========================================= */
-
       isPersonalMember
         ? empty(setBazaar)
         : subscribeCollection(
@@ -215,13 +182,6 @@ export function useMessData(
             ownerId,
             wrap(setBazaar)
           ),
-
-
-
-      /* =========================================
-         DEPOSITS
-      ========================================= */
-
       isPersonalMember
         ? subscribeCollection(
             "deposits",
@@ -234,13 +194,6 @@ export function useMessData(
             ownerId,
             wrap(setDeposits)
           ),
-
-
-
-      /* =========================================
-         EXTRA COSTS
-      ========================================= */
-
       isPersonalMember
         ? empty(setExtraCosts)
         : subscribeCollection(
@@ -248,13 +201,6 @@ export function useMessData(
             ownerId,
             wrap(setExtraCosts)
           ),
-
-
-
-      /* =========================================
-         NOTICES
-      ========================================= */
-
       isPersonalMember
         ? empty(setNotices)
         : subscribeCollection(
@@ -262,13 +208,6 @@ export function useMessData(
             ownerId,
             wrap(setNotices)
           ),
-
-
-
-      /* =========================================
-         NOTIFICATIONS
-      ========================================= */
-
       isPersonalMember
         ? empty(setNotifications)
         : subscribeCollection(
@@ -285,11 +224,6 @@ export function useMessData(
                   .slice(0, 30)
               )
           ),
-
-      /* =========================================
-         ACTIVITY LOGS
-      ========================================= */
-
       isPersonalMember
         ? empty(setActivityLogs)
         : subscribeCollection(
@@ -306,11 +240,6 @@ export function useMessData(
                   .slice(0, 80)
               )
           ),
-
-      /* =========================================
-         SESSION ACTIVITY
-      ========================================= */
-
       isPersonalMember
         ? empty(setSessionActivity)
         : subscribeCollection(
@@ -327,13 +256,6 @@ export function useMessData(
                   .slice(0, 20)
               )
           ),
-
-
-
-      /* =========================================
-         SETTINGS
-      ========================================= */
-
       subscribeSettings(
         ownerId,
         wrap(setSettings)

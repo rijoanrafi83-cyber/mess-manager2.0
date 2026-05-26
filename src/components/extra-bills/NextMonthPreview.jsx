@@ -1,13 +1,6 @@
-/**
- * NextMonthPreview
- *
- * Shows recurring bills that will carry forward to next month.
- * Admin can disable recurrence or carry forward all at once.
- */
-
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Calendar, RefreshCw, XCircle } from "lucide-react";
+import { Calendar, XCircle } from "lucide-react";
 
 import { Button, Badge } from "../ui";
 import { SmartSection } from "../SmartUI";
@@ -34,7 +27,7 @@ function getNextMonthLabel() {
   return next.toLocaleString("default", { month: "long", year: "numeric" });
 }
 
-export function NextMonthPreview({ extraCosts = [], ownerId, userProfile, members = [] }) {
+export function NextMonthPreview({ extraCosts = [], ownerId, userProfile }) {
   const [disablingId, setDisablingId] = useState("");
   const [carryingForward, setCarryingForward] = useState(false);
 

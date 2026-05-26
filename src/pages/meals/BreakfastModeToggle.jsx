@@ -1,13 +1,3 @@
-/**
- * BreakfastModeToggle
- *
- * A 3-state cycling button for breakfast mode selection.
- * Cycles through: Off → Half → Full → Off
- *
- * Replaces the binary Check/X toggle for the breakfast column
- * in PermanentMealManager.
- */
-
 import { motion } from "framer-motion";
 import { Check, Minus, X } from "lucide-react";
 

@@ -57,12 +57,6 @@ import {
 
 import { useChartTheme } from "../hooks/useChartTheme";
 import { buildSmartInsights } from "../utils/smartInsights";
-
-
-/* =========================================================
-   CUSTOM TOOLTIP
-========================================================= */
-
 const CustomTooltip = ({
   active,
   payload,
@@ -121,13 +115,6 @@ const CustomTooltip = ({
     </div>
   );
 };
-
-
-
-/* =========================================================
-   MAIN PAGE
-========================================================= */
-
 export function DashboardPage({
 
   members = [],
@@ -160,13 +147,6 @@ export function DashboardPage({
   } = billData;
 
   const chartTheme = useChartTheme();
-
-
-
-  /* =====================================================
-     TREND
-  ===================================================== */
-
   const combinedMeals =
     useMemo(
       () => [
@@ -192,13 +172,6 @@ export function DashboardPage({
 
       [combinedMeals]
     );
-
-
-
-  /* =====================================================
-     BAZAAR PIE
-  ===================================================== */
-
   const bazaarByCategory =
     useMemo(
 
@@ -227,13 +200,6 @@ export function DashboardPage({
 
       [bazaarByCategory]
     );
-
-
-
-  /* =====================================================
-     TOP MEMBER
-  ===================================================== */
-
   const topMealEater =
     useMemo(
 
@@ -268,13 +234,6 @@ export function DashboardPage({
 
       [memberBills]
     );
-
-
-
-  /* =====================================================
-     RECENT BAZAAR
-  ===================================================== */
-
   const recentBazaar =
     useMemo(
 
@@ -299,13 +258,6 @@ export function DashboardPage({
 
       [bazaar]
     );
-
-
-
-  /* =====================================================
-     RECENT DEPOSITS
-  ===================================================== */
-
   const recentDeposits =
     useMemo(
 
@@ -854,8 +806,6 @@ export function DashboardPage({
 
         <div className="space-y-4">
 
-          {/* TOP EATER */}
-
           <Card>
 
             <div className="flex items-start gap-3">
@@ -908,10 +858,6 @@ export function DashboardPage({
             </div>
 
           </Card>
-
-
-
-          {/* TOP DUE */}
 
           <Card>
 
@@ -971,10 +917,6 @@ export function DashboardPage({
             </div>
 
           </Card>
-
-
-
-          {/* MONTH */}
 
           <Card>
 

@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -27,8 +25,7 @@ import {
   ROLES,
   credentialAliasDocId,
 } from "../utils/roles";
-
-const AuthContext = createContext(null);
+import { AuthContext } from "./useAuth";
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -162,10 +159,6 @@ export function AuthProvider({ children }) {
     joinedAt: data.joinedAt || data.createdAt || null,
     sessionId: firebaseUser.uid,
   });
-
-  // =========================
-  // AUTH STATE LISTENER
-  // =========================
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -188,10 +181,7 @@ export function AuthProvider({ children }) {
           }
 
           setCurrentUser(firebaseUser);
-
-          // =========================
           // ADMIN PROFILE CHECK
-          // =========================
           const adminRef = doc(
             db,
             "adminProfiles",
@@ -224,10 +214,7 @@ export function AuthProvider({ children }) {
             setStatus("authed");
             return;
           }
-
-          // =========================
           // MEMBER PROFILE CHECK
-          // =========================
           const memberRef = doc(
             db,
             "memberAccess",
@@ -260,10 +247,7 @@ export function AuthProvider({ children }) {
             setStatus("authed");
             return;
           }
-
-          // =========================
           // NO PROFILE FOUND
-          // =========================
           setUserProfile(null);
           setStatus("guest");
 
@@ -360,10 +344,6 @@ export function AuthProvider({ children }) {
     userProfile?.role,
     userProfile?.credentialVersion,
   ]);
-
-  // =========================
-  // LOGIN
-  // =========================
   const resolveLoginEmail = async (identifier, expectedRole) => {
     const sharedAliasSnap = await getDoc(
       doc(
@@ -502,10 +482,6 @@ export function AuthProvider({ children }) {
       };
     }
   };
-
-  // =========================
-  // REGISTER
-  // =========================
   const register = async (
     displayName,
     email,
@@ -553,10 +529,6 @@ export function AuthProvider({ children }) {
       };
     }
   };
-
-  // =========================
-  // LOGOUT
-  // =========================
   const logout = async () => {
     signingOutRef.current = true;
     authSequenceRef.current += 1;
@@ -591,10 +563,6 @@ export function AuthProvider({ children }) {
       setStatus("guest");
     }
   };
-
-  // =========================
-  // RESET PASSWORD
-  // =========================
   const resetPassword = async (email) => {
     try {
       await sendPasswordResetEmail(
@@ -622,10 +590,6 @@ export function AuthProvider({ children }) {
       };
     }
   };
-
-  // =========================
-  // CONTEXT VALUE
-  // =========================
   const value = {
     currentUser,
     userProfile,
@@ -647,19 +611,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-// =========================
-// CUSTOM HOOK
-// =========================
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-
-  if (!ctx) {
-    throw new Error(
-      "useAuth must be used inside AuthProvider"
-    );
-  }
-
-  return ctx;
 }

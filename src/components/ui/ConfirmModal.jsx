@@ -1,22 +1,3 @@
-/**
- * ConfirmModal
- *
- * Reusable confirmation dialog for destructive actions (delete, reset, etc.).
- * Replaces the repeated pattern of Modal + message + danger button + cancel button
- * found across Members, Meals, Bazaar, and Deposits pages.
- *
- * Usage:
- *   <ConfirmModal
- *     open={Boolean(delId)}
- *     onClose={() => setDelId(null)}
- *     onConfirm={handleDelete}
- *     loading={loading}
- *     title="Delete Member"
- *     message="Are you sure? This will permanently remove the member and cannot be undone."
- *     confirmLabel="Delete"
- *   />
- */
-
 import { Modal, Button } from "../ui";
 
 export function ConfirmModal({

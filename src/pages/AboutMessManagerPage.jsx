@@ -14,7 +14,6 @@ import {
   Fingerprint,
   Gauge,
   Gem,
-  GitBranch,
   Layers3,
   LockKeyhole,
   MonitorSmartphone,

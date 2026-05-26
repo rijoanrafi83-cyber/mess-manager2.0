@@ -52,8 +52,9 @@ export function useSessionTracking(userProfile) {
   const trackedRef = useRef("");
   const profileRef = useRef(userProfile);
 
-  // Keep profileRef current without re-triggering the effect
-  profileRef.current = userProfile;
+  useEffect(() => {
+    profileRef.current = userProfile;
+  });
 
   useEffect(() => {
     if (!userProfile?.ownerId || !userProfile?.uid) {
@@ -100,8 +101,6 @@ export function useSessionTracking(userProfile) {
       window.clearInterval(heartbeat);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  // Only re-run when identity changes, not on every profile object reference change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     userProfile?.ownerId,
     userProfile?.uid,

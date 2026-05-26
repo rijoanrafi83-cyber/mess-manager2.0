@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import {
   AuthButton,
   AuthShell,

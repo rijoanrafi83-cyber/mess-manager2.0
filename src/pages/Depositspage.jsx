@@ -193,15 +193,11 @@ export function DepositsPage({ deposits = [], members = [], ownerId, userProfile
           </Button>
         ) : null}
       />
-
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <MetricCard label="Total Collected" value={formatCurrency(totalDeposits)} icon={TrendingUp} tone="green" caption="all member deposits" />
         <MetricCard label="Filtered Total" value={formatCurrency(filteredTotal)} icon={Wallet} tone="blue" caption="visible records" />
         <MetricCard label="Transactions" value={deposits.length} icon={CheckCircle} tone="accent" caption="successful payments" />
       </div>
-
-      {/* Member summary cards */}
       {members.length > 0 && (
         <SmartSection title="Member Balance Overview" subtitle="Collected amount per member" className="mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -219,8 +215,6 @@ export function DepositsPage({ deposits = [], members = [], ownerId, userProfile
         </div>
         </SmartSection>
       )}
-
-      {/* Filters */}
       <FilterSurface>
         <SearchInput value={search} onChange={setSearch} placeholder="Search deposits..." className="flex-1" />
         <Select value={filterMem} onChange={e => setFilterMem(e.target.value)} wrapperClass="sm:w-44">

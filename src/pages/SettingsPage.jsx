@@ -63,7 +63,7 @@ import toast from "react-hot-toast";
 
 import { auth, db } from "../firebase";
 import { addActivityLog } from "../services/firestoreService";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { useTheme } from "../context/ThemeContext";
 import {
   ACCENT_STORAGE_KEY,
@@ -1003,26 +1003,24 @@ export default function SettingsPage({
         }
       } finally {
         if (
-          cancelled ||
-          loadRequestRef.current !== requestId
+          !cancelled &&
+          loadRequestRef.current === requestId
         ) {
-          return;
+          savedSettingsSignature.current =
+            buildSettingsSignature({
+              formData:
+                nextFormData,
+              preferences:
+                savedPreferences,
+              sharedRoleLogins:
+                nextSharedRoleLogins,
+            });
+          savedAutoSave.current =
+            Boolean(savedPreferences.autoSave);
+          didInitialLoad.current = true;
+          isHydrating.current = false;
+          setLoading(false);
         }
-
-        savedSettingsSignature.current =
-          buildSettingsSignature({
-            formData:
-              nextFormData,
-            preferences:
-              savedPreferences,
-            sharedRoleLogins:
-              nextSharedRoleLogins,
-          });
-        savedAutoSave.current =
-          Boolean(savedPreferences.autoSave);
-        didInitialLoad.current = true;
-        isHydrating.current = false;
-        setLoading(false);
       }
     };
 

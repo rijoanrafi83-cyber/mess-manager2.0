@@ -1,10 +1,3 @@
-/**
- * BillForm
- *
- * Modal form for creating and editing extra bills.
- * Supports billing mode selection, member targeting, category, and recurrence.
- */
-
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -142,7 +135,6 @@ export function BillForm({ open, onClose, ownerId, members = [], editBill = null
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Billing Mode Selector */}
         <div className="space-y-2">
           <p className="text-xs font-bold uppercase tracking-wider theme-muted-text">
             Billing Mode
@@ -169,8 +161,6 @@ export function BillForm({ open, onClose, ownerId, members = [], editBill = null
             ))}
           </div>
         </div>
-
-        {/* Title and Amount */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Bill Title"
@@ -192,8 +182,6 @@ export function BillForm({ open, onClose, ownerId, members = [], editBill = null
             required
           />
         </div>
-
-        {/* Real-time calculation preview */}
         {Number(form.amount) > 0 && form.selectedMemberIds.length > 0 && (
           <div className="rounded-2xl border theme-muted p-4">
             <div className="flex items-center justify-between gap-4 text-sm">
@@ -215,8 +203,6 @@ export function BillForm({ open, onClose, ownerId, members = [], editBill = null
             </div>
           </div>
         )}
-
-        {/* Category and Date */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Category"
@@ -235,8 +221,6 @@ export function BillForm({ open, onClose, ownerId, members = [], editBill = null
             required
           />
         </div>
-
-        {/* Recurring toggle */}
         <div className="flex items-center justify-between gap-4 rounded-2xl border theme-muted p-4">
           <div>
             <p className="text-sm font-semibold theme-text">Recurring Monthly</p>
@@ -256,8 +240,6 @@ export function BillForm({ open, onClose, ownerId, members = [], editBill = null
             />
           </button>
         </div>
-
-        {/* Member Selection */}
         <div>
           <MemberSelector
             members={activeMembers}
@@ -268,8 +250,6 @@ export function BillForm({ open, onClose, ownerId, members = [], editBill = null
             <p className="mt-2 text-xs text-red-500 font-semibold">{errors.members}</p>
           )}
         </div>
-
-        {/* Actions */}
         <div className="flex gap-3 pt-2">
           <Button type="submit" loading={loading} className="flex-1">
             {isEdit ? "Update Bill" : "Add Extra Bill"}

@@ -1,10 +1,3 @@
-/**
- * MemberSelector
- *
- * Reusable checkbox list for selecting which members are included in an extra bill.
- * Supports select all/deselect all, displays count, and scrolls on mobile.
- */
-
 import { PersonAvatar } from "../SmartUI";
 
 export function MemberSelector({ members = [], selectedIds = [], onChange }) {
@@ -29,7 +22,6 @@ export function MemberSelector({ members = [], selectedIds = [], onChange }) {
 
   return (
     <div className="space-y-3">
-      {/* Header with count and toggle */}
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-bold theme-muted-text uppercase tracking-wider">
           {selectedIds.length} of {members.length} members selected
@@ -42,8 +34,6 @@ export function MemberSelector({ members = [], selectedIds = [], onChange }) {
           {allSelected ? "Deselect All" : "Select All"}
         </button>
       </div>
-
-      {/* Scrollable member list */}
       <div className="max-h-48 overflow-y-auto rounded-2xl border theme-muted p-2 space-y-1">
         {members.map((member) => {
           const isSelected = selectedIds.includes(member.id);
@@ -91,8 +81,6 @@ export function MemberSelector({ members = [], selectedIds = [], onChange }) {
           </p>
         )}
       </div>
-
-      {/* Validation hint */}
       {noneSelected && members.length > 0 && (
         <p className="text-xs text-red-500 font-semibold">
           At least one member must be selected.

@@ -1,8 +1,5 @@
-// ─── Smart UI Component Library ──────────────────────────────────────────────
 import { motion } from "framer-motion";
 import { Loader2, X, AlertCircle, CheckCircle, Info, AlertTriangle } from "lucide-react";
-
-// ─── Page wrapper ─────────────────────────────────────────────────────────────
 export function PageWrapper({ children, className = "" }) {
   return (
     <motion.div
@@ -15,8 +12,6 @@ export function PageWrapper({ children, className = "" }) {
     </motion.div>
   );
 }
-
-// ─── Page header ──────────────────────────────────────────────────────────────
 export function PageHeader({ title, subtitle, actions }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -28,8 +23,6 @@ export function PageHeader({ title, subtitle, actions }) {
     </div>
   );
 }
-
-// ─── Stat card ────────────────────────────────────────────────────────────────
 export function StatCard({ label, value, sub, icon: Icon, iconBg = "bg-violet-500/15", iconColor = "text-violet-500", trend, trendUp }) {
   return (
     <motion.div
@@ -54,8 +47,6 @@ export function StatCard({ label, value, sub, icon: Icon, iconBg = "bg-violet-50
     </motion.div>
   );
 }
-
-// ─── Card ─────────────────────────────────────────────────────────────────────
 export function Card({ children, className = "", noPad = false }) {
   return (
     <div className={`theme-card theme-gradient-border border rounded-2xl overflow-hidden ${noPad ? "" : "p-4 sm:p-6"} ${className}`}>
@@ -75,8 +66,6 @@ export function CardHeader({ title, subtitle, actions, className = "" }) {
     </div>
   );
 }
-
-// ─── Button ───────────────────────────────────────────────────────────────────
 const btnBase = "inline-flex items-center gap-2 font-medium rounded-xl transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--accent)_22%,transparent)]";
 const btnSizes = {
   xs: "px-2.5 py-1.5 text-xs",
@@ -104,8 +93,6 @@ export function Button({ children, variant = "primary", size = "md", loading = f
     </button>
   );
 }
-
-// ─── Input ────────────────────────────────────────────────────────────────────
 export function Input({ label, error, helper, className = "", wrapperClass = "", ...props }) {
   return (
     <div className={`space-y-1.5 ${wrapperClass}`}>
@@ -127,8 +114,6 @@ export function Input({ label, error, helper, className = "", wrapperClass = "",
     </div>
   );
 }
-
-// ─── Select ───────────────────────────────────────────────────────────────────
 export function Select({ label, error, className = "", wrapperClass = "", children, ...props }) {
   return (
     <div className={`space-y-1.5 ${wrapperClass}`}>
@@ -145,8 +130,6 @@ export function Select({ label, error, className = "", wrapperClass = "", childr
     </div>
   );
 }
-
-// ─── Textarea ─────────────────────────────────────────────────────────────────
 export function Textarea({ label, error, className = "", wrapperClass = "", ...props }) {
   return (
     <div className={`space-y-1.5 ${wrapperClass}`}>
@@ -163,8 +146,6 @@ export function Textarea({ label, error, className = "", wrapperClass = "", ...p
     </div>
   );
 }
-
-// ─── Modal ────────────────────────────────────────────────────────────────────
 export function Modal({ open, onClose, title, subtitle, children, size = "md" }) {
   const widths = { sm: "max-w-sm", md: "max-w-md", lg: "max-w-lg", xl: "max-w-2xl", "2xl": "max-w-3xl" };
   if (!open) return null;
@@ -201,8 +182,6 @@ export function Modal({ open, onClose, title, subtitle, children, size = "md" })
     </div>
   );
 }
-
-// ─── Badge ────────────────────────────────────────────────────────────────────
 const badgeVariants = {
   default:  "theme-muted text-gray-700 dark:text-gray-300",
   success:  "bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400",
@@ -219,8 +198,6 @@ export function Badge({ children, variant = "default", className = "" }) {
     </span>
   );
 }
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 export function Skeleton({ className = "" }) {
   return <div className={`animate-pulse theme-muted rounded-xl ${className}`} />;
 }
@@ -234,8 +211,6 @@ export function SkeletonCard() {
     </div>
   );
 }
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
 export function EmptyState({ icon: Icon, title, description, action }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -250,8 +225,6 @@ export function EmptyState({ icon: Icon, title, description, action }) {
     </div>
   );
 }
-
-// ─── Table ────────────────────────────────────────────────────────────────────
 export function Table({ columns, data, onRowClick, loading, emptyState }) {
   if (loading) {
     return (
@@ -292,8 +265,6 @@ export function Table({ columns, data, onRowClick, loading, emptyState }) {
     </div>
   );
 }
-
-// ─── Search input ─────────────────────────────────────────────────────────────
 import { Search } from "lucide-react";
 export function SearchInput({ value, onChange, placeholder = "Search...", className = "" }) {
   return (
@@ -308,8 +279,6 @@ export function SearchInput({ value, onChange, placeholder = "Search...", classN
     </div>
   );
 }
-
-// ─── Alert ────────────────────────────────────────────────────────────────────
 const alertConfig = {
   info:    { Icon: Info,          bg: "bg-blue-50 dark:bg-blue-500/10",   text: "text-blue-700 dark:text-blue-400",   border: "border-blue-200 dark:border-blue-500/20" },
   success: { Icon: CheckCircle,   bg: "bg-green-50 dark:bg-green-500/10", text: "text-green-700 dark:text-green-400", border: "border-green-200 dark:border-green-500/20" },
@@ -329,8 +298,6 @@ export function Alert({ type = "info", title, children }) {
     </div>
   );
 }
-
-// ─── Toggle ───────────────────────────────────────────────────────────────────
 export function Toggle({ checked, onChange, label }) {
   return (
     <label className="flex items-center gap-3 cursor-pointer">
@@ -348,8 +315,6 @@ export function Toggle({ checked, onChange, label }) {
     </label>
   );
 }
-
-// ─── Number badge ─────────────────────────────────────────────────────────────
 export function NumberInput({ label, value, onChange, min = 0, max = 99, className = "" }) {
   return (
     <div className={`space-y-1.5 ${className}`}>
