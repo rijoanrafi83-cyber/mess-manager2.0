@@ -28,6 +28,29 @@ import {
 } from "../utils/roles";
 import { AuthContext } from "./useAuth";
 
+const AUTH_PROFILE_TIMEOUT_MS = 8000;
+
+class AuthStartupTimeoutError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "AuthStartupTimeoutError";
+  }
+}
+
+function withTimeout(promise, timeoutMs, message) {
+  let timeoutId;
+
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new AuthStartupTimeoutError(message));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -138,7 +161,7 @@ export function AuthProvider({ children }) {
     return profile;
   }, [buildAdminProfile]);
 
-  const buildManagedProfile = (firebaseUser, data) => ({
+  const buildManagedProfile = useCallback((firebaseUser, data) => ({
     uid: firebaseUser.uid,
     email: data.email || firebaseUser.email,
     displayName:
@@ -159,7 +182,67 @@ export function AuthProvider({ children }) {
     createdAt: data.createdAt || null,
     joinedAt: data.joinedAt || data.createdAt || null,
     sessionId: firebaseUser.uid,
-  });
+  }), []);
+
+  const loadBootstrapProfile = useCallback(async (firebaseUser) => {
+    const adminRef = doc(
+      db,
+      "adminProfiles",
+      firebaseUser.uid
+    );
+    const userRef = doc(
+      db,
+      "users",
+      firebaseUser.uid
+    );
+
+    const [adminSnap, userSnap] = await Promise.all([
+      getDoc(adminRef),
+      getDoc(userRef),
+    ]);
+
+    const adminProfile = await hydrateAdminProfile(
+      firebaseUser,
+      adminSnap,
+      userSnap
+    );
+
+    if (adminProfile) {
+      return {
+        kind: "profile",
+        profile: adminProfile,
+      };
+    }
+
+    const memberRef = doc(
+      db,
+      "memberAccess",
+      firebaseUser.uid
+    );
+    const memberSnap = await getDoc(memberRef);
+
+    if (!memberSnap.exists()) {
+      return {
+        kind: "guest",
+      };
+    }
+
+    const data = memberSnap.data();
+    const accountStatus =
+      data.accountStatus || data.status || "active";
+
+    if (accountStatus !== "active") {
+      return {
+        kind: "inactive",
+      };
+    }
+
+    return {
+      kind: "profile",
+      profile: buildManagedProfile(firebaseUser, data),
+    };
+  }, [buildManagedProfile, hydrateAdminProfile]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -181,24 +264,10 @@ export function AuthProvider({ children }) {
           }
 
           setCurrentUser(firebaseUser);
-          const adminRef = doc(
-            db,
-            "adminProfiles",
-            firebaseUser.uid
-          );
-
-          const adminSnap = await getDoc(adminRef);
-          const userRef = doc(
-            db,
-            "users",
-            firebaseUser.uid
-          );
-          const userSnap = await getDoc(userRef);
-
-          const adminProfile = await hydrateAdminProfile(
-            firebaseUser,
-            adminSnap,
-            userSnap
+          const result = await withTimeout(
+            loadBootstrapProfile(firebaseUser),
+            AUTH_PROFILE_TIMEOUT_MS,
+            "Auth profile lookup timed out."
           );
 
           if (
@@ -208,53 +277,43 @@ export function AuthProvider({ children }) {
             return;
           }
 
-          if (adminProfile) {
-            setUserProfile(adminProfile);
+          if (result.kind === "profile") {
+            setUserProfile(result.profile);
             setStatus("authed");
             return;
           }
-          const memberRef = doc(
-            db,
-            "memberAccess",
-            firebaseUser.uid
-          );
 
-          const memberSnap = await getDoc(memberRef);
-
-          if (
-            signingOutRef.current ||
-            sequence !== authSequenceRef.current
-          ) {
+          if (result.kind === "inactive") {
+            await signOut(auth);
+            setCurrentUser(null);
+            setUserProfile(null);
+            setStatus("guest");
             return;
           }
 
-          if (memberSnap.exists()) {
-            const data = memberSnap.data();
-            const accountStatus =
-              data.accountStatus || data.status || "active";
-
-            if (accountStatus !== "active") {
-              await signOut(auth);
-              setUserProfile(null);
-              setStatus("guest");
-              return;
-            }
-
-            setUserProfile(buildManagedProfile(firebaseUser, data));
-
-            setStatus("authed");
-            return;
-          }
           setUserProfile(null);
           setStatus("guest");
 
         } catch (err) {
-          console.error(
-            "Auth state error:",
-            err
-          );
+          if (
+            signingOutRef.current ||
+            sequence !== authSequenceRef.current
+          ) {
+            return;
+          }
 
-          setCurrentUser(null);
+          if (err instanceof AuthStartupTimeoutError) {
+            console.warn(
+              "Auth startup timed out:",
+              err
+            );
+          } else {
+            console.error(
+              "Auth state error:",
+              err
+            );
+          }
+
           setUserProfile(null);
           setStatus("guest");
         }
@@ -262,7 +321,7 @@ export function AuthProvider({ children }) {
     );
 
     return () => unsubscribe();
-  }, [hydrateAdminProfile]);
+  }, [loadBootstrapProfile]);
 
   useEffect(() => {
     if (
